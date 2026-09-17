@@ -37,6 +37,11 @@ def assign_role(vol, bbox, faces):
     chunk = (dmin / dmax) if dmax else 0
     if vol > 50:
         return "shell-tpu"
+    # Large thin solids with many CAD faces are cut plates (armor with
+    # lightening holes), not the weapon band: a true ring is a simple
+    # profile with few faces. Plates must win before the ring rule.
+    if dmin <= 6 and dmax >= 100:
+        return "chassis-alu"
     if dmax >= 100 and dmin <= 6 and vol >= 15:
         return "weapon-steel"
     if vol >= 8 and chunk >= 0.5 and faces >= 30:

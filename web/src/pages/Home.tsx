@@ -186,7 +186,7 @@ export function Home() {
           <div className="cards">
             <div className="card">
               <h3>Weapon: AR500 ring</h3>
-              <p>Symmetric 2-tooth, 0.25 in, no lightening holes, no bolt holes through the rim. Holes start cracks; a single tooth plus counterweight throws the chassis on tooth-stop. AR500 ring target about 241 g per Branch E of the mass audit.</p>
+              <p>Symmetric 2-tooth weapon, measured 55.6 cm³ a pair in CAD: 436 g in AR500 steel, 246 g in Grade 5 titanium. No lightening holes, no bolt holes through the rim — holes start cracks. The 3lb path is titanium teeth (Liftoff's tapered steel ring hit 241 g; ours reaches the same budget in Ti).</p>
               <footer className="foot meta mono">Standard Weapon Teeth.step · 295 KB · 2 solids</footer>
             </div>
             <div className="card">

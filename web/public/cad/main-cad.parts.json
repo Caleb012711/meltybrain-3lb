@@ -937,7 +937,7 @@
  },
  {
   "node": "solid_078",
-  "role": "weapon-steel",
+  "role": "chassis-alu",
   "vol_cm3": 32.668,
   "bbox_mm": [
    128.1,
@@ -949,7 +949,7 @@
  },
  {
   "node": "solid_079",
-  "role": "weapon-steel",
+  "role": "chassis-alu",
   "vol_cm3": 25.651,
   "bbox_mm": [
    128.1,

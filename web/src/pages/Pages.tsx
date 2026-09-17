@@ -206,9 +206,11 @@ export function Parts() {
           Project Liftoff's hard lessons, all confirmed in competition: a pointed tooth
           embeds in the arena wall — run it blunt. A single tooth plus counterweight throws
           the chassis when the tooth stops on impact — run symmetric 2-tooth. Bolt holes
-          through the rim start cracks — remove them and taper mid-span instead (326 g down
-          to 241 g precedent). Steel carries 1.77× the energy of titanium at equal volume,
-          so AR500 0.25 in is the default; titanium is only the weight relief valve.
+          through the rim start cracks — remove them and taper mid-span instead (Liftoff's
+          precedent: 326 g down to 241 g). Our teeth measure 55.6 cm³ a pair in CAD: 436 g in
+          steel, 246 g in titanium — so steel is the energy king but titanium is the 3lb ticket.
+          Steel carries 1.77× the energy of titanium at equal volume, which is exactly why the
+          Ti-swap is the relief valve, not the default.
         </p>
       </div>
       <div className="step">

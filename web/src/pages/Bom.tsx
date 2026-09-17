@@ -101,7 +101,7 @@ export function Bom() {
             </tr>
           </thead>
           <tbody>
-            <tr><td>Weapon (Ti band + teeth)</td><td className="mono">200–250 g</td><td className="mono">___ g</td></tr>
+            <tr><td>Weapon (Ti teeth pair, 55.6 cm³)</td><td className="mono">~246 g (steel pair = 436 g — overweight, Ti required)</td><td className="mono">___ g</td></tr>
             <tr><td>Plates + structure (alu)</td><td className="mono">300–400 g</td><td className="mono">___ g</td></tr>
             <tr><td>Shell + cradle (TPU)</td><td className="mono">80–120 g</td><td className="mono">___ g</td></tr>
             <tr><td>Pods (hubs + cleats)</td><td className="mono">~50 g</td><td className="mono">___ g</td></tr>

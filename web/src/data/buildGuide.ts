@@ -16,7 +16,7 @@ export const BUILD_GUIDE: Record<PartRole, GuideEntry> = {
     role: 'weapon-steel',
     where: 'Outer spinning band — symmetric 2-tooth ring and teeth. No rim, bolt, or lightening holes.',
     stepDetail: 'BS4 Assemble frame (01 §4) + BS1 order metal first',
-    note: 'AR500 0.25 in default, ~241 g ring / 218 g per tooth in steel. Taper mid-span to tune — never drill to lighten. Ring bolts 12.9 + Loctite 243, star pattern, 24 h cure. Over budget? Ti-swap the weapon first (437 g down to 246 g a pair).',
+    note: 'Teeth pair measures 55.6 cm³ in CAD: 436 g in AR500 steel, 246 g in Grade 5 titanium — build Ti to make the 1310 g target (Liftoff steel precedent: 241 g tapered). Taper mid-span to tune — never drill to lighten. Ring bolts 12.9 + Loctite 243, star pattern, 24 h cure.',
     caution: 'Balance on a point jig, level in 4+ orientations. 3–5 g off means hop at 3000 RPM.',
     links: [
       { to: '/build', label: 'Build step 4' },
