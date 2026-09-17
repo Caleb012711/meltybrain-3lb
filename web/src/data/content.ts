@@ -3,6 +3,7 @@ export type NavEntry = { to: string; label: string; end?: boolean; anchors?: Nav
 
 export const nav: NavEntry[] = [
   { to: '/', label: 'Overview', end: true },
+  { to: '/studio', label: '3D Studio' },
   { to: '/explorer', label: 'Explorer' },
   { to: '/build', label: 'Build' },
   { to: '/onshape', label: 'Onshape' },

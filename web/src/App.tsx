@@ -10,6 +10,7 @@ const Printing = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Pr
 const Parts = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Parts })));
 const Firmware = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Firmware })));
 const Explorer = lazy(() => import('./pages/Explorer').then((m) => ({ default: m.Explorer })));
+const Studio = lazy(() => import('./pages/Studio').then((m) => ({ default: m.Studio })));
 const Bom = lazy(() => import('./pages/Bom').then((m) => ({ default: m.Bom })));
 
 export function App() {
@@ -28,6 +29,7 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="studio" element={<Studio />} />
           <Route path="explorer" element={<Explorer />} />
           <Route path="build" element={<Build />} />
           <Route path="onshape" element={<Onshape />} />

@@ -6,8 +6,10 @@ import { ExplodingModel, GlErrorBoundary, useModelParts, EMPTY_SET } from './Cad
 import { useIsMobile, usePrefersReducedMotion } from '../hooks/hooks';
 
 const ROLL_R = 1.5;
-const parked = { x0: -4.6, x1: 4.6, ground: -1.55 };
-const mobileCfg = { x0: -2.9, x1: 2.9, ground: -1.35 };
+const parked = { x0: -7.2, x1: 7.2, ground: -0.7 };
+const mobileCfg = { x0: -3.4, x1: 3.4, ground: -0.55 };
+const DRIVE_START = 0.15;
+const DRIVE_END = 0.7;
 
 type Shared = { p: number; smooth: number; x: number };
 
@@ -25,17 +27,24 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
     if (!g) return;
     const s = shared.current;
     s.smooth += (s.p - s.smooth) * (1 - Math.exp(-6 * Math.min(delta, 0.05)));
-    const e = ease(clamp01(s.smooth));
-    const x = cfg.x0 + (cfg.x1 - cfg.x0) * e;
+    const ds = mobile ? 0.12 : DRIVE_START;
+    const de = mobile ? 0.68 : DRIVE_END;
+    const drive = ease(clamp01((s.smooth - ds) / (de - ds)));
+    const x = cfg.x0 + (cfg.x1 - cfg.x0) * drive;
     const dx = x - prev.current;
     prev.current = x;
     s.x = x;
+    // end fade via scale (no material traversal): parks off-screen at both ends
+    const fade = Math.min(clamp01(s.smooth / 0.1), 1 - clamp01((s.smooth - 0.88) / 0.12));
+    const eFade = fade * fade * (3 - 2 * fade);
+    const baseScale = mobile ? 0.62 : 1.0;
+    g.visible = eFade > 0.02;
+    g.scale.setScalar(Math.max(0.001, baseScale * (0.4 + 0.6 * eFade)));
     const speed = Math.min(1, Math.abs(dx) * 30 + 0.12);
-    const hop = Math.abs(Math.sin((x / ROLL_R) * 2)) * 0.05 * speed;
-    g.position.set(x, cfg.ground + hop, Math.sin(e * Math.PI) * 0.3);
-    g.rotation.set(0, 0.35 + e * 0.25, 0);
+    const hop = Math.abs(Math.sin((x / ROLL_R) * 2)) * 0.05 * speed * eFade;
+    g.position.set(x, cfg.ground + hop, Math.sin(drive * Math.PI) * 0.6);
+    g.rotation.set(0, 0.35 + drive * 0.25, 0);
     g.rotation.z -= dx / ROLL_R;
-    if (mobile) g.scale.setScalar(0.72);
   });
 
   return (
@@ -157,7 +166,7 @@ function HeroScene({
         <RollingBot shared={shared} mobile={mobile} />
       </Suspense>
       <ContactShadows
-        position={[0, -1.68, 0]}
+        position={[0, mobile ? -0.68 : -0.83, 0]}
         scale={14}
         far={3.2}
         resolution={256}
@@ -208,6 +217,9 @@ export function HeroStage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     const onResize = () => {
       measure();
+    if (document.fonts) {
+      void document.fonts.ready.then(() => measure());
+    }
       onScroll();
     };
     window.addEventListener('resize', onResize);
@@ -220,13 +232,17 @@ export function HeroStage() {
       const stageEl = stageRef.current;
       const hud = hudRef.current;
       if (!cam || !stageEl) return;
-      if (hud) hud.textContent = `SCROLL ${Math.round(shared.current.p * 100)}%`;
+      if (hud) {
+        const p = shared.current.p;
+        const stage = p < 0.15 ? 'ENTER' : p < 0.7 ? 'CROSSING' : p < 0.88 ? 'EXIT' : 'DONE';
+        hud.textContent = `SCROLL ${Math.round(p * 100)}% — ${stage}`;
+      }
       if (Math.abs(shared.current.x - lastX) < 0.5) return;
       lastX = shared.current.x;
       const w = stageEl.clientWidth;
-      proj.set(shared.current.x, -1.2, 0).project(cam);
+      proj.set(shared.current.x, mobile ? -0.55 : -0.7, 0).project(cam);
       const botPx = (proj.x * 0.5 + 0.5) * w;
-      const sigma = mobile ? 180 : 140;
+      const sigma = mobile ? 110 : 140;
       const tiltOn = !mobile;
       for (let i = 0; i < letters.current.length; i++) {
         const el = letters.current[i];
