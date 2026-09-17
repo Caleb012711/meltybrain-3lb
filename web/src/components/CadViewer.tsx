@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
@@ -10,6 +10,23 @@ import { indexColor, roleMaterial, type PartInfo } from './materials';
 export type ColorMode = 'role' | 'index' | 'plain';
 
 export const EMPTY_SET: Set<number> = new Set();
+
+export class GlErrorBoundary extends Component<
+  { onFail: () => void; children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFail();
+  }
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
 const EMISSIVE_ORANGE = new THREE.Color('#e8490f');
 
 async function loadParts(modelId: string): Promise<PartInfo[]> {
@@ -70,7 +87,9 @@ export function ExplodingModel({
   const gltf = useGLTF(url);
   const group = useRef<THREE.Group>(null);
   const base = useRef(new Map<string, { pos: THREE.Vector3; dir: THREE.Vector3 }>());
-  const indexMats = useRef<THREE.MeshStandardMaterial[]>([]);
+  // Index-color materials keyed by ORIGINAL solid idx (not mesh order):
+  // dropped_from_glb gaps make meshCount-based slots collide (solid_120 vs solid_24).
+  const indexMats = useRef(new Map<number, THREE.MeshStandardMaterial>());
   const xrayMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -107,17 +126,30 @@ export function ExplodingModel({
 
   useEffect(() => {
     indexMats.current.forEach((m) => m.dispose());
-    indexMats.current = Array.from({ length: meshCount }, (_, i) => {
-      const mat = new THREE.MeshStandardMaterial({
-        color: indexColor(i, Math.max(1, meshCount)),
+    indexMats.current.clear();
+    // Sized lazily per original idx on first use (see material effect) —
+    // meshCount is smaller than max original idx once degenerates drop.
+    return () => {
+      indexMats.current.forEach((m) => m.dispose());
+      indexMats.current.clear();
+    };
+  }, [meshCount]);
+
+  const matForIndex = (idx: number, total: number) => {
+    let m = indexMats.current.get(idx);
+    if (!m) {
+      m = new THREE.MeshStandardMaterial({
+        color: indexColor(idx, Math.max(1, total)),
         metalness: 0.55,
         roughness: 0.45,
+        side: THREE.DoubleSide,
       });
-      mat.emissive.copy(EMISSIVE_ORANGE);
-      mat.emissiveIntensity = 0;
-      return mat;
-    });
-  }, [meshCount]);
+      m.emissive.copy(EMISSIVE_ORANGE);
+      m.emissiveIntensity = 0;
+      indexMats.current.set(idx, m);
+    }
+    return m;
+  };
 
   // One-time per model: part index, explode vectors, per-mesh material clones.
   // Clones are per-mesh so selection/wireframe never leak across same-role parts.
@@ -223,7 +255,7 @@ export function ExplodingModel({
         colorMode === 'role'
           ? clones.role
           : colorMode === 'index'
-            ? (indexMats.current[idx % Math.max(1, indexMats.current.length)] ?? clones.plain)
+            ? matForIndex(idx, parts.length > 0 ? parts.length : meshCount)
             : clones.plain;
       o.material = mat;
       mat.wireframe = wireframe;
@@ -269,17 +301,25 @@ function StlOverlay({ geometry }: { geometry: THREE.BufferGeometry | null }) {
     g.center();
     g.computeBoundingBox();
     const bb = g.boundingBox;
-    if (!bb) return g;
-    const size = new THREE.Vector3();
-    bb.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    g.scale(3 / maxDim, 3 / maxDim, 3 / maxDim);
+    if (bb) {
+      // Same normalize path as ExplodingModel (4/maxDim, centered at origin).
+      const size = new THREE.Vector3();
+      bb.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      g.scale(4 / maxDim, 4 / maxDim, 4 / maxDim);
+      g.center();
+    }
     return g;
   }, [geometry]);
+  useEffect(() => {
+    return () => {
+      normalized?.dispose();
+    };
+  }, [normalized]);
   if (!normalized) return null;
   return (
-    <mesh geometry={normalized} position={[0, 2.4, 0]}>
-      <meshStandardMaterial color="#1a6b32" roughness={0.6} />
+    <mesh geometry={normalized} position={[0, 0, 0]}>
+      <meshStandardMaterial color="#1a6b32" roughness={0.6} transparent opacity={0.85} side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -291,7 +331,7 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
   }, [active, onDone]);
   if (!active) return null;
   return (
-    <div
+      <div
       style={{
         position: 'absolute',
         top: 12,
@@ -299,12 +339,14 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
         right: 12,
         background: '#fff',
         border: '1px solid #c9c6b8',
+        borderTop: '3px solid #1a1d21',
         borderRadius: 6,
         padding: '6px 10px',
         fontSize: 13,
+        fontFamily: 'ui-monospace, monospace',
       }}
     >
-      Loading CAD… {Math.round(progress)}%
+      LOADING CAD — {Math.round(progress)}%
     </div>
   );
 }
@@ -345,7 +387,10 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
       const buf = await f.arrayBuffer();
       const geo = new STLLoader().parse(buf);
       geo.computeVertexNormals();
-      setStlGeo(geo);
+      setStlGeo((prev) => {
+        prev?.dispose();
+        return geo;
+      });
       setStlName(f.name);
     } catch {
       alert('Could not parse that STL.');
@@ -356,7 +401,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
     return (
       <div className="viewer">
         <div className="viewer-fallback">
-          <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" />
+          <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" />
         </div>
         <div className="viewer-bar">
           <span className="meta">3D failed to load — the render and STEP downloads still work.</span>
@@ -377,9 +422,10 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
   return (
     <div className="viewer">
       <div style={{ position: 'relative' }}>
+        <GlErrorBoundary onFail={() => setFailed(true)}>
         <Canvas
           camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
-          dpr={[1, 2]}
+          dpr={[1, 1.5]}
           onCreated={({ gl }) => gl.setClearColor('#ffffff')}
           role="img"
           aria-label={`3D model of Eyeliner combat robot, ${model.label}`}
@@ -406,8 +452,17 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
             />
             <StlOverlay geometry={stlGeo} />
           </Suspense>
-          <OrbitControls enableDamping autoRotate={false} makeDefault />
+          <OrbitControls
+            enableDamping
+            autoRotate={false}
+            makeDefault
+            touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+            minDistance={3}
+            maxDistance={14}
+            maxPolarAngle={Math.PI / 2 + 0.1}
+          />
         </Canvas>
+        </GlErrorBoundary>
         {!ready && <LoaderBar onDone={() => setReady(true)} />}
       </div>
       <div className="viewer-bar" role="toolbar" aria-label="CAD viewer controls">
@@ -509,6 +564,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
           <button
             className="mini"
             onClick={() => {
+              stlGeo?.dispose();
               setStlGeo(null);
               setStlName('');
             }}

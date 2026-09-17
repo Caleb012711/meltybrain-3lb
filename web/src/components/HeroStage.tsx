@@ -1,8 +1,8 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { ExplodingModel, useModelParts, EMPTY_SET } from './CadViewer';
+import { ExplodingModel, GlErrorBoundary, useModelParts, EMPTY_SET } from './CadViewer';
 import { useIsMobile, usePrefersReducedMotion } from '../hooks/hooks';
 
 const ROLL_R = 1.5;
@@ -82,6 +82,9 @@ function ParkedBot() {
   );
 }
 
+const _camTarget = new THREE.Vector3();
+const _lookTarget = new THREE.Vector3();
+
 function CameraRig({ shared, mobile }: { shared: React.MutableRefObject<Shared>; mobile: boolean }) {
   const look = useRef(new THREE.Vector3(0, -0.3, 0));
   useFrame(({ camera }, delta) => {
@@ -89,8 +92,10 @@ function CameraRig({ shared, mobile }: { shared: React.MutableRefObject<Shared>;
     const x = shared.current.x;
     const k = 1 - Math.exp(-3.2 * Math.min(delta, 0.05));
     const tz = mobile ? 10.4 : 9.2;
-    camera.position.lerp(new THREE.Vector3(x * 0.32, 0.6 - Math.sin(e * Math.PI) * 0.15, tz - e * 0.6), k);
-    look.current.lerp(new THREE.Vector3(x * 0.45, -0.3, 0), k);
+    _camTarget.set(x * 0.32, 0.6 - Math.sin(e * Math.PI) * 0.15, tz - e * 0.6);
+    camera.position.lerp(_camTarget, k);
+    _lookTarget.set(x * 0.45, -0.3, 0);
+    look.current.lerp(_lookTarget, k);
     camera.lookAt(look.current);
   });
   return null;
@@ -101,7 +106,7 @@ function SplitLine({ text, register }: { text: string; register: (el: HTMLSpanEl
   return (
     <>
       {words.map((w, wi) => (
-        <span key={wi} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+        <span key={wi} style={{ display: 'inline', overflowWrap: 'break-word' }}>
           {w.split('').map((ch, ci) => (
             <span
               key={ci}
@@ -155,7 +160,7 @@ function HeroScene({
         position={[0, -1.68, 0]}
         scale={14}
         far={3.2}
-        resolution={mobile ? 256 : 512}
+        resolution={256}
         blur={2.6}
         opacity={0.42}
         color="#1a1e23"
@@ -173,6 +178,8 @@ export function HeroStage() {
   const letters = useRef<HTMLSpanElement[]>([]);
   const blobRef = useRef<HTMLDivElement | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
+  const hudRef = useRef<HTMLSpanElement | null>(null);
+  const [glFailed, setGlFailed] = useState(false);
   const shared = useRef<Shared>({ p: 0, smooth: 0, x: parked.x0 });
   const centers = useRef<number[]>([]);
 
@@ -199,17 +206,23 @@ export function HeroStage() {
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', () => {
+    const onResize = () => {
       measure();
       onScroll();
-    });
+    };
+    window.addEventListener('resize', onResize);
     measure();
     const proj = new THREE.Vector3();
+    let lastX = Number.NaN;
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const cam = cameraRef.current;
       const stageEl = stageRef.current;
+      const hud = hudRef.current;
       if (!cam || !stageEl) return;
+      if (hud) hud.textContent = `SCROLL ${Math.round(shared.current.p * 100)}%`;
+      if (Math.abs(shared.current.x - lastX) < 0.5) return;
+      lastX = shared.current.x;
       const w = stageEl.clientWidth;
       proj.set(shared.current.x, -1.2, 0).project(cam);
       const botPx = (proj.x * 0.5 + 0.5) * w;
@@ -242,6 +255,7 @@ export function HeroStage() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced, mobile]);
@@ -296,6 +310,11 @@ export function HeroStage() {
           <p className="hero-kicker">3 lb translational-drift combat robot — scroll to roll it across the words</p>
         </div>
         <div ref={blobRef} className="hero-shadow-blob" aria-hidden="true" />
+        {glFailed ? (
+          <div className="hero-poster">
+            <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" />
+          </div>
+        ) : (
         <Suspense
           fallback={
             <div className="hero-poster">
@@ -303,10 +322,13 @@ export function HeroStage() {
             </div>
           }
         >
+          <GlErrorBoundary onFail={() => setGlFailed(true)}>
           <HeroScene shared={shared} mobile={mobile} cameraRef={cameraRef} />
+          </GlErrorBoundary>
         </Suspense>
+        )}
         <div className="hero-hud" aria-hidden="true">
-          <span>SCROLL</span>
+          <span ref={hudRef}>SCROLL 0%</span>
           <span className="hero-hud-line" />
         </div>
       </div>

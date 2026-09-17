@@ -80,7 +80,7 @@ export function Sidebar({
 
   return (
     <>
-      <button
+      <div
         className="backdrop"
         hidden={!open}
         onClick={() => {
@@ -88,7 +88,6 @@ export function Sidebar({
           triggerRef.current?.focus();
         }}
         aria-hidden="true"
-        tabIndex={-1}
       />
       <nav
         id="site-drawer"

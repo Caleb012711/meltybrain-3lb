@@ -2,9 +2,10 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, useModelParts, type ColorMode } from '../components/CadViewer';
+import { ExplodingModel, GlErrorBoundary, useModelParts, type ColorMode } from '../components/CadViewer';
 import { ROLE_CSS, ROLE_LABELS, partLabel, type PartInfo } from '../components/materials';
 import { Reveal } from '../components/Layout';
 
@@ -77,12 +78,18 @@ export function Explorer() {
   }, [count, parts]);
 
   const toggleHide = (i: number) => {
+    if (parts[i]?.dropped_from_glb) return;
     setHidden((prev) => {
       const next = new Set(prev);
       if (next.has(i)) next.delete(i);
       else next.add(i);
       return next;
     });
+  };
+
+  const isolatePart = (i: number) => {
+    if (parts[i]?.dropped_from_glb) return;
+    setIsolated(i);
   };
 
   const reset = () => {
@@ -118,12 +125,13 @@ export function Explorer() {
             <div style={{ position: 'relative' }}>
               {failed ? (
                 <div className="viewer-fallback">
-                  <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" />
+                  <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" />
                 </div>
               ) : (
+                <GlErrorBoundary onFail={() => setFailed(true)}>
                 <Canvas
                   camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
-                  dpr={[1, 2]}
+                  dpr={[1, 1.5]}
                   onCreated={({ gl }) => gl.setClearColor('#ffffff')}
                   role="img"
                   aria-label={`3D explorer, ${model.label}, ${count} parts`}
@@ -149,8 +157,17 @@ export function Explorer() {
                       onHover={setHovered}
                     />
                   </Suspense>
-                  <OrbitControls enableDamping autoRotate={false} makeDefault />
+                  <OrbitControls
+                    enableDamping
+                    autoRotate={false}
+                    makeDefault
+                    touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+                    minDistance={3}
+                    maxDistance={14}
+                    maxPolarAngle={Math.PI / 2 + 0.1}
+                  />
                 </Canvas>
+                </GlErrorBoundary>
               )}
             </div>
             <div className="viewer-bar" role="toolbar" aria-label="Explorer controls">
@@ -227,7 +244,7 @@ export function Explorer() {
               </button>
             </div>
             <p className="status" role="status">
-              {model.label} · {count} parts{parts.length > 0 && <> ({meshed} meshed, {count - meshed} thread specks stats-only)</>} · {count - hidden.size} visible
+              {model.label} · {count} parts{parts.length > 0 && <> ({meshed} meshed, {count - meshed} thread specks stats-only)</>} · {meshed - hidden.size} meshed visible
               {isolated !== null && <> · isolated #{isolated} — <button className="mini" onClick={() => setIsolated(null)}>Exit isolate</button></>}
               {hovered !== null && <> · hover #{hovered}</>}
             </p>
@@ -301,7 +318,14 @@ export function Explorer() {
             </p>
           </header>
           <ul className="part-list" ref={listRef} aria-label="Parts">
-            {entries.map(({ i, p }) => {
+            {parts.length === 0 &&
+              Array.from({ length: 8 }, (_, i) => (
+                <li key={`sk-${i}`} aria-hidden="true">
+                  <span className="row-main" style={{ background: 'var(--inset)', height: 44, width: '100%' }} />
+                </li>
+              ))}
+            {parts.length > 0 &&
+              entries.map(({ i, p }) => {
               const role = roleOf(parts, i);
               return (
                 <li
@@ -346,6 +370,8 @@ export function Explorer() {
                     className="eye"
                     aria-label={hidden.has(i) ? `Show part ${i}` : `Hide part ${i}`}
                     aria-pressed={hidden.has(i)}
+                    disabled={!!p?.dropped_from_glb}
+                    title={p?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}
                     onClick={() => toggleHide(i)}
                     style={{ marginRight: 12 }}
                   >
@@ -353,13 +379,22 @@ export function Explorer() {
                   </button>
                 </li>
               );
-            })}
-            {entries.length === 0 && (
+              })}
+            {parts.length > 0 && entries.length === 0 && (
               <li>
                 <span className="row-main">
                   <b>No parts match “{query}”</b>
                   <span>Clear the search or role filter.</span>
                 </span>
+                <button
+                  className="mini"
+                  onClick={() => {
+                    setQuery('');
+                    setRoleFilter('all');
+                  }}
+                >
+                  Clear filters
+                </button>
               </li>
             )}
           </ul>
@@ -380,7 +415,7 @@ export function Explorer() {
                   <dd>{sel.node}</dd>
                 </dl>
                 <div className="btn-row" style={{ margin: '8px 0 0' }}>
-                  <button className="mini" onClick={() => setIsolated(selected)}>
+                  <button className="mini" onClick={() => selected !== null && isolatePart(selected)} disabled={selected !== null && !!parts[selected]?.dropped_from_glb} title={selected !== null && parts[selected]?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}>
                     Isolate
                   </button>
                   <button className="mini" onClick={() => toggleHide(selected)}>

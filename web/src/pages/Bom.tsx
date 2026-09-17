@@ -66,7 +66,7 @@ export function Bom() {
       </p>
       <h1>BOM and cost</h1>
       <p className="lede">
-        Everything to buy, with 2026 US street-price estimates. Priced rows are checked
+        Everything to buy, with 2026 US street-price estimates. Stamps: Priced means a listing checked Sep 2026, Range means the fab quote moves. BOM.md carries no live prices — the vendor and SKU column is yours to fill. Priced rows are checked
         listings; range rows move with fab quotes. Verify before ordering — prices drift.
       </p>
       <CostTable rows={costRows} caption="Fight build — one bot plus two flight battery sets" />
@@ -75,8 +75,7 @@ export function Bom() {
           Build total <span className="mono">{formatUsd(buildTotal)}</span> <span className="stamp todo">Estimate</span>
         </h3>
         <p className="muted">
-          Excluding the one-time handset (~$72), the build is ~$590 at listed prices;
-          fab variance puts it roughly $560–770 plus tax and ship.
+          About $590 excluding the handset ($662 with it) at listed prices; fab variance runs $592–737 plus tax and ship. Add spares near $161.
         </p>
       </div>
       <h2>Spares keep you in the event</h2>
@@ -97,7 +96,7 @@ export function Bom() {
           <thead>
             <tr>
               <th>Subsystem</th>
-              <th>Target</th>
+              <th>Target (estimate — weigh yours)</th>
               <th>Yours</th>
             </tr>
           </thead>
@@ -109,7 +108,7 @@ export function Bom() {
             <tr><td>Motors + ESCs + wiring</td><td className="mono">~250 g</td><td className="mono">___ g</td></tr>
             <tr><td>Battery (1 flight set)</td><td className="mono">~120 g</td><td className="mono">___ g</td></tr>
             <tr><td>Pi + cam + BEC</td><td className="mono">35–50 g</td><td className="mono">___ g</td></tr>
-            <tr><td><b>Total (must be ≤ 1361 g)</b></td><td className="mono">1000–1250 g</td><td className="mono">___ g</td></tr>
+            <tr><td><b>Total (cap 1360.8 g, target ≤ 1310 g)</b></td><td className="mono">1000–1250 g</td><td className="mono">___ g</td></tr>
           </tbody>
         </table>
       </div>

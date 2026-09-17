@@ -55,3 +55,12 @@ unsliced guide · `/parts` locked BOM · `/bom` costed BOM + weights ·
 Design: light mode only, pit-sheet aesthetic, IntersectionObserver reveals,
 count-up spec strip, scroll progress bar, `prefers-reduced-motion` respected.
 The old static prototype in `site/` is superseded by this app.
+
+## Deploy (Render)
+
+Blueprint: root `render.yaml` → service `eyeliner-web` (static, rootDir `web`,
+`npm ci && npm run build`, publish `./dist`, Node 22.12.0). The file also sets
+security headers, immutable caching for hashed `/assets/*`, PR previews, and a
+`buildFilter` so CAD-only commits skip rebuilds.
+Dashboard alt: New → Static Site with the same values. Hash routing means no
+rewrite rules are needed. Verify locally with `npm run preview` first.

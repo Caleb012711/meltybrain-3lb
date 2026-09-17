@@ -14,7 +14,17 @@ const Bom = lazy(() => import('./pages/Bom').then((m) => ({ default: m.Bom })));
 
 export function App() {
   return (
-    <Suspense fallback={<div className="page">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="page" role="status">
+          <p className="spec-plate">
+            <span>EYELINER-3LB / REV9</span>
+            <span>Loading — sheet</span>
+          </p>
+          <p className="mono">Loading sheet…</p>
+        </div>
+      }
+    >
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />

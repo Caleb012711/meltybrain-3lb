@@ -50,7 +50,7 @@ function StackSection() {
   const shown = group === 'All' ? stackCards : stackCards.filter((c) => c.group === group);
   return (
     <section id="stack" className="section">
-      <p className="eyebrow">Systems stack — LiftOff Rev9 lock</p>
+      <p className="eyebrow">04 — Systems stack</p>
       <h2>Every gram has a job.</h2>
       <p className="lede">
         Teensy 4.0 plus dual ±400 g accels plus DShot600 at 8 kHz. Copy LiftOff Rev9,
@@ -83,7 +83,7 @@ function StackSection() {
           <div className="stack-card" key={c.id}>
             <h3>
               {c.part}{' '}
-              <span className={`stamp ${c.stamp === 'Locked' ? 'ok' : 'todo'}`}>{c.stamp}</span>
+              <span className={c.stamp === 'Locked' ? 'stamp ok' : c.stamp === 'Estimate' ? 'stamp estimate' : 'stamp todo'}>{c.stamp}</span>
             </h3>
             <p className="spec">{c.spec}</p>
             <p>{c.role}</p>
@@ -117,7 +117,7 @@ export function Home() {
             <div className="hero-static">
               <h1 className="hero-giant">SPIN THE WHOLE BOT. DRIVE LIKE IT'S STANDING STILL.</h1>
               <div className="hero-poster" style={{ position: 'static', padding: '24px 0' }}>
-                <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" style={{ maxWidth: '100%' }} />
+                <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" style={{ maxWidth: '100%' }} width="1600" height="1200" />
               </div>
             </div>
           }
@@ -131,6 +131,11 @@ export function Home() {
             H3LIS331 accelerometers, PROPDRIVE 2836 1200KV hubmotors, AM32 with bidirectional
             DShot600, ELRS. This page is the full build path with the real CAD.
           </p>
+          <div className="warn">
+            <b>New here?</b> A meltybrain spins its whole body as the weapon (2000–4000 RPM) and
+            pulses its two wheels once per rev to drift-drive. Start at <Link to="/build">step 0</Link> —
+            rules and safety first. Budget about $660 plus spares, 4–8 weeks with metal lead time.
+          </div>
           <div className="btn-row">
             <Link className="btn primary" to="/build">Start build</Link>
             <Link className="btn" to="/explorer">3D explorer</Link>
@@ -143,8 +148,9 @@ export function Home() {
           </p>
           <ProofStrip />
           <p className="meta">
-            Tip-speed math: v(mph) = π × D(in) × RPM / 336. An 8 in ring at 4000 RPM is about
-            95 mph — not 200+. Always verify your actual spin diameter before quoting numbers.
+            Cap 1360.8 g — build target ≤1310 g (50 g margin for wires, Loctite, scale error).
+            Tip-speed math: v(mph) = π × D(in) × RPM / 336, but you must measure YOUR spin
+            diameter first. An 8 in ring at 4000 RPM is about 95 mph — not 200+.
           </p>
         </div>
       </section>
@@ -163,7 +169,7 @@ export function Home() {
             rotation do not break tracking.
           </p>
           <figure className="render-figure">
-            <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" />
+            <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" width="1600" height="1200" loading="lazy" decoding="async" />
             <figcaption className="mono">
               eyeliner_summer_2025_render.png — steel ring plus TPU shell. Balance is everything:
               3–5 g off means violent hop at 3000 RPM.
@@ -185,7 +191,7 @@ export function Home() {
             </div>
             <div className="card">
               <h3>Drive: hubmotor pods</h3>
-              <p>PROPDRIVE 2836 1200KV cans rebuilt as hubmotors: 6 mm dead axle, two 626 bearings, machined aluminum inner and outer hubs, 1.55 in titanium cleat wheels. Wheels-out mounting trades top speed for spin-up torque.</p>
+              <p>PROPDRIVE 2836 1200KV cans rebuilt as hubmotors per Liftoff Rev5: 6 mm dead axle, two 626 bearings, machined aluminum inner and outer hubs, 1.55 in titanium cleat wheels. Shim endplay under 1 mm.</p>
               <footer className="foot meta mono">Wheel Pod.step · 4.1 MB · 25 solids</footer>
             </div>
             <div className="card">
@@ -205,7 +211,7 @@ export function Home() {
       {/* 05 build path */}
       <Reveal as="section">
         <section id="build-path" className="section">
-          <p className="eyebrow">04 — Build path, 8 steps</p>
+          <p className="eyebrow">05 — Build path, 8 steps</p>
           <h2>Do it in order, tick boxes</h2>
           {buildSteps.map((s) => (
             <div className="step" key={s.n}>
@@ -226,7 +232,7 @@ export function Home() {
       {/* 05 CAD files */}
       <Reveal as="section">
         <section id="cad" className="section">
-          <p className="eyebrow">05 — CAD files, actual sizes</p>
+          <p className="eyebrow">06 — CAD files, actual sizes</p>
           <h2>Download the real assemblies</h2>
           <p className="lede">
             These live in the repo root. They are the source — not the order. Export single
@@ -261,7 +267,7 @@ export function Home() {
       {/* 06 teasers */}
       <Reveal as="section">
         <section id="more" className="section">
-          <p className="eyebrow">06 — Metal, plastic, firmware</p>
+          <p className="eyebrow">07 — Metal, plastic, firmware</p>
           <h2>Three pages, with TODOs marked</h2>
           <div className="cards">
             <Link className="card" to="/pcbway">
@@ -286,7 +292,7 @@ export function Home() {
       {/* 07 FAQ */}
       <Reveal as="section">
         <section id="faq" className="section">
-          <p className="eyebrow">07 — Questions every builder asks</p>
+          <p className="eyebrow">08 — Questions every builder asks</p>
           <h2>Weight, failsafe, cloud</h2>
           <div className="step">
             <h3>How do you make 1361 g?</h3>
@@ -295,6 +301,22 @@ export function Home() {
           <div className="step">
             <h3>What failsafe do inspectors want to see?</h3>
             <p>Transmitter off means motors stopped or braked in under one second, with no restart until a deliberate re-arm. Same behavior on Pi brown-out. It must never boot armed with throttle high. Film it and save firmware/failsafe-test.mp4.</p>
+          </div>
+          <div className="step">
+            <h3>How much does it cost, and how long?</h3>
+            <p>About $662 including the handset ($590 without), spares near $161 plus an armor lot at $100–180. Order metal first — it has the longest lead time.</p>
+          </div>
+          <div className="step">
+            <h3>Can I skip the Pi?</h3>
+            <p>Yes — the Teensy flies alone. The Pi adds logging and trim assist at 50–100 Hz. It never drives.</p>
+          </div>
+          <div className="step">
+            <h3>ELRS or SBUS?</h3>
+            <p>Liftoff Rev9 flew SBUS; this build locks ELRS CRSF for telemetry back to the handset. Either link needs a filmed TX-off failsafe.</p>
+          </div>
+          <div className="step">
+            <h3>Overweight at weigh-in?</h3>
+            <p>Titanium-swap the teeth first — it saves about 190 g a pair (437 g down to 246 g) before you shrink the battery. Bring a backup 450 mAh option and a lightening plan.</p>
           </div>
           <div className="step">
             <h3>Does the cloud AI drive the bot?</h3>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import heroThumb from '../assets/hero.png';
 import { nav } from '../data/content';
 import { useScrollProgress } from '../hooks/hooks';
 import { HamburgerButton, Sidebar } from './Sidebar';
@@ -61,7 +62,7 @@ export function Layout() {
           <HamburgerButton open={open} onToggle={() => setOpen((v) => !v)} buttonRef={triggerRef} />
           <Link className="brand" to="/">
             <span className="brand-mark" aria-hidden="true" />
-            <img src="eyeliner_summer_2025_render.png" alt="" aria-hidden="true" />
+            <img src={heroThumb} alt="" aria-hidden="true" width={34} height={22} decoding="async" />
             EYELINER · 3LB MELTY
           </Link>
         </div>
@@ -76,8 +77,10 @@ export function Layout() {
       <Sidebar open={open} onClose={() => setOpen(false)} nav={nav} triggerRef={triggerRef} />
       <Outlet />
       <footer className="site">
-        OpenMelt2 by nothinglabs (CC BY-NC-SA) · Project LiftOff by Team LiftOff (NHRL wiki) · Eyeliner build.
-        Match link must be FHSS ELRS with failsafe. Pit and cloud software never drive.
+        Match link FHSS ELRS with failsafe. Pit and cloud software never drive. Rules:{' '}
+        <a href="https://github.com/nothinglabs/openmelt2">OpenMelt2 by nothinglabs (CC BY-NC-SA)</a> ·{' '}
+        <a href="https://wiki.nhrl.io/wiki/index.php?title=Project_LiftOff">Project LiftOff (NHRL wiki)</a> ·{' '}
+        SPARC / TRC rules via your event organizer.
       </footer>
     </>
   );

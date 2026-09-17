@@ -8,7 +8,10 @@ export function Build() {
     <div className="page">
       <p className="eyebrow">Build — beginner path</p>
       <h1>Build in 8 steps</h1>
-      <p className="lede">Do these in order. Tick boxes. Ask your event organizers early about radio and autonomy rules.</p>
+      <p className="lede">Zero experience OK. Eight steps in order. P0 first: read SPARC plus TRC beetle rules, then message TRC now if you run any DIY handset. Metal lead time drives the schedule.</p>
+      <div className="warn">
+        <b>Safety first:</b> LiPo bag, never charge unattended. Wheel locks on until the arena or test box. Link pull under 60 s. Concrete floor, no people or pets in the plane of spin.
+      </div>
       {buildSteps.map((s) => (
         <Reveal key={s.n}>
           <div className="step">
@@ -68,6 +71,11 @@ export function Pcbway() {
     <div className="page">
       <p className="eyebrow">PCBWay — machining order pack</p>
       <h1>Send this to PCBWay</h1>
+      <div className="warn danger">
+        <b>P1 gate — do not pay yet:</b> no metal order until STEP volume × density says ≤1310 g
+        target. Branch B/D (steel ring plus solid chassis) prove overweight as-drawn. If the 80 cm³
+        body is solid in CAD, pocket and lighten it — or go TPU plus aluminum sandwich — first.
+      </div>
       <div className="warn">
         <b>Do NOT upload</b> <code>Main CAD.step</code> (17.7 MB assembly), <code>Wheel Pod.step</code>, STLs, or G-code. PCBWay quotes <b>one solid per file</b>. Export in Onshape first, then upload.
       </div>
@@ -90,7 +98,7 @@ export function Pcbway() {
           <tbody>
             <tr><td>Chassis, structure, motor mounts</td><td><b>6061-T6 aluminum</b></td><td>As-machined, general ISO 2768-m</td></tr>
             <tr><td>Weapon hub, high load</td><td><b>7075-T6</b> or 4140 steel per CAD notes</td><td>H7 bearing bores only, note in comments</td></tr>
-            <tr><td>Teeth</td><td><b>AR500 / Hardox</b> default, Grade 5 titanium alt</td><td>As-cut, quantity 2 plus spares</td></tr>
+            <tr><td>Teeth</td><td><b>AR500 0.25 in</b> default (241–326 g); Ti only as relief valve (saves ~190 g a pair)</td><td>As-cut, quantity 2 plus spares</td></tr>
             <tr><td>Shafts, standoffs</td><td><b>303 stainless or 6061</b></td><td>As-machined</td></tr>
             <tr><td>Flat armor (DXF)</td><td><b>5052-H32 or 6061, 1.5–3 mm</b>, match CAD</td><td>Laser only</td></tr>
           </tbody>
@@ -102,7 +110,7 @@ export function Pcbway() {
       </div>
       <p className="meta">US alternate for flat AR500: SendCutSend or OSH Cut waterjet from the same DXF. CNC teeth stay on PCBWay.</p>
       <h2>Source assemblies (not order-ready — export first)</h2>
-      <p className="meta">CNC and DXF order files do not exist yet — export single bodies in Onshape first.</p>
+      <p className="meta">Empty now — here is the action: export NN-name-material.step to manufacturing/pcbway/cnc/ and NN-name-thickness-material.dxf to sheet-metal/, fill ORDER-CHECKLIST.md, cut an Onshape version V1-cnc-ready. Flat AR500 alt: send the same DXF to SendCutSend or OSH Cut.</p>
       <DownloadCards modelId="full" />
       <div className="btn-row">
         <Link className="btn primary" to="/printing">Next: printing guide</Link>
@@ -144,17 +152,17 @@ export function Printing() {
         <table>
           <thead><tr><th>Setting</th><th>Value</th></tr></thead>
           <tbody>
-            <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams.</td></tr>
+            <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams — direct drive or pick another project.</td></tr>
             <tr><td>Nozzle / bed</td><td>225–240 °C per spool after a temp tower. Bed 40–60 °C with glue on smooth plate.</td></tr>
             <tr><td>Speed / retraction</td><td>20–35 mm/s. Retraction off or 1 mm max. Pressure advance off to start.</td></tr>
             <tr><td>Walls / infill</td><td>4–6 perimeters, 5–6 top and bottom layers, 30–60% gyroid. Dense cradle, not hollow, never 100% solid.</td></tr>
             <tr><td>Drying</td><td>65 °C for 4–6 hours. Wet TPU strings, pops, and delaminates — the number one beginner failure.</td></tr>
-            <tr><td>Finish</td><td>Heat-set M3/M4 inserts at 200–220 °C. Never tap TPU. Weigh prints into the BOM budget (TPU is 1.21 g/cc).</td></tr>
+            <tr><td>Finish</td><td>Heat-set M3/M4 inserts at 200–220 °C. Never tap TPU. Test-fit in cheap PLA or PETG first, then TPU; weigh prints into the BOM (TPU is 1.21 g/cc).</td></tr>
           </tbody>
         </table>
       </div>
       <h2>Downloads — pod reference pack</h2>
-      <p className="meta">Print STLs are exported per plastic body from Onshape — nothing to download yet. The pod reference below is assembly geometry, not print-ready.</p>
+      <p className="meta">No print STLs yet — export NN-name.stl from Onshape (binary, about 0.1 mm chord) into 3d-printing/stl/. The pod reference below is assembly geometry, not print-ready.</p>
       <DownloadCards modelId="pod" />
       <div className="btn-row">
         <Link className="btn primary" to="/firmware">Next: firmware</Link>
@@ -170,8 +178,8 @@ export function Parts() {
     ['ESCs', 'AM32 55 A board, DShot600 bidirectional with eRPM telemetry. Not SimonK.', '1 + spare'],
     ['MCU', 'Teensy 4.0 lockable without pins. Cortex-M7 at 600 MHz, soldered direct.', '1 + 1 spare'],
     ['Accelerometers', 'H3LIS331DLTR at ±400 g. Two Adafruit 4627 breakouts to learn, two bare chips opposed at 45° on the final PCB.', '2 + 2'],
-    ['Radio', 'ELRS receiver plus handset over CRSF into Teensy UART. Failsafe throttle-cut verified.', '1'],
-    ['Battery', 'Two 4S 550 mAh in parallel, strapped in TPU so they cannot shift.', '2+ sets'],
+    ['Radio', 'ELRS receiver plus handset over CRSF into Teensy UART. FHSS link, failsafe throttle-cut, filmed.', '1'],
+    ['Battery', 'Two 4S 550 mAh in parallel, XT30, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.', '2+ sets'],
     ['Weapon', '0.25 in AR500 ring, symmetric 2-tooth, no holes, tapered toward 241 g.', '1 + spares'],
     ['Wheels', 'Rubber set to learn, 1.55 in titanium cleats to fight.', '2 + spares'],
     ['AI kit', 'Onboard Pi Zero 2W plus wide camera on an isolated BEC (about 40 g). Pit overhead camera plus laptop YOLO and cloud hints.', '1 set'],
@@ -224,8 +232,12 @@ export function Firmware() {
         <p>Bench with no weapon energy. Low-RPM slide to check the LED matches the stick. Trim straight for the floor. Ramp 2000, heat-check, 3000, heat-check, 4000. Blip-test hit recovery — it must re-hold RPM, not toilet-bowl. One gain at a time, log RPM, g, battery, and temperature on the Pi.</p>
       </div>
       <div className="step">
+        <h3>Failsafe — film this</h3>
+        <p>TX-off stops or brakes the bot in under 1 s, with no restart without a deliberate re-arm. Yank Pi power — the MCU must still failsafe. It must never boot armed with throttle high. Save firmware/failsafe-test.mp4, freeze the firmware version, back up config and logs. Show TRC at check-in.</p>
+      </div>
+      <div className="step">
         <h3>Dual-camera AI, both, advisory only</h3>
-        <p>Onboard Pi Zero 2W plus wide camera over UART: optical-flow trim, RPM hold, 1080p log to SD, telemetry back to the handset. Pit overhead camera plus laptop: YOLO tracks both bots, cloud model suggests strategy for the driver to approve. Reference: DeepMelt. Full autonomy needs event pre-clear.</p>
+        <p>Onboard Pi Zero 2W plus wide camera over UART: optical-flow trim, RPM hold, 1080p log to SD, telemetry back to the handset. Pit overhead camera plus laptop: YOLO tracks both bots, cloud model suggests strategy for the driver to approve. Reference: DeepMelt. DIY handset is a trainer until TRC pre-clears §6.4.3. Match radio is the RadioMaster Pocket plus EP1/RP1.</p>
       </div>
     </div>
   );
