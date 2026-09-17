@@ -1,0 +1,14 @@
+# Render blueprint for the Eyeliner build site (static Vite bundle in web/).
+# Dashboard path: New → Blueprint → select this repo. Or create the static
+# site manually with the same settings (see web/README.md).
+services:
+  - type: web
+    name: eyeliner-web
+    env: static
+    branch: main
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
