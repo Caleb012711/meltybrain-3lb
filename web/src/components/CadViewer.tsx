@@ -1,33 +1,82 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { cadModels } from '../data/content';
+import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
+import { indexColor, roleMaterial, type PartInfo } from './materials';
 
-function ExplodingModel({
+export type ColorMode = 'role' | 'index' | 'plain';
+
+export const EMPTY_SET: Set<number> = new Set();
+const EMISSIVE_ORANGE = new THREE.Color('#e8490f');
+
+async function loadParts(modelId: string): Promise<PartInfo[]> {
+  const base = cadModels.find((m) => m.id === modelId)?.glb ?? '';
+  const url = base.replace(/\.glb$/, '.parts.json');
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    return (await r.json()) as PartInfo[];
+  } catch {
+    return [];
+  }
+}
+
+export function useModelParts(modelId: string) {
+  const [parts, setParts] = useState<PartInfo[]>([]);
+  useEffect(() => {
+    let live = true;
+    void loadParts(modelId).then((p) => {
+      if (live) setParts(p);
+    });
+    return () => {
+      live = false;
+    };
+  }, [modelId]);
+  return parts;
+}
+
+export function ExplodingModel({
   url,
+  parts,
   explode,
   wireframe,
   xray,
   spin,
+  colorMode,
+  selected,
+  hovered,
+  hidden,
+  isolated,
+  onSelect,
+  onHover,
 }: {
   url: string;
+  parts: PartInfo[];
   explode: number;
   wireframe: boolean;
   xray: boolean;
   spin: boolean;
+  colorMode: ColorMode;
+  selected: number | null;
+  hovered: number | null;
+  hidden: Set<number>;
+  isolated: number | null;
+  onSelect: (i: number | null) => void;
+  onHover: (i: number | null) => void;
 }) {
   const gltf = useGLTF(url);
   const group = useRef<THREE.Group>(null);
   const base = useRef(new Map<string, { pos: THREE.Vector3; dir: THREE.Vector3 }>());
+  const indexMats = useRef<THREE.MeshStandardMaterial[]>([]);
   const xrayMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
         color: '#8a94a6',
         transparent: true,
-        opacity: 0.32,
+        opacity: 0.3,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
@@ -36,7 +85,6 @@ function ExplodingModel({
 
   const scene = useMemo(() => {
     const s = gltf.scene.clone(true);
-    // center + scale mm -> scene units
     const box = new THREE.Box3().setFromObject(s);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -49,58 +97,188 @@ function ExplodingModel({
     return s;
   }, [gltf]);
 
-  useEffect(() => {
-    // record per-mesh base positions + radial dirs from assembly center
-    base.current.clear();
-    const root = new THREE.Box3().setFromObject(scene).getCenter(new THREE.Vector3());
+  const meshCount = useMemo(() => {
+    let n = 0;
     scene.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
-        const dir = c.clone().sub(root);
-        if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
-        dir.normalize();
-        base.current.set(o.uuid, { pos: o.position.clone(), dir });
-      }
+      if (o instanceof THREE.Mesh) n += 1;
     });
+    return n;
   }, [scene]);
 
   useEffect(() => {
-    scene.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        const rec = base.current.get(o.uuid);
-        if (rec) o.position.copy(rec.pos).addScaledVector(rec.dir, explode * 1.4);
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of mats) {
-          if (m instanceof THREE.MeshStandardMaterial) {
-            m.wireframe = wireframe;
-          }
-        }
-        if (xray) {
-          o.userData._orig = o.material;
-          o.material = xrayMat;
-        } else if (o.userData._orig) {
-          o.material = o.userData._orig;
-          delete o.userData._orig;
-        }
-      }
+    indexMats.current.forEach((m) => m.dispose());
+    indexMats.current = Array.from({ length: meshCount }, (_, i) => {
+      const mat = new THREE.MeshStandardMaterial({
+        color: indexColor(i, Math.max(1, meshCount)),
+        metalness: 0.55,
+        roughness: 0.45,
+      });
+      mat.emissive.copy(EMISSIVE_ORANGE);
+      mat.emissiveIntensity = 0;
+      return mat;
     });
-  }, [scene, explode, wireframe, xray, xrayMat]);
+  }, [meshCount]);
+
+  // One-time per model: part index, explode vectors, per-mesh material clones.
+  // Clones are per-mesh so selection/wireframe never leak across same-role parts.
+  useEffect(() => {
+    base.current.clear();
+    const root = new THREE.Box3().setFromObject(scene).getCenter(new THREE.Vector3());
+    let k = 0;
+    scene.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      let idx = k;
+      let p: THREE.Object3D | null = o;
+      while (p) {
+        const m = /^solid_(\d+)$/.exec(p.name);
+        if (m) {
+          // Node names are authoritative (written by tools/cad_convert.py).
+          // Original indices survive degenerate-dropping, so do NOT bound by mesh count.
+          const n = parseInt(m[1], 10);
+          if (Number.isFinite(n) && n >= 0) idx = n;
+          break;
+        }
+        p = p.parent;
+      }
+      o.userData.partIndex = idx;
+      k += 1;
+      const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+      const dir = c.clone().sub(root);
+      if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
+      dir.normalize();
+      base.current.set(o.uuid, { pos: o.position.clone(), dir });
+      // dispose previous clones, then make fresh per-mesh clones
+      const old = o.userData.clones as
+        | { role: THREE.MeshStandardMaterial; plain: THREE.MeshStandardMaterial }
+        | undefined;
+      old?.role.dispose();
+      old?.plain.dispose();
+      const roleClone = roleMaterial('fastener-dark').clone();
+      roleClone.emissive.copy(EMISSIVE_ORANGE);
+      roleClone.emissiveIntensity = 0;
+      const plainSrc = (Array.isArray(o.material) ? o.material[0] : o.material) as THREE.Material;
+      const plainClone = (
+        plainSrc instanceof THREE.MeshStandardMaterial
+          ? plainSrc.clone()
+          : new THREE.MeshStandardMaterial({ color: '#9aa1ab', metalness: 0.6, roughness: 0.5 })
+      ) as THREE.MeshStandardMaterial;
+      plainClone.emissive.copy(EMISSIVE_ORANGE);
+      plainClone.emissiveIntensity = 0;
+      o.userData.clones = { role: roleClone, plain: plainClone };
+    });
+    return () => {
+      scene.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        const old = o.userData.clones as
+          | { role: THREE.MeshStandardMaterial; plain: THREE.MeshStandardMaterial }
+          | undefined;
+        old?.role.dispose();
+        old?.plain.dispose();
+        delete o.userData.clones;
+      });
+    };
+  }, [scene, meshCount]);
+
+  // Apply role from parts.json to the per-mesh clones (runs when manifest arrives).
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const clones = o.userData.clones as
+        | { role: THREE.MeshStandardMaterial; plain: THREE.MeshStandardMaterial }
+        | undefined;
+      if (!clones) return;
+      const idx = (o.userData.partIndex as number) ?? 0;
+      const template = roleMaterial(parts[idx]?.role ?? 'fastener-dark');
+      clones.role.color.copy(template.color);
+      clones.role.metalness = template.metalness;
+      clones.role.roughness = template.roughness;
+    });
+  }, [scene, parts]);
+
+  // Position + visibility only (cheap per slider tick — no material allocs).
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const idx = (o.userData.partIndex as number) ?? 0;
+      const rec = base.current.get(o.uuid);
+      if (rec) o.position.copy(rec.pos).addScaledVector(rec.dir, explode * 1.4);
+      o.visible = !hidden.has(idx) && (isolated === null || isolated === idx);
+    });
+  }, [scene, explode, hidden, isolated]);
+
+  // Material mode only (runs on mode/selection toggles, not on explode).
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const idx = (o.userData.partIndex as number) ?? 0;
+      const clones = o.userData.clones as
+        | { role: THREE.MeshStandardMaterial; plain: THREE.MeshStandardMaterial }
+        | undefined;
+      if (!clones) return;
+      if (xray) {
+        o.material = xrayMat;
+        return;
+      }
+      const mat =
+        colorMode === 'role'
+          ? clones.role
+          : colorMode === 'index'
+            ? (indexMats.current[idx % Math.max(1, indexMats.current.length)] ?? clones.plain)
+            : clones.plain;
+      o.material = mat;
+      mat.wireframe = wireframe;
+      mat.emissiveIntensity = selected === idx ? 0.45 : hovered === idx ? 0.22 : 0;
+    });
+  }, [scene, colorMode, wireframe, xray, xrayMat, selected, hovered, parts]);
 
   useFrame((_, delta) => {
     if (spin && group.current) group.current.rotation.y += delta * 0.5;
   });
 
+  const pick = (obj: THREE.Object3D): number | null => {
+    const idx = obj.userData.partIndex as number | undefined;
+    return typeof idx === 'number' ? idx : null;
+  };
+
   return (
     <group ref={group}>
-      <primitive object={scene} />
+      <primitive
+        object={scene}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          onSelect(pick(e.object));
+        }}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          onHover(pick(e.object));
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          onHover(null);
+          document.body.style.cursor = '';
+        }}
+      />
     </group>
   );
 }
 
 function StlOverlay({ geometry }: { geometry: THREE.BufferGeometry | null }) {
-  if (!geometry) return null;
+  const normalized = useMemo(() => {
+    if (!geometry) return null;
+    const g = geometry.clone();
+    g.center();
+    g.computeBoundingBox();
+    const bb = g.boundingBox;
+    if (!bb) return g;
+    const size = new THREE.Vector3();
+    bb.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    g.scale(3 / maxDim, 3 / maxDim, 3 / maxDim);
+    return g;
+  }, [geometry]);
+  if (!normalized) return null;
   return (
-    <mesh geometry={geometry} position={[0, 2.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    <mesh geometry={normalized} position={[0, 2.4, 0]}>
       <meshStandardMaterial color="#1a6b32" roughness={0.6} />
     </mesh>
   );
@@ -131,22 +309,29 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function CadViewer() {
+export function CadViewer({ compact = false }: { compact?: boolean }) {
   const reduced = usePrefersReducedMotion();
   const [modelId, setModelId] = useState('full');
   const [explode, setExplode] = useState(0);
   const [wireframe, setWireframe] = useState(false);
   const [xray, setXray] = useState(false);
+  const [colorMode, setColorMode] = useState<ColorMode>('role');
   const [spin, setSpin] = useState(!reduced);
   const [stlGeo, setStlGeo] = useState<THREE.BufferGeometry | null>(null);
   const [stlName, setStlName] = useState('');
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
+  const parts = useModelParts(modelId);
+  const stlInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setReady(false);
     setFailed(false);
   }, [modelId]);
+
+  useEffect(() => {
+    if (reduced) setSpin(false);
+  }, [reduced]);
 
   const model = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
 
@@ -160,7 +345,6 @@ export function CadViewer() {
       const buf = await f.arrayBuffer();
       const geo = new STLLoader().parse(buf);
       geo.computeVertexNormals();
-      geo.center();
       setStlGeo(geo);
       setStlName(f.name);
     } catch {
@@ -181,7 +365,10 @@ export function CadViewer() {
           </button>
         </div>
         <p className="status">
-          {model.label} · {model.solids} solids · STEP {model.stepSize} · <a href={model.step} download>Download STEP</a>
+          {model.label} · {model.solids} solids · STEP {model.stepSize} ·{' '}
+          <a href={cadHref(model.step)} download>
+            Download STEP
+          </a>
         </p>
       </div>
     );
@@ -194,18 +381,28 @@ export function CadViewer() {
           camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
           dpr={[1, 2]}
           onCreated={({ gl }) => gl.setClearColor('#ffffff')}
+          role="img"
           aria-label={`3D model of Eyeliner combat robot, ${model.label}`}
         >
-          <hemisphereLight args={['#ffffff', '#dfe3ea', 1.1]} />
-          <directionalLight position={[5, 8, 4]} intensity={1.4} />
+          <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
+          <directionalLight position={[5, 8, 4]} intensity={2.2} />
+          <directionalLight position={[-6, 3, -6]} intensity={1.0} color="#dfe8ff" />
           <gridHelper args={[12, 24, '#c9c6b8', '#e2e0d8']} position={[0, -2.2, 0]} />
           <Suspense fallback={null}>
             <ExplodingModel
               url={model.glb}
+              parts={parts}
               explode={explode}
               wireframe={wireframe}
               xray={xray}
               spin={spin && !reduced}
+              colorMode={colorMode}
+              selected={null}
+              hovered={null}
+              hidden={EMPTY_SET}
+              isolated={null}
+              onSelect={() => undefined}
+              onHover={() => undefined}
             />
             <StlOverlay geometry={stlGeo} />
           </Suspense>
@@ -240,29 +437,93 @@ export function CadViewer() {
             aria-label="Exploded view"
           />
         </label>
-        <button className="mini" aria-pressed={xray} onClick={() => { setXray((v) => !v); if (!xray) setWireframe(false); }}>
+        {!compact && (
+          <label className="meta">
+            Color{' '}
+            <select
+              aria-label="Color mode"
+              value={colorMode}
+              onChange={(e) => setColorMode(e.target.value as ColorMode)}
+              style={{ minHeight: 36 }}
+            >
+              <option value="role">By heuristic role</option>
+              <option value="index">By part #</option>
+              <option value="plain">Plain</option>
+            </select>
+          </label>
+        )}
+        <button
+          className="mini"
+          aria-pressed={xray}
+          onClick={() => {
+            setXray((v) => !v);
+            if (!xray) setWireframe(false);
+          }}
+        >
           X-ray
         </button>
-        <button className="mini" aria-pressed={wireframe} onClick={() => { setWireframe((v) => !v); if (!wireframe) setXray(false); }}>
+        <button
+          className="mini"
+          aria-pressed={wireframe}
+          onClick={() => {
+            setWireframe((v) => !v);
+            if (!wireframe) setXray(false);
+          }}
+        >
           Wireframe
         </button>
-        <button className="mini" aria-pressed={spin} onClick={() => setSpin((v) => !v)}>
+        <button
+          className="mini"
+          aria-pressed={spin}
+          disabled={reduced}
+          title={reduced ? 'Disabled: reduced motion' : undefined}
+          onClick={() => setSpin((v) => !v)}
+        >
           {spin ? 'Pause spin' : 'Spin'}
         </button>
-        <label className="mini" style={{ cursor: 'pointer' }}>
+        <button
+          className="mini"
+          type="button"
+          onClick={() => stlInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              stlInput.current?.click();
+            }
+          }}
+        >
           View your STL
-          <input type="file" accept=".stl" hidden onChange={(e) => void onStlFile(e.target.files?.[0])} />
-        </label>
+        </button>
+        <input
+          ref={stlInput}
+          type="file"
+          accept=".stl"
+          aria-label="Upload an STL to preview"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+          onChange={(e) => {
+            void onStlFile(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
         {stlName && (
-          <button className="mini" onClick={() => { setStlGeo(null); setStlName(''); }}>
+          <button
+            className="mini"
+            onClick={() => {
+              setStlGeo(null);
+              setStlName('');
+            }}
+          >
             Remove {stlName}
           </button>
         )}
       </div>
-      <p className="status" role="status">
-        {model.label} · {model.solids} solids · <a href={model.step} download>STEP {model.stepSize}</a> ·{' '}
-        <a href={model.glb} download>GLB</a> · drag to orbit, scroll to zoom
-        {stlName ? ` · overlay: ${stlName}` : ''}
+      <p className="status path" role="status">
+        <b>{model.label}</b> <i>·</i> {model.solids} solids, heuristic roles <i>·</i>{' '}
+        <a href={cadHref(model.step)} download>
+          STEP {model.stepSize}
+        </a>{' '}
+        <i>·</i> <a href={cadHref(model.glb)} download>GLB</a>
+        {stlName ? ` · overlay: ${stlName}` : ''} · drag to orbit, scroll to zoom
       </p>
     </div>
   );

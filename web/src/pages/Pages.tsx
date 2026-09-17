@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { buildSteps, trackerText } from '../data/content';
 import { Reveal } from '../components/Layout';
+import { DownloadCards } from './Bom';
 
 export function Build() {
   return (
@@ -100,6 +101,9 @@ export function Pcbway() {
         <p>Every file opens in the PCBWay preview. Units read mm with M3 at 3.2 mm. One part per file with NN-name-material names. Materials and thicknesses match the tables. Teeth spares added. Bearing fits noted H7/h6. Shipping leaves room for a re-order. Save the quote PDF in the folder.</p>
       </div>
       <p className="meta">US alternate for flat AR500: SendCutSend or OSH Cut waterjet from the same DXF. CNC teeth stay on PCBWay.</p>
+      <h2>Source assemblies (not order-ready — export first)</h2>
+      <p className="meta">CNC and DXF order files do not exist yet — export single bodies in Onshape first.</p>
+      <DownloadCards modelId="full" />
       <div className="btn-row">
         <Link className="btn primary" to="/printing">Next: printing guide</Link>
         <Link className="btn" to="/onshape">Back to Onshape</Link>
@@ -136,8 +140,7 @@ export function Printing() {
           </tbody>
         </table>
       </div>
-      <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>
-      <div className="table-wrap">
+      <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>      <div className="table-wrap">
         <table>
           <thead><tr><th>Setting</th><th>Value</th></tr></thead>
           <tbody>
@@ -150,6 +153,9 @@ export function Printing() {
           </tbody>
         </table>
       </div>
+      <h2>Downloads — pod reference pack</h2>
+      <p className="meta">Print STLs are exported per plastic body from Onshape — nothing to download yet. The pod reference below is assembly geometry, not print-ready.</p>
+      <DownloadCards modelId="pod" />
       <div className="btn-row">
         <Link className="btn primary" to="/firmware">Next: firmware</Link>
         <Link className="btn" to="/pcbway">Back to PCBWay</Link>
@@ -195,7 +201,7 @@ export function Firmware() {
       <p className="eyebrow">Firmware + AI camera</p>
       <h1>Teensy spins, Pi watches, cloud suggests</h1>
       <div className="warn danger">
-        <b>Safety ladder:</b> T0 failsafe, T1 Teensy spin near 1 kHz, T2 onboard Pi assist at 50–100 Hz, T3 pit dashboard near 5 Hz, T4 cloud hints in seconds. T3 and T4 <b>never drive</b>. TX-off stops the bot in under one second, filmed.
+        <b>Safety ladder:</b> T0 failsafe, T1 Teensy spin at 8 kHz DShot600, T2 onboard Pi assist at 50–100 Hz, T3 pit dashboard near 5 Hz, T4 cloud hints in seconds. T3 and T4 <b>never drive</b>. TX-off stops the bot in under one second, filmed.
       </div>
       <h2>OpenMelt2 learning rig to LiftOff fight stack</h2>
       <div className="table-wrap">

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { nav } from '../data/content';
 import { useScrollProgress } from '../hooks/hooks';
+import { HamburgerButton, Sidebar } from './Sidebar';
 import type { ReactNode } from 'react';
 
 export function Reveal({ children, as: Tag = 'div', className = '' }: { children: ReactNode; as?: 'div' | 'section'; className?: string }) {
@@ -49,16 +50,21 @@ function ScrollToTop() {
 }
 
 export function Layout() {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   return (
     <>
       <ScrollToTop />
       <ScrollProgressBar />
       <header className="nav">
-        <Link className="brand" to="/">
-          <span className="brand-mark" aria-hidden="true" />
-          <img src="eyeliner_summer_2025_render.png" alt="" aria-hidden="true" />
-          EYELINER · 3LB MELTY
-        </Link>
+        <div className="nav-left">
+          <HamburgerButton open={open} onToggle={() => setOpen((v) => !v)} buttonRef={triggerRef} />
+          <Link className="brand" to="/">
+            <span className="brand-mark" aria-hidden="true" />
+            <img src="eyeliner_summer_2025_render.png" alt="" aria-hidden="true" />
+            EYELINER · 3LB MELTY
+          </Link>
+        </div>
         <nav aria-label="Site sections">
           {nav.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -67,6 +73,7 @@ export function Layout() {
           ))}
         </nav>
       </header>
+      <Sidebar open={open} onClose={() => setOpen(false)} nav={nav} triggerRef={triggerRef} />
       <Outlet />
       <footer className="site">
         OpenMelt2 by nothinglabs (CC BY-NC-SA) · Project LiftOff by Team LiftOff (NHRL wiki) · Eyeliner build.

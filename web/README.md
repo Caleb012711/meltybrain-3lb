@@ -28,20 +28,28 @@ python3 tools/cad_convert.py --all --out web/public/cad --manifest
 
 Outputs per assembly (`web/public/cad/`):
 
-| Assembly | Solids | GLB (viewer) | STL | STEP (download only) |
+| Assembly | Solids | GLB (viewer) | STL (reference) | STEP (download only) |
 |---|---|---|---|---|
-| Main CAD | 145 | main-cad.glb 2.2 MB | 6.8 MB | Main CAD.step 17.7 MB |
-| Wheel Pod | 25 | wheel-pod.glb 1.3 MB | 3.7 MB | Wheel Pod.step 4.1 MB |
-| Standard Weapon Teeth | 2 | 105 KB | 289 KB | 295 KB |
-| Undercutter Config | 10 | 226 KB | 767 KB | 458 KB |
+| Main CAD | 145 (96 meshed) | main-cad.glb 4.0 MB | 13 MB | Main CAD.step 17.7 MB |
+| Wheel Pod | 25 (16 meshed) | wheel-pod.glb 2.2 MB | 6.3 MB | Wheel Pod.step 4.1 MB |
+| Standard Weapon Teeth | 2 | 105→439 KB | 1.2 MB | 295 KB |
+| Undercutter Config | 10 | 226→553 KB | 1.9 MB | 458 KB |
 
-GLB keeps one node per solid so the hero viewer can explode the assembly.
+GLB keeps one node per solid (`solid_NNN`, original indices) so the viewer can
+explode the assembly. Thread-speck degenerates (`faces < 8` and `vol < 0.005 cm³`)
+are dropped from the GLB only — flagged `dropped_from_glb` in `*.parts.json` —
+while STL, manifest, and mass stats keep every solid. Roles
+(`weapon-steel`, `chassis-alu`, `pod-metal`, `fastener-dark`, `shell-tpu`,
+`electro-green`) are a volume-plus-bbox heuristic, labeled as such in the UI.
+Viewer materials render `DoubleSide` so thin sheet solids never cull to slivers.
 Needs `OCP`, `trimesh`, `numpy`, `fast-simplification` (`pip install`).
 
 ## Pages
 
-`/` long overview with hero viewer · `/build` 8 steps · `/onshape` export flow ·
-`/pcbway` order pack · `/printing` unsliced guide · `/parts` locked BOM ·
+`/` long overview with scroll-driven hero (bot rolls over the headline) and
+systems-stack showcase · `/explorer` part-level 3D with isolate/hide/downloads ·
+`/build` 8 steps · `/onshape` export flow · `/pcbway` order pack · `/printing`
+unsliced guide · `/parts` locked BOM · `/bom` costed BOM + weights ·
 `/firmware` Teensy plus advisory AI cameras.
 
 Design: light mode only, pit-sheet aesthetic, IntersectionObserver reveals,

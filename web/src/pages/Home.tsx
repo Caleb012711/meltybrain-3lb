@@ -1,11 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router';
-import { buildSteps, cadModels, proofStats, trackerText } from '../data/content';
+import { buildSteps, cadHref, cadModels, proofStats, stackCards, stackGroups, trackerText, type StackGroup } from '../data/content';
 import { Reveal } from '../components/Layout';
 import { useCountUp, useReveal } from '../hooks/hooks';
 
-const CadViewer = lazy(() =>
-  import('../components/CadViewer').then((m) => ({ default: m.CadViewer }))
+const HeroStage = lazy(() =>
+  import('../components/HeroStage').then((m) => ({ default: m.HeroStage }))
 );
 
 function ProofStrip() {
@@ -45,6 +45,60 @@ function Stat({
   );
 }
 
+function StackSection() {
+  const [group, setGroup] = useState<'All' | StackGroup>('All');
+  const shown = group === 'All' ? stackCards : stackCards.filter((c) => c.group === group);
+  return (
+    <section id="stack" className="section">
+      <p className="eyebrow">Systems stack — LiftOff Rev9 lock</p>
+      <h2>Every gram has a job.</h2>
+      <p className="lede">
+        Teensy 4.0 plus dual ±400 g accels plus DShot600 at 8 kHz. Copy LiftOff Rev9,
+        don’t freestyle. Branch E or bust — fight-ready at or under 1361 g.
+      </p>
+      <div className="stack-stats" aria-label="Key system figures">
+        <div><b>600 MHz</b><span>Cortex-M7 Teensy 4.0</span></div>
+        <div><b>8 kHz</b><span>DShot600 bidir loop</span></div>
+        <div><b>±400 g</b><span>H3LIS331DLTR dual</span></div>
+        <div><b>2–4k RPM</b><span>Liftoff spin target</span></div>
+        <div><b>≤1361 g</b><span>3 lb cap (1360.8 g)</span></div>
+      </div>
+      <div className="stack-tabs" role="group" aria-label="Filter by subsystem">
+        {stackGroups.map((g) => {
+          const n = g === 'All' ? stackCards.length : stackCards.filter((c) => c.group === g).length;
+          return (
+            <button
+              key={g}
+              className="stack-tab"
+              aria-pressed={group === g}
+              onClick={() => setGroup(g)}
+            >
+              {g} ({n})
+            </button>
+          );
+        })}
+      </div>
+      <div className="stack-grid">
+        {shown.map((c) => (
+          <div className="stack-card" key={c.id}>
+            <h3>
+              {c.part}{' '}
+              <span className={`stamp ${c.stamp === 'Locked' ? 'ok' : 'todo'}`}>{c.stamp}</span>
+            </h3>
+            <p className="spec">{c.spec}</p>
+            <p>{c.role}</p>
+            <p className="grp">{c.group}</p>
+          </div>
+        ))}
+      </div>
+      <p className="meta">
+        Prices are estimates, US, Sep 2026 — see <Link to="/bom">BOM + cost</Link>. Verify before
+        ordering. TX-off stops the bot in under 1 s — film it to <code>firmware/failsafe-test.mp4</code>.
+      </p>
+    </section>
+  );
+}
+
 export function Home() {
   const copyTracker = () => {
     void navigator.clipboard?.writeText(trackerText).catch(() => undefined);
@@ -54,46 +108,45 @@ export function Home() {
     <div className="page">
       {/* 01 hero */}
       <section id="hero">
-        <p className="eyebrow">01 — Eyeliner · 3 lb meltybrain · LiftOff Rev9 spec</p>
-        <div className="hero-grid">
-          <div>
-            <h1>Spin the whole bot. Drive like it is standing still.</h1>
-            <p className="lede">
-              A 3 lb translational-drift combat robot: the entire body spins at 2000–4000 RPM
-              while two hub motors modulate once per revolution to drive. Teensy 4.0, dual
-              H3LIS331 accelerometers, PROPDRIVE 2836 1200KV hubmotors, AM32 with bidirectional
-              DShot600, ELRS. This page is the full build path with the real CAD below.
-            </p>
-            <div className="btn-row">
-              <Link className="btn primary" to="/build">Start build</Link>
-              <Link className="btn" to="/onshape">Open in Onshape</Link>
-              <Link className="btn" to="/pcbway">Get PCBWay files</Link>
-            </div>
-            <p className="meta">
-              Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids). Viewer loads
-              converted GLB meshes; STEP downloads are linked per model.
-            </p>
-          </div>
-          <div>
-            <Suspense
-              fallback={
-                <div className="viewer">
-                  <div className="viewer-fallback">
-                    <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" />
-                  </div>
-                  <p className="status">Loading 3D viewer…</p>
-                </div>
-              }
-            >
-              <CadViewer />
-            </Suspense>
-          </div>
-        </div>
-        <ProofStrip />
-        <p className="meta">
-          Tip-speed math: v(mph) = π × D(in) × RPM / 336. An 8 in ring at 4000 RPM is about
-          95 mph — not 200+. Always verify your actual spin diameter before quoting numbers.
+        <p className="spec-plate">
+          <span>EYELINER-3LB / REV9 / SHEET 01</span>
+          <span>Hero — live CAD</span>
         </p>
+        <Suspense
+          fallback={
+            <div className="hero-static">
+              <h1 className="hero-giant">SPIN THE WHOLE BOT. DRIVE LIKE IT'S STANDING STILL.</h1>
+              <div className="hero-poster" style={{ position: 'static', padding: '24px 0' }}>
+                <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" style={{ maxWidth: '100%' }} />
+              </div>
+            </div>
+          }
+        >
+          <HeroStage />
+        </Suspense>
+        <div className="hero-after">
+          <p className="lede">
+            A 3 lb translational-drift combat robot: the entire body spins at 2000–4000 RPM
+            while two hub motors modulate once per revolution to drive. Teensy 4.0, dual
+            H3LIS331 accelerometers, PROPDRIVE 2836 1200KV hubmotors, AM32 with bidirectional
+            DShot600, ELRS. This page is the full build path with the real CAD.
+          </p>
+          <div className="btn-row">
+            <Link className="btn primary" to="/build">Start build</Link>
+            <Link className="btn" to="/explorer">3D explorer</Link>
+            <Link className="btn" to="/onshape">Open in Onshape</Link>
+            <Link className="btn" to="/pcbway">Get PCBWay files</Link>
+          </div>
+          <p className="meta">
+            Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids, 96 meshed — thread specks stats-only). Viewer loads
+            converted GLB meshes; STEP downloads are linked per model.
+          </p>
+          <ProofStrip />
+          <p className="meta">
+            Tip-speed math: v(mph) = π × D(in) × RPM / 336. An 8 in ring at 4000 RPM is about
+            95 mph — not 200+. Always verify your actual spin diameter before quoting numbers.
+          </p>
+        </div>
       </section>
 
       {/* 02 render + how melty works */}
@@ -127,7 +180,7 @@ export function Home() {
           <div className="cards">
             <div className="card">
               <h3>Weapon: AR500 ring</h3>
-              <p>Symmetric 2-tooth, 0.25 in, no lightening holes, no bolt holes through the rim. Holes start cracks; a single tooth plus counterweight throws the chassis on tooth-stop. Liftoff tapered 326 g down to 241 g.</p>
+              <p>Symmetric 2-tooth, 0.25 in, no lightening holes, no bolt holes through the rim. Holes start cracks; a single tooth plus counterweight throws the chassis on tooth-stop. AR500 ring target about 241 g per Branch E of the mass audit.</p>
               <footer className="foot meta mono">Standard Weapon Teeth.step · 295 KB · 2 solids</footer>
             </div>
             <div className="card">
@@ -137,14 +190,19 @@ export function Home() {
             </div>
             <div className="card">
               <h3>Electronics: Teensy core</h3>
-              <p>Teensy 4.0 lockable without pins, two H3LIS331DLTR at ±400 g opposed at 45°, AM32 55 A with bidirectional DShot600 at 8 kHz, ELRS receiver, two 4S 550 mAh packs in parallel. Pi Zero 2W plus camera rides along for logging only.</p>
+              <p>Teensy 4.0 lockable without pins, two H3LIS331DLTR at ±400 g opposed at 45°, AM32 55 A with bidirectional DShot600 at 8 kHz, ELRS receiver, two 4S 550 mAh packs in parallel. Pi Zero 2W plus camera for logging and trim assist at 50–100 Hz — it never drives.</p>
               <footer className="foot meta mono">BOM.md · firmware/README.md</footer>
             </div>
           </div>
         </section>
       </Reveal>
 
-      {/* 04 build path */}
+      {/* 04 stack */}
+      <Reveal as="section">
+        <StackSection />
+      </Reveal>
+
+      {/* 05 build path */}
       <Reveal as="section">
         <section id="build-path" className="section">
           <p className="eyebrow">04 — Build path, 8 steps</p>
@@ -186,8 +244,8 @@ export function Home() {
                     <td className="mono">{m.step.split('/').pop()}</td>
                     <td className="mono">{m.stepSize}</td>
                     <td className="mono">{m.solids}</td>
-                    <td>{m.note}</td>
-                    <td><a href={m.step} download>STEP</a> · <a href={m.glb} download>GLB</a></td>
+                    <td><span className="stamp todo">Source — do not upload</span><br />{m.note}</td>
+                    <td><Link to="/explorer">Inspect</Link> · <a href={cadHref(m.step)} download>STEP</a> · <a href={cadHref(m.glb)} download>GLB</a></td>
                   </tr>
                 ))}
               </tbody>
@@ -204,16 +262,16 @@ export function Home() {
       <Reveal as="section">
         <section id="more" className="section">
           <p className="eyebrow">06 — Metal, plastic, firmware</p>
-          <h2>Three pages, no guesswork</h2>
+          <h2>Three pages, with TODOs marked</h2>
           <div className="cards">
             <Link className="card" to="/pcbway">
               <h3>Send metal to PCBWay</h3>
-              <p>CNC STEP one-solid-per-file in millimeters, sheet DXF 1:1 with cut outlines only, materials per part, the 5-minute pre-pay check.</p>
+              <p>CNC STEP one-solid-per-file in millimeters, sheet DXF 1:1 with cut outlines only, materials per part, the pre-pay check.</p>
               <footer className="foot meta mono">manufacturing/pcbway/</footer>
             </Link>
             <Link className="card" to="/printing">
               <h3>Print plastics unsliced</h3>
-              <p>STLs only, never G-code. TPU 95A profile for Orca, Bambu, and PrusaSlicer, drying, inserts, and the five beginner failure modes.</p>
+              <p>STLs only, never G-code. TPU 95A profile for Orca, Bambu, and PrusaSlicer, drying, inserts, and common failure modes.</p>
               <footer className="foot meta mono">3d-printing/stl/</footer>
             </Link>
             <Link className="card" to="/firmware">
