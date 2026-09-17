@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router';
-import { buildSteps, cadHref, cadModels, proofStats, stackCards, stackGroups, trackerText, type StackGroup } from '../data/content';
+import { buildSteps, cadHref, cadModels, proofStats, stackCards, stackGroups, type StackGroup } from '../data/content';
 import { Reveal } from '../components/Layout';
 import { useCountUp, useReveal } from '../hooks/hooks';
 
@@ -100,9 +100,6 @@ function StackSection() {
 }
 
 export function Home() {
-  const copyTracker = () => {
-    void navigator.clipboard?.writeText(trackerText).catch(() => undefined);
-  };
 
   return (
     <div className="page">
@@ -220,11 +217,7 @@ export function Home() {
             </div>
           ))}
           <div className="btn-row">
-            <Link className="btn primary" to="/build">Full build guide</Link>
-            <button className="btn" onClick={copyTracker}>Copy tracker</button>
-          </div>
-          <div className="tracker">
-            <pre>{trackerText}</pre>
+            <Link className="btn primary" to="/build">Full build guide with checklists</Link>
           </div>
         </section>
       </Reveal>

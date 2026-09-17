@@ -136,6 +136,58 @@ def step_to_meshes(path, linear=0.1, angular=0.2618):
                 pass
             m.fix_normals()
             m.process(validate=True)
+            # Crease-split: faces sharing an edge with dihedral > 30 deg get
+            # duplicated vertices so flat faces keep crisp normals instead
+            # of smearing into fillets. Union-find over smooth edges only.
+            try:
+                _F = m.faces.copy()
+                _parent = list(range(len(_F) * 3 + 1))
+
+                def _find(_a):
+                    while _parent[_a] != _a:
+                        _parent[_a] = _parent[_parent[_a]]
+                        _a = _parent[_a]
+                    return _a
+
+                def _union_sets(_a, _b):
+                    _ra, _rb = _find(_a), _find(_b)
+                    if _ra != _rb:
+                        _parent[_ra] = _rb
+
+                _adj = m.face_adjacency
+                _ang = m.face_adjacency_angles
+                _edg = m.face_adjacency_edges
+                _pairs = []
+                for (_fa, _fb), (_va, _vb), _an in zip(_adj, _edg, _ang):
+                    if _an > np.radians(30):
+                        continue
+                    for _vv in (_va, _vb):
+                        _ka = int(np.where(_F[_fa] == _vv)[0][0])
+                        _kb = int(np.where(_F[_fb] == _vv)[0][0])
+                        _pairs.append((_fa * 3 + _ka, _fb * 3 + _kb))
+                _flat_v = m.vertices[_F.reshape(-1)]
+                if _pairs:
+                    for _a, _b in _pairs:
+                        _union_sets(_a, _b)
+                    _groups = np.array([_find(_i) for _i in range(len(_F) * 3)], dtype=np.int64)
+                    _seen = {}
+                    _nv = []
+                    _idx = np.empty(len(_F) * 3, dtype=np.int64)
+                    for _ci in range(len(_F) * 3):
+                        _g = int(_groups[_ci])
+                        if _g not in _seen:
+                            _seen[_g] = len(_nv)
+                            _nv.append(_flat_v[_ci])
+                        _idx[_ci] = _seen[_g]
+                    m.vertices = np.array(_nv)
+                    m.faces = _idx.reshape((-1, 3))
+                else:
+                    m.vertices = _flat_v
+                    m.faces = np.arange(len(_F) * 3, dtype=np.int64).reshape((-1, 3))
+                m.remove_unreferenced_vertices()
+                m.compute_vertex_normals()
+            except Exception:
+                pass
             meshes.append(m)
             q = 1 if (vol_cm3 < 0.01 or nfaces <= 6) else 0
             stats.append({

@@ -102,11 +102,11 @@ function CameraRig({ shared, mobile }: { shared: React.MutableRefObject<Shared>;
     const drive = ease(clamp01((shared.current.smooth - ds) / (de - ds)));
     const win = Math.sin(drive * Math.PI);
     const x = shared.current.x;
-    const k = 1 - Math.exp(-3.2 * Math.min(delta, 0.05));
+    const k = 1 - Math.exp(-6 * Math.min(delta, 0.05));
     const tz = mobile ? 10.4 : 9.2;
     _camTarget.set(x * 0.32 * win, 0.6 - win * 0.15, tz - drive * 0.6);
     camera.position.lerp(_camTarget, k);
-    _lookTarget.set(x * 0.45 * win, -0.3, 0);
+    _lookTarget.set(x * 0.3 * win, -0.3, 0);
     look.current.lerp(_lookTarget, k);
     camera.lookAt(look.current);
   });
@@ -125,7 +125,11 @@ function SplitLine({ text, register }: { text: string; register: (el: HTMLSpanEl
               aria-hidden="true"
               ref={register}
               className="hero-ch"
-              style={{ display: 'inline-block', willChange: 'transform' }}
+              style={{
+                display: 'inline-block',
+                padding: '0 0.08em',
+                borderRadius: 3,
+              }}
             >
               {ch}
             </span>
@@ -183,11 +187,11 @@ function HeroScene({
       </Suspense>
       <ContactShadows
         position={[0, mobile ? -0.68 : -0.83, 0]}
-        scale={14}
-        far={3.2}
+        scale={10}
+        far={2.2}
         resolution={256}
-        blur={2.6}
-        opacity={0.42}
+        blur={3.5}
+        opacity={0.22}
         color="#1a1e23"
         frames={Infinity}
       />
@@ -238,6 +242,12 @@ export function HeroStage() {
 
   const [inView, setInView] = useState(true);
   const [ready, setReady] = useState(false);
+  const [posterGone, setPosterGone] = useState(false);
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(() => setPosterGone(true), 350);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   useEffect(() => {
     if (reduced) return;
@@ -273,6 +283,7 @@ export function HeroStage() {
     io.observe(stage);
     const proj = new THREE.Vector3();
     let lastX = Number.NaN;
+    let wasStyling = false;
     const tick = () => {
       raf = requestAnimationFrame(tick);
       if (!visible) return;
@@ -291,9 +302,13 @@ export function HeroStage() {
       const w = stageEl.clientWidth;
       proj.set(shared.current.x, mobile ? -0.55 : -0.7, 0).project(cam);
       const botPx = (proj.x * 0.5 + 0.5) * w;
-      const sigma = mobile ? 110 : 140;
+      const sigma = mobile ? 110 : 90;
       const tiltOn = !mobile;
       const styling = shared.current.p > 0.05 && shared.current.p < 0.95;
+      if (styling !== wasStyling) {
+        wasStyling = styling;
+        for (const el of letters.current) el.style.willChange = styling ? 'transform' : 'auto';
+      }
       for (let i = 0; i < letters.current.length; i++) {
         const el = letters.current[i];
         const cx = centers.current[i];
@@ -302,20 +317,19 @@ export function HeroStage() {
         const ad = Math.abs(d);
         const fall = Math.exp(-(d * d) / (2 * sigma * sigma));
         if (tiltOn && styling) {
-          const gate = ad < 260 ? 1 - ad / 260 : 0;
-          const tilt = Math.max(-14, Math.min(14, -d * 0.045)) * gate;
-          const lift = -18 * fall;
+          const gate = ad < 160 ? 1 - ad / 160 : 0;
+          const tilt = Math.max(-8, Math.min(8, -d * 0.045)) * gate;
+          const lift = -8 * fall;
           const t = `translateY(${lift.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
           if (el.style.transform !== t) el.style.transform = t;
-          el.style.willChange = 'transform';
         } else if (!tiltOn) {
           el.style.transform = '';
           el.style.willChange = 'auto';
         }
         const hi = Math.round(fall * 100) / 100;
-        const bg = styling && hi > 0.03 ? `rgba(232,73,15,${(0.22 * hi).toFixed(3)})` : 'transparent';
+        const bg = styling && hi > 0.03 ? `rgba(232,73,15,${(0.14 * hi).toFixed(3)})` : 'transparent';
         if (el.style.background !== bg) el.style.background = bg;
-        const fg = styling && hi > 0.5 ? '#b23600' : '';
+        const fg = styling && hi > 0.65 ? '#9a2f00' : '';
         if (el.style.color !== fg) el.style.color = fg;
       }
       // blob tracks the end-fade so it never pops in detached
@@ -405,8 +419,8 @@ export function HeroStage() {
           </div>
         ) : (
         <>
-          {!ready && (
-            <div className="hero-poster">
+          {!posterGone && (
+            <div className="hero-poster" style={{ opacity: ready ? 0 : 1, transition: 'opacity 300ms linear' }}>
               <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="eager" decoding="async" fetchPriority="high" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
           )}

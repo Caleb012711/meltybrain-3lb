@@ -1,6 +1,6 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
@@ -108,9 +108,24 @@ export function ExplodingModel({
       }),
     []
   );
-  useEffect(() => () => {
-    xrayMat.dispose();
-  }, [xrayMat]);
+  const xraySelMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#e8490f',
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    []
+  );
+  useEffect(
+    () => () => {
+      xrayMat.dispose();
+      xraySelMat.dispose();
+    },
+    [xrayMat, xraySelMat]
+  );
 
   const scene = useMemo(() => {
     const s = gltf.scene.clone(true);
@@ -294,15 +309,101 @@ export function ExplodingModel({
         onPointerOver={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           onHover(pick(e.object));
-          document.body.style.cursor = 'pointer';
         }}
         onPointerOut={() => {
           onHover(null);
-          document.body.style.cursor = '';
         }}
       />
     </group>
   );
+}
+
+const _fFromT = new THREE.Vector3();
+const _fFromP = new THREE.Vector3();
+const _fToT = new THREE.Vector3();
+const _fToP = new THREE.Vector3();
+const HOME_POS = new THREE.Vector3(4.4, 3.1, 5.4);
+const HOME_TGT = new THREE.Vector3(0, 0, 0);
+
+export function FocusRig({
+  idx,
+  homeKey,
+  reduced,
+}: {
+  idx: number | null;
+  homeKey: number;
+  reduced: boolean;
+}) {
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls) as unknown as {
+    target: THREE.Vector3;
+    update: () => void;
+    addEventListener?: (t: string, f: () => void) => void;
+    removeEventListener?: (t: string, f: () => void) => void;
+  } | null;
+  const anim = useRef(false);
+  const t = useRef(0);
+
+  useEffect(() => {
+    if (!controls) return;
+    if (idx === null) {
+      _fFromT.copy(controls.target);
+      _fFromP.copy(camera.position);
+      _fToT.copy(HOME_TGT);
+      _fToP.copy(HOME_POS);
+    } else {
+      let found: THREE.Object3D | null = null;
+      scene.traverse((o) => {
+        if (!found && o.userData.partIndex === idx && (o as THREE.Mesh).isMesh) found = o;
+      });
+      if (!found) return;
+      const box = new THREE.Box3().setFromObject(found);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxSize = Math.max(size.x, size.y, size.z);
+      const fov = (camera as THREE.PerspectiveCamera).fov
+        ? ((camera as THREE.PerspectiveCamera).fov * Math.PI) / 180
+        : 0.7;
+      const dist = THREE.MathUtils.clamp((maxSize * 2.0) / Math.tan(fov / 2), 0.8, 8);
+      _fFromT.copy(controls.target);
+      _fFromP.copy(camera.position);
+      _fToT.copy(center);
+      const dir = camera.position.clone().sub(controls.target);
+      if (dir.lengthSq() < 1e-6) dir.set(0.4, 0.35, 1);
+      dir.normalize();
+      _fToP.copy(center).addScaledVector(dir, dist);
+    }
+    if (reduced) {
+      controls.target.copy(_fToT);
+      camera.position.copy(_fToP);
+      controls.update();
+      return;
+    }
+    t.current = 0;
+    anim.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, homeKey, scene, camera, controls, reduced]);
+
+  useEffect(() => {
+    if (!controls?.addEventListener) return;
+    const stop = () => {
+      anim.current = false;
+    };
+    controls.addEventListener('start', stop);
+    return () => controls.removeEventListener?.('start', stop);
+  }, [controls]);
+
+  useFrame((_, delta) => {
+    if (!anim.current || !controls) return;
+    t.current += delta / 0.6;
+    const k = t.current >= 1 ? 1 : 1 - Math.pow(1 - t.current, 3);
+    controls.target.lerpVectors(_fFromT, _fToT, k);
+    camera.position.lerpVectors(_fFromP, _fToP, k);
+    controls.update();
+    if (t.current >= 1) anim.current = false;
+  });
+  return null;
 }
 
 function StlOverlay({ geometry }: { geometry: THREE.BufferGeometry | null }) {
@@ -478,9 +579,18 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
             autoRotate={false}
             makeDefault
             touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
-            minDistance={3}
-            maxDistance={14}
+            minDistance={0.8}
+            maxDistance={22}
+            minPolarAngle={0.05}
             maxPolarAngle={Math.PI / 2 + 0.1}
+            zoomToCursor
+            onChange={(e) => {
+              const c = e?.target;
+              if (c && c.target && c.target.length() > 3) {
+                c.target.setLength(3);
+                c.update();
+              }
+            }}
           />
         </Canvas>
         </GlErrorBoundary>

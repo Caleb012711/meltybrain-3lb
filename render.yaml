@@ -57,3 +57,8 @@ services:
         - Wheel Pod.step
         - Standard Weapon Teeth.step
         - Undercutter Config.step
+        - tools/cad_convert.py
+        - Main CAD.step
+        - Wheel Pod.step
+        - Standard Weapon Teeth.step
+        - Undercutter Config.step

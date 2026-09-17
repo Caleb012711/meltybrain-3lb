@@ -6,7 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import { cadModels } from '../data/content';
 import { BUILD_GUIDE, STEP_ROLES, type BuildStepKey } from '../data/buildGuide';
 import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, GlErrorBoundary, useModelParts, EMPTY_SET } from '../components/CadViewer';
+import { ExplodingModel, FocusRig, GlErrorBoundary, useModelParts, EMPTY_SET } from '../components/CadViewer';
 import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel } from '../components/materials';
 
 // ---------- drive physics (arcade melty: no spin = no move) ----------
@@ -364,6 +364,8 @@ function DriveTrail({
   return <primitive object={lineObj} />;
 }
 
+const ARENA_EDGE = new THREE.EdgesGeometry(new THREE.BoxGeometry(2 * HALF, 0.02, 2 * HALF));
+
 function DriveArena() {
   const walls: [number, number, number, number, number][] = [
     [0, 0.5, -HALF - 0.2, 2 * HALF + 0.8, 0.4],
@@ -375,13 +377,16 @@ function DriveArena() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2 * HALF + 1, 2 * HALF + 1]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.95} />
+        <meshStandardMaterial color="#f4f2ec" roughness={0.95} />
       </mesh>
       <gridHelper args={[2 * HALF, 2 * HALF, '#c9c6b8', '#e2e0d8']} position={[0, 0.01, 0]} />
-      {walls.map(([x, y, z, w, d], i) => (
-        <mesh key={i} position={[x, y, z]}>
-          <boxGeometry args={[w, 1, d]} />
-          <meshStandardMaterial color="#3f4752" roughness={0.8} />
+      <lineSegments geometry={ARENA_EDGE} position={[0, 0.02, 0]}>
+        <lineBasicMaterial color="#1a1d21" />
+      </lineSegments>
+      {walls.map(([x, , z, w, d], i) => (
+        <mesh key={i} position={[x, 0.3, z]}>
+          <boxGeometry args={[w, 0.6, d]} />
+          <meshStandardMaterial color="#22252a" roughness={0.8} />
         </mesh>
       ))}
     </group>
@@ -392,18 +397,26 @@ function BuildCanvas({
   modelId: mid,
   bparts: bp,
   selected: sel,
+  focus,
+  homeKey,
+  reduced,
   hidden: hid,
   isolated: iso,
   explode,
   onSelect,
+  onFocus,
 }: {
   modelId: string;
   bparts: Parameters<typeof ExplodingModel>[0]['parts'];
   selected: number | null;
+  focus: number | null;
+  homeKey: number;
+  reduced: boolean;
   hidden: Set<number>;
   isolated: number | null;
   explode: number;
   onSelect: (i: number | null) => void;
+  onFocus: (i: number | null) => void;
 }) {
   const model = cadModels.find((m) => m.id === mid) ?? cadModels[0];
   return (
@@ -411,6 +424,7 @@ function BuildCanvas({
       <Canvas
         camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
         dpr={[1, 1.5]}
+        style={{ cursor: 'grab' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NeutralToneMapping;
           gl.toneMappingExposure = 1.0;
@@ -419,6 +433,10 @@ function BuildCanvas({
         }}
         role="img"
         aria-label={`Build guide model, ${model.label}. Model orbit is pointer-only; full part control is in the list below.`}
+        onPointerMissed={() => onSelect(null)}
+        onDoubleClick={() => {
+          if (sel !== null) onFocus(sel);
+        }}
       >
         <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
         <directionalLight position={[5, 8, 4]} intensity={2.0} />
@@ -440,14 +458,24 @@ function BuildCanvas({
             onHover={() => undefined}
           />
         </Suspense>
+        <FocusRig idx={focus} homeKey={homeKey} reduced={reduced} />
         <OrbitControls
           enableDamping
           autoRotate={false}
           makeDefault
           touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
-          minDistance={3}
-          maxDistance={14}
+          minDistance={0.8}
+          maxDistance={22}
+          minPolarAngle={0.05}
           maxPolarAngle={Math.PI / 2 + 0.1}
+          zoomToCursor
+          onChange={(e) => {
+            const c = e?.target;
+            if (c && c.target && c.target.length() > 3) {
+              c.target.setLength(3);
+              c.update();
+            }
+          }}
         />
       </Canvas>
     </div>
@@ -623,6 +651,8 @@ export function Studio() {
   // build-guide mode state
   const [modelId, setModelId] = useState('full');
   const [selected, setSelected] = useState<number | null>(null);
+  const [bFocus, setBFocus] = useState<number | null>(null);
+  const [bHome, setBHome] = useState(0);
   const [hidden, setHidden] = useState<Set<number>>(new Set());
   const [isolated, setIsolated] = useState<number | null>(null);
   const [bExplode, setBExplode] = useState(0);
@@ -916,7 +946,7 @@ export function Studio() {
                   <span className="rpm-fill" style={{ width: `${(hud.rpm / RPM_MAX) * 100}%` }} />
                 </span>
                 <span>
-                  SPD <b>{hud.speed.toFixed(1)}</b> u/s
+                  SPD <b>{hud.speed.toFixed(1)}</b> sim u/s
                 </span>
                 <span>
                   THR <b>{Math.round(hud.thr * 100)}%</b>
@@ -1146,7 +1176,7 @@ export function Studio() {
                 <dt>RPM</dt>
                 <dd>{hud.rpm} / {RPM_MAX}</dd>
                 <dt>Speed</dt>
-                <dd>{hud.speed.toFixed(2)} u/s</dd>
+                <dd>{hud.speed.toFixed(2)} sim u/s</dd>
                 <dt>Throttle</dt>
                 <dd>{Math.round(hud.thr * 100)} %</dd>
                 <dt>Authority (sim)</dt>
@@ -1180,6 +1210,8 @@ export function Studio() {
                       onClick={() => {
                         setModelId(m.id);
                         setSelected(null);
+                        setBFocus(null);
+                        setBHome((k) => k + 1);
                         setHidden(new Set());
                         setIsolated(null);
                         setQuery('');
@@ -1208,10 +1240,14 @@ export function Studio() {
                 modelId={modelId}
                 bparts={bparts}
                 selected={selected}
+                focus={bFocus}
+                homeKey={bHome}
+                reduced={reduced}
                 hidden={hidden}
                 isolated={isolated}
                 explode={bExplode}
                 onSelect={setSelected}
+                onFocus={setBFocus}
               />
               <p className="status" role="status">
                 {bmodel.label} · {bparts.length} parts ·{' '}
@@ -1377,6 +1413,22 @@ export function Studio() {
                     </div>
                   )}
                   <div className="btn-row" style={{ margin: '8px 0 0' }}>
+                    <button
+                      className="mini"
+                      onClick={() => selected !== null && setBFocus(selected)}
+                      disabled={selected === null}
+                    >
+                      Zoom to part
+                    </button>
+                    <button
+                      className="mini"
+                      onClick={() => {
+                        setBFocus(null);
+                        setBHome((k) => k + 1);
+                      }}
+                    >
+                      Reset view
+                    </button>
                     {selGuide.links.map((l) => (
                       <Link key={l.to + l.label} className="btn" to={l.to}>
                         {l.label}
@@ -1396,8 +1448,8 @@ export function Studio() {
       )}
 
       {tour && !tour.done.every(Boolean) && (
-        <div className="viewer" style={{ marginTop: 12 }}>
-          <div className="step" role="dialog" aria-label="60-second drive tutorial">
+        <div style={{ marginTop: 12 }}>
+          <div role="dialog" aria-label="60-second drive tutorial">
             <h3>
               Drive check ({tour.done.filter(Boolean).length}/5)
               <span className="stamp todo">60 s tour</span>

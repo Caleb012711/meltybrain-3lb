@@ -24,6 +24,25 @@ export function Build() {
         <h3>Tracker — copy to a GitHub issue</h3>
         <pre>{trackerText}</pre>
       </div>
+      <details className="step">
+        <summary><b>Step 0 checklist — rules + safety</b></summary>
+        <p className="mono">[ ] SPARC + TRC beetle rules read · [ ] DIY-radio pre-clear sent · [ ] removable link &lt;60s · [ ] LiPo bag + never charge unattended · [ ] wheel locks on · [ ] cloud/pit never drives</p>
+      </details>
+      <details className="step">
+        <summary><b>Step 4 tools + bench numbers</b></summary>
+        <p>Tools: M2/M2.5/M3 hex, 0.1 g scale, calipers, Loctite 243, insert iron, vise + sockets for bearing press.</p>
+        <p className="mono">Hand-thread every bolt first, never force · bearings: outer race only, freeze bearing + warm housing · pod endplay &lt;1 mm · ring bolts star-pattern snug · 243 cures 24 h · balance on point jig level in 4+ orientations (3–5 g off = hop at 3000 RPM, fix with 2–3 g trim screws — never drill the ring)</p>
+      </details>
+      <details className="step">
+        <summary><b>Step 5 wiring checklist</b></summary>
+        <p className="mono">XT60 mains + 16 AWG (XT30 is 30 A cont — inadequate) · 18 AWG min short motor leads · twist + separate power/signal · 4700µF on 5 V + 10:1 divider · battery strapped in TPU (a shift = unbalance) · link pull kills everything</p>
+      </details>
+      <details className="step">
+        <summary><b>Steps 6–7 tune + failsafe sequence</b></summary>
+        <p className="mono">Bench with no weapon energy → cap 1500–2000 RPM, soft start, current limit → slide 500–1000 RPM (flip heading 180° if orbit is wrong) → trim straight: wood bites, steel skates → 2000 → heat-check → 3000 → heat-check → 4000 → blip hit-recovery (must re-hold RPM, not toilet-bowl) → one gain at a time, log RPM/g/batt/temp on the Pi</p>
+        <p className="mono">Failsafe, filmed to firmware/failsafe-test.mp4: TX-off stops/brakes &lt;1 s · re-arm deliberate · yank-Pi brown-out still failsafes · never boots armed with throttle high · freeze firmware version · back up config + logs · show TRC at check-in</p>
+        <p className="mono">Weigh-in: scale ≤1361 g (1360.8 g cap), target ≤1310 g · log every subassembly · spares: teeth, cleats, ESC, 2nd pack · calibrated scale</p>
+      </details>
       <div className="btn-row">
         <Link className="btn primary" to="/onshape">Next: open CAD in Onshape</Link>
         <Link className="btn" to="/parts">Parts list</Link>
@@ -58,6 +77,14 @@ export function Onshape() {
           <div className="step"><h3>{s.t}</h3><p>{s.b}</p></div>
         </Reveal>
       ))}
+      <details className="step">
+        <summary><b>Troubleshooting imports</b></summary>
+        <p className="mono">Holes read 0.126 in or the bot is 25.4× off → delete and re-import in mm, never Scale · Parts list shows ≠1 solid → re-Derive exactly one body per studio · Main CAD bbox is 138×331×168 mm (the 331 mm axis is reach, not spin diameter — verify YOUR spin Ø before tip-speed math)</p>
+      </details>
+      <details className="step">
+        <summary><b>Verify each export</b></summary>
+        <p className="mono">Re-import every STEP/DXF/STL into an empty studio: 1 solid, M3 = 3.2 mm holes · tiny solids are thread artifacts — verify alloy in CAD, not color · DXF must be outlines + holes on one layer, no title block or dimensions</p>
+      </details>
       <div className="btn-row">
         <Link className="btn primary" to="/pcbway">Next: order from PCBWay</Link>
         <Link className="btn" to="/">Back to viewer</Link>
@@ -104,10 +131,25 @@ export function Pcbway() {
           </tbody>
         </table>
       </div>
-      <h2>Five-minute check before you pay</h2>
+      <h2>Teeth numbers, measured</h2>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Option</th><th scope="col">Mass</th><th scope="col">Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>Standard pair, AR500</td><td className="mono">55.63 cm³ ≈ 437 g</td><td>Energy king; flies at ~1245 g all-in with ~65 g margin</td></tr>
+            <tr><td>Standard pair, Grade 5 Ti</td><td className="mono">≈ 246 g</td><td>Comfortable (~1055 g all-in); relief valve, saves ~190 g</td></tr>
+            <tr><td>Undercutter pair</td><td className="mono">44.67 cm³ ≈ 351 g / 198 g Ti</td><td>Pick ONE config — CAD stages both, never order both</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h2>Check before you pay</h2>
       <div className="step">
         <p>Every file opens in the PCBWay preview. Units read mm with M3 at 3.2 mm. One part per file with NN-name-material names. Materials and thicknesses match the tables. Teeth spares added. Bearing fits noted H7/h6. Shipping leaves room for a re-order. Save the quote PDF in the folder.</p>
       </div>
+      <details className="step">
+        <summary><b>Per-file upload checklist</b></summary>
+        <p className="mono">[ ] uploaded · [ ] preview shows the right body · [ ] 1 solid per file · [ ] NN-name-material name matches · [ ] thickness set (DXF) · [ ] teeth spares 2+ · [ ] H7/h6 noted in order comments</p>
+      </details>
       <p className="meta">US alternate for flat AR500: SendCutSend or OSH Cut waterjet from the same DXF. CNC teeth stay on PCBWay.</p>
       <h2>Source assemblies (not order-ready — export first)</h2>
       <p className="meta">Empty now — here is the action: export NN-name-material.step to manufacturing/pcbway/cnc/ and NN-name-thickness-material.dxf to sheet-metal/, fill ORDER-CHECKLIST.md, cut an Onshape version V1-cnc-ready. Flat AR500 alt: send the same DXF to SendCutSend or OSH Cut.</p>
@@ -148,11 +190,15 @@ export function Printing() {
           </tbody>
         </table>
       </div>
+      <details className="step">
+        <summary><b>Pre-print checklist</b></summary>
+        <p className="mono">[ ] STLs in 3d-printing/stl/ as NN-part-name · [ ] flow + temp tower per spool · [ ] PLA/PETG fit-check, then TPU final · [ ] weighed at 1.21 g/cc into BOM (shell budget 80–120 g)</p>
+      </details>
       <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>      <div className="table-wrap">
         <table>
           <thead><tr><th scope="col">Setting</th><th scope="col">Value</th></tr></thead>
           <tbody>
-            <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams — direct drive or pick another project.</td></tr>
+            <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams — use direct-drive only.</td></tr>
             <tr><td>Nozzle / bed</td><td>225–240 °C per spool after a temp tower. Bed 40–60 °C with glue on smooth plate.</td></tr>
             <tr><td>Speed / retraction</td><td>20–35 mm/s. Retraction off or 1 mm max. Pressure advance off to start.</td></tr>
             <tr><td>Walls / infill</td><td>4–6 perimeters, 5–6 top and bottom layers, 30–60% gyroid. Dense cradle, not hollow, never 100% solid.</td></tr>
@@ -199,7 +245,7 @@ export function Parts() {
         </table>
       </div>
       <p className="meta">Full tick-box BOM with vendor-link column lives in <code>BOM.md</code>. Cap is 1361 g — weigh every subassembly.</p>
-      <h2>Blade lab — what the winners run</h2>
+      <h2>Teeth lab — what the winners run</h2>
       <div className="step">
         <h3>AR500 ring, blunt symmetric teeth, no holes</h3>
         <p>
@@ -256,9 +302,22 @@ export function Firmware() {
           </tbody>
         </table>
       </div>
+      <details className="step">
+        <summary><b>Stack pick — one stack, don't mix</b></summary>
+        <p className="mono">Fight: Teensy 4.0 lock (no pins) + 2× H3LIS331DL + AM32 DShot600 bidirectional + ELRS CRSF · Learn rig: OpenMelt2 on Arduino Micro + single accel + 490 Hz/SimonK to ~3200 RPM · Fallback: Rotini ESP32-S2 + SimpleMelt</p>
+      </details>
+      <details className="step">
+        <summary><b>Flash checklist</b></summary>
+        <p className="mono">[ ] Teensyduino / Arduino / PlatformIO installed · [ ] baseline flash, no custom gains · [ ] USB enumerates + config UI loads · [ ] stock config backed up · [ ] match-day version frozen after tune</p>
+      </details>
       <div className="step">
         <h3>Wiring, locked</h3>
-        <p>Battery to link (XT60 mains, 16 AWG — XT30 is 30 A continuous and inadequate per 48 A pack path) to AM32 boards to PROPDRIVEs (18 AWG minimum on short motor leads). ELRS CRSF to Teensy UART. Dual accelerometers on short stiff SPI within ~20 mm of the spin center (a ±400 g H3LIS331 saturates above ~2800 RPM at 45 mm and above ~3450 RPM at 30 mm — mount close or accept an RPM ceiling). 4700 uF across 5 V, 10:1 divider for battery sense. Green LED means front, raised and inset so it reads across the arena. Never power the Teensy from Pi USB inside the bot.</p>
+        <ul>
+          <li>Battery → link (<b>XT60</b> mains, <b>16 AWG</b> — XT30 is 30 A continuous, inadequate per 48 A pack path) → AM32 boards → PROPDRIVEs (18 AWG minimum on short motor leads)</li>
+          <li>ELRS CRSF → Teensy UART · Pi link UART <b>115200</b> · never power the MCU from Pi USB in-bot</li>
+          <li>Dual accels on short stiff SPI <b>within ~20 mm of spin center</b> (±400 g saturates past ~2800 RPM at 45 mm, ~3450 RPM at 30 mm) · 4700µF on 5 V + 10:1 divider for battery sense</li>
+          <li>Green LED = front, raised/inset a few mm for shallow arena angles · learn defaults: radius 3.9 cm, LED offset 7%</li>
+        </ul>
       </div>
       <div className="step">
         <h3>Tune: bench, slide, 2k, 3k, 4k</h3>

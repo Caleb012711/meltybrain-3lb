@@ -5,7 +5,7 @@ import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, GlErrorBoundary, useModelParts, type ColorMode } from '../components/CadViewer';
+import { ExplodingModel, FocusRig, GlErrorBoundary, useModelParts, type ColorMode } from '../components/CadViewer';
 import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel, type PartInfo } from '../components/materials';
 import { Reveal } from '../components/Layout';
 
@@ -22,6 +22,8 @@ export function Explorer() {
   const [colorMode, setColorMode] = useState<ColorMode>('role');
   const [spin, setSpin] = useState(!reduced);
   const [selected, setSelected] = useState<number | null>(null);
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
+  const [homeKey, setHomeKey] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const [hidden, setHidden] = useState<Set<number>>(new Set());
   const [isolated, setIsolated] = useState<number | null>(null);
@@ -34,6 +36,8 @@ export function Explorer() {
 
   useEffect(() => {
     setSelected(null);
+    setFocusIdx(null);
+    setHomeKey((k) => k + 1);
     setHidden(new Set());
     setIsolated(null);
     setQuery('');
@@ -94,6 +98,8 @@ export function Explorer() {
 
   const reset = () => {
     setSelected(null);
+    setFocusIdx(null);
+    setHomeKey((k) => k + 1);
     setHidden(new Set());
     setIsolated(null);
     setExplode(0);
@@ -132,6 +138,11 @@ export function Explorer() {
                 <Canvas
                   camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
                   dpr={[1, 1.5]}
+                  style={{ cursor: hovered !== null ? 'pointer' : 'grab' }}
+                  onPointerMissed={() => setSelected(null)}
+                  onDoubleClick={() => {
+                    if (selected !== null) setFocusIdx(selected);
+                  }}
                   onCreated={({ gl }) => {
                     gl.toneMapping = THREE.NeutralToneMapping;
                     gl.toneMappingExposure = 1.0;
@@ -162,14 +173,24 @@ export function Explorer() {
                       onHover={setHovered}
                     />
                   </Suspense>
+                  <FocusRig idx={focusIdx} homeKey={homeKey} reduced={reduced} />
                   <OrbitControls
                     enableDamping
                     autoRotate={false}
                     makeDefault
                     touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
-                    minDistance={3}
-                    maxDistance={14}
+                    minDistance={0.8}
+                    maxDistance={22}
+                    minPolarAngle={0.05}
                     maxPolarAngle={Math.PI / 2 + 0.1}
+                    zoomToCursor
+                    onChange={(e) => {
+                      const c = e?.target;
+                      if (c && c.target && c.target.length() > 3) {
+                        c.target.setLength(3);
+                        c.update();
+                      }
+                    }}
                   />
                 </Canvas>
                 </GlErrorBoundary>
