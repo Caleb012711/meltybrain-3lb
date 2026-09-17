@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Eyeliner — 3lb Meltybrain · Build Site</title>
+<link rel="stylesheet" href="styles.css"/>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><span class="dot"></span> EYELINER · 3LB MELTY</a>
+  <nav>
+    <a href="index.html" class="active">Hero + 3D</a>
+    <a href="build.html">Build</a>
+    <a href="pcbway.html">PCBWay files</a>
+    <a href="printing.html">3D printing</a>
+    <a href="parts.html">Parts</a>
+    <a href="firmware.html">Firmware + AI cam</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <div class="pill">LiftOff Rev9 spec · Teensy 4.0 · Dual H3LIS331 · PropDrive 2836</div>
+    <h1>Spin the whole bot.<br/><span>Drive like it's standing still.</span></h1>
+    <p class="sub">3lb translational-drift combat robot. AR500 ring, TPU shell, Ti cleats, 2000–4000 RPM. This site is the easy button: view in 3D, order metal in 10 minutes, print plastics, flash Teensy, fight.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="build.html">Start build →</a>
+      <a class="btn" href="pcbway.html">Get PCBWay files</a>
+      <a class="btn" href="printing.html">Slicing guide</a>
+    </div>
+    <div class="stats">
+      <div><b>≤1361g</b><span>weight cap</span></div>
+      <div><b>95 mph</b><span>8″ @4000 RPM tip</span></div>
+      <div><b>241g</b><span>AR500 ring target</span></div>
+      <div><b>8kHz</b><span>DShot600 loop</span></div>
+    </div>
+  </div>
+  <div class="hero-3d">
+    <canvas id="hero3d"></canvas>
+    <div class="viewer-bar">
+      <label class="upload">View your STL <input type="file" id="stlFile" accept=".stl"/></label>
+      <button id="spinBtn" class="mini">⏸ pause spin</button>
+      <button id="explodeBtn" class="mini">Explode</button>
+    </div>
+    <p class="hint">Drag to orbit · scroll to zoom · upload any exported <code>stl/</code> to preview it here</p>
+  </div>
+</section>
+
+<section class="cards">
+  <a class="card" href="build.html"><h3>1 · Build in 8 steps</h3><p>Rules → order → machine → print → assemble → wire → tune → weigh-in. Beginner-first, tick-box style.</p></a>
+  <a class="card" href="pcbway.html"><h3>2 · Send to PCBWay</h3><p>Which STEP goes to CNC, which DXF goes to laser. Filenames, materials, checklist. No full assemblies.</p></a>
+  <a class="card" href="printing.html"><h3>3 · Print (unsliced)</h3><p>We give you STLs, you slice for YOUR printer. TPU 95A profile for Orca/Bambu/Prusa included.</p></a>
+  <a class="card" href="firmware.html"><h3>4 · Teensy + AI camera</h3><p>OpenMelt2 → Liftoff port, AM32 + ELRS setup, dual-accel math, Pi cam + pit YOLO (advisory only).</p></a>
+</section>
+
+<section class="split">
+  <div>
+    <h2>What makes this one good</h2>
+    <ul class="ticks">
+      <li><b>Liftoff formula, not guesswork:</b> PropDrive 2836 1200KV hubmotors (6mm dead axle, 2×626), 1.55″ Ti cleats, 0.25″ AR500 ring, TPU shell.</li>
+      <li><b>Deterministic spin sensing:</b> 2× H3LIS331DLTR opposed @45°, SPI to Teensy 4.0 LOCK, DShot600 bidir @8000Hz. Survives CoR shift after hits.</li>
+      <li><b>Legal AI:</b> onboard Pi Zero 2W cam (optical flow + log) + pit overhead YOLO + cloud LLM hints. Human-gated, never drives.</li>
+      <li><b>Weight-safe:</b> P1 mass audit in repo proves steel-ring + alu + TPU path to ≤1361g.</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>Quick tracker — copy to a GitHub Issue</h3>
+<pre>- [ ] Rules + TRC pre-clear (ELRS + AI advisory)
+- [ ] Order metal (pcbway/) + electronics (BOM.md)
+- [ ] Print TPU shell + pods
+- [ ] Assemble + balance on point jig
+- [ ] Wire AM32 + Teensy + ELRS, bench no-weapon
+- [ ] Flash + tune 2k→3k→4k RPM
+- [ ] Failsafe video + weigh ≤1361g</pre>
+  </div>
+</section>
+
+<footer>OpenMelt2 by nothinglabs (CC BY-NC-SA) · Liftoff by Team Liftoff (NHRL wiki) · Eyeliner build site — light mode, no build step, just open index.html.</footer>
+<script type="module" src="viewer.js"></script>
+</body>
+</html>

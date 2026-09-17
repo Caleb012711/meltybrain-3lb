@@ -1,0 +1,122 @@
+[
+ {
+  "node": "solid_000",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_001",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_002",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_003",
+  "role": "weapon-steel",
+  "vol_cm3": 10.479,
+  "bbox_mm": [
+   47.9,
+   32.8,
+   26.8
+  ],
+  "faces": 46,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_004",
+  "role": "weapon-steel",
+  "vol_cm3": 11.858,
+  "bbox_mm": [
+   36.1,
+   30.9,
+   22.0
+  ],
+  "faces": 45,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_005",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_006",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_007",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_008",
+  "role": "weapon-steel",
+  "vol_cm3": 10.479,
+  "bbox_mm": [
+   47.9,
+   32.8,
+   26.8
+  ],
+  "faces": 46,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_009",
+  "role": "weapon-steel",
+  "vol_cm3": 11.858,
+  "bbox_mm": [
+   36.1,
+   30.9,
+   22.0
+  ],
+  "faces": 45,
+  "dropped_from_glb": false
+ }
+]

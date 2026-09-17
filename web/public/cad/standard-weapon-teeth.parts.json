@@ -1,0 +1,26 @@
+[
+ {
+  "node": "solid_000",
+  "role": "weapon-steel",
+  "vol_cm3": 27.815,
+  "bbox_mm": [
+   103.8,
+   116.9,
+   108.7
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_001",
+  "role": "weapon-steel",
+  "vol_cm3": 27.815,
+  "bbox_mm": [
+   103.8,
+   116.9,
+   108.7
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ }
+]

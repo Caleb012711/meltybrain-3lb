@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>PCBWay — Eyeliner</title><link rel="stylesheet" href="styles.css"/></head>
+<body><header class="nav"><a class="brand" href="index.html"><span class="dot"></span> EYELINER · 3LB MELTY</a><nav><a href="index.html">Hero + 3D</a><a href="build.html">Build</a><a href="pcbway.html" class="active">PCBWay files</a><a href="printing.html">3D printing</a><a href="parts.html">Parts</a><a href="firmware.html">Firmware + AI cam</a></nav></header>
+<div class="page"><h1>Send this to PCBWay</h1>
+<div class="warn"><b>Do NOT upload</b> <code>Main CAD.step</code> (17.7 MB assembly), <code>Wheel Pod.step</code>, STLs, or G-code. PCBWay quotes <b>one solid per file</b>. Export first, then upload.</div>
+<h2>What goes where</h2>
+<table><tr><th>Send to</th><th>Files in this repo</th><th>Process on PCBWay</th></tr>
+<tr><td><b>CNC milling</b></td><td><code>manufacturing/pcbway/cnc/*.step</code> — chassis blocks, weapon hub, motor mounts, shafts (export from Main CAD, AP214, mm, one body each: <code>01-chassis-base.step</code>…)</td><td>3-axis CNC · 6061-T6 chassis, 7075/shafts steel, teeth AR500/Ti · as-machined · ISO 2768-m, H7 only for bearing bores</td></tr>
+<tr><td><b>Laser / sheet</b></td><td><code>manufacturing/pcbway/sheet-metal/*.dxf</code> — top/bottom armor, bulkheads (1:1 mm, cut outlines only, no title block)</td><td>Laser · 5052/6061 1.5–3 mm · confirm M3=3.2 mm holes in preview</td></tr></table>
+<h2>Easy order (10 min)</h2>
+<div class="step"><h3>1 · Export</h3><p>Open <code>Main CAD.step</code> in Fusion/Onshape → isolate body → Export STEP → drop in <code>cnc/</code>. Flat part → drawing → flat pattern → Export DXF → <code>sheet-metal/</code>. Teeth: <code>Standard Weapon Teeth.step</code> / <code>Undercutter Config.step</code> → STEP for CNC or DXF for waterjet.</p></div>
+<div class="step"><h3>2 · Upload</h3><p>pcbway.com → CNC Machining / Sheet Metal → Instant Quote → upload. Pick material per file. Qty 1 + spares for teeth/wear parts.</p></div>
+<div class="step"><h3>3 · 5-min check before pay</h3><p>☐ Preview shows all bodies ☐ Units mm, scale right ☐ One part per file ☐ Material/thickness right ☐ Spares added ☐ Lead time leaves re-order room. Save quote PDF in folder.</p></div>
+<h2>Files in repo right now</h2>
+<p>Root STEPs (source, not for upload): <code>Main CAD.step</code> · <code>Wheel Pod.step</code> · <code>Standard Weapon Teeth.step</code> · <code>Undercutter Config.step</code>. Exported per-part STEP/DXF land in <code>manufacturing/pcbway/cnc/</code> + <code>sheet-metal/</code>. US alt for flat AR500: SendCutSend / OSH Cut.</p>
+</div></body></html>

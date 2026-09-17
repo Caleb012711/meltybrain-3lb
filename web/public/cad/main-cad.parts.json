@@ -1,0 +1,1742 @@
+[
+ {
+  "node": "solid_000",
+  "role": "weapon-steel",
+  "vol_cm3": 27.815,
+  "bbox_mm": [
+   127.0,
+   115.4,
+   108.7
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_001",
+  "role": "weapon-steel",
+  "vol_cm3": 27.815,
+  "bbox_mm": [
+   127.0,
+   115.4,
+   108.7
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_002",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   1.1,
+   1.2,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_003",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_004",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_005",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_006",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   1.1,
+   1.2,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_007",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_008",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_009",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_010",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_011",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   1.1,
+   1.2,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_012",
+  "role": "fastener-dark",
+  "vol_cm3": 0.02,
+  "bbox_mm": [
+   7.5,
+   6.9,
+   0.7
+  ],
+  "faces": 26,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_013",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_014",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_015",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_016",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_017",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_018",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_019",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   1.1,
+   1.2,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_020",
+  "role": "fastener-dark",
+  "vol_cm3": 0.041,
+  "bbox_mm": [
+   11.5,
+   11.0,
+   4.2
+  ],
+  "faces": 103,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_021",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.8,
+   1.0,
+   0.3
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_022",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_023",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_024",
+  "role": "fastener-dark",
+  "vol_cm3": 0.045,
+  "bbox_mm": [
+   8.1,
+   6.3,
+   3.7
+  ],
+  "faces": 129,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_025",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   2.2,
+   3.2,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_026",
+  "role": "fastener-dark",
+  "vol_cm3": 0.043,
+  "bbox_mm": [
+   16.0,
+   15.6,
+   2.7
+  ],
+  "faces": 38,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_027",
+  "role": "fastener-dark",
+  "vol_cm3": 0.003,
+  "bbox_mm": [
+   2.8,
+   3.1,
+   0.6
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_028",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_029",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_030",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_031",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_032",
+  "role": "fastener-dark",
+  "vol_cm3": 0.003,
+  "bbox_mm": [
+   2.8,
+   3.1,
+   0.6
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_033",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_034",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_035",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_036",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   0.6,
+   0.6,
+   0.1
+  ],
+  "faces": 6,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_037",
+  "role": "fastener-dark",
+  "vol_cm3": 0.003,
+  "bbox_mm": [
+   3.3,
+   3.5,
+   1.3
+  ],
+  "faces": 67,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_038",
+  "role": "chassis-alu",
+  "vol_cm3": 0.445,
+  "bbox_mm": [
+   24.9,
+   25.8,
+   1.3
+  ],
+  "faces": 345,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_039",
+  "role": "fastener-dark",
+  "vol_cm3": 0.385,
+  "bbox_mm": [
+   13.4,
+   18.5,
+   16.5
+  ],
+  "faces": 565,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_040",
+  "role": "fastener-dark",
+  "vol_cm3": 0.421,
+  "bbox_mm": [
+   9.6,
+   12.4,
+   12.7
+  ],
+  "faces": 37,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_041",
+  "role": "fastener-dark",
+  "vol_cm3": 0.421,
+  "bbox_mm": [
+   9.6,
+   12.4,
+   12.7
+  ],
+  "faces": 37,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_042",
+  "role": "fastener-dark",
+  "vol_cm3": 0.047,
+  "bbox_mm": [
+   3.6,
+   3.6,
+   11.7
+  ],
+  "faces": 80,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_043",
+  "role": "fastener-dark",
+  "vol_cm3": 0.057,
+  "bbox_mm": [
+   12.6,
+   16.8,
+   1.0
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_044",
+  "role": "fastener-dark",
+  "vol_cm3": 0.057,
+  "bbox_mm": [
+   12.6,
+   16.8,
+   1.0
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_045",
+  "role": "fastener-dark",
+  "vol_cm3": 0.716,
+  "bbox_mm": [
+   16.3,
+   18.3,
+   5.0
+  ],
+  "faces": 961,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_046",
+  "role": "pod-metal",
+  "vol_cm3": 1.007,
+  "bbox_mm": [
+   25.5,
+   17.7,
+   13.0
+  ],
+  "faces": 89,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_047",
+  "role": "pod-metal",
+  "vol_cm3": 1.007,
+  "bbox_mm": [
+   25.3,
+   18.2,
+   13.0
+  ],
+  "faces": 89,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_048",
+  "role": "pod-metal",
+  "vol_cm3": 0.523,
+  "bbox_mm": [
+   13.8,
+   13.8,
+   10.0
+  ],
+  "faces": 39,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_049",
+  "role": "fastener-dark",
+  "vol_cm3": 0.075,
+  "bbox_mm": [
+   13.8,
+   13.8,
+   0.8
+  ],
+  "faces": 6,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_050",
+  "role": "pod-metal",
+  "vol_cm3": 0.666,
+  "bbox_mm": [
+   15.3,
+   22.1,
+   17.8
+  ],
+  "faces": 575,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_051",
+  "role": "pod-metal",
+  "vol_cm3": 2.687,
+  "bbox_mm": [
+   24.8,
+   33.0,
+   39.4
+  ],
+  "faces": 38,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_052",
+  "role": "chassis-alu",
+  "vol_cm3": 0.321,
+  "bbox_mm": [
+   26.9,
+   22.9,
+   3.5
+  ],
+  "faces": 750,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_053",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.4,
+   1.1,
+   6.0
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_054",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.9,
+   1.5,
+   5.0
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_055",
+  "role": "fastener-dark",
+  "vol_cm3": 0.169,
+  "bbox_mm": [
+   7.0,
+   7.0,
+   8.9
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_056",
+  "role": "fastener-dark",
+  "vol_cm3": 0.076,
+  "bbox_mm": [
+   16.5,
+   9.0,
+   12.5
+  ],
+  "faces": 15,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_057",
+  "role": "fastener-dark",
+  "vol_cm3": 0.091,
+  "bbox_mm": [
+   13.7,
+   27.4,
+   6.5
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_058",
+  "role": "fastener-dark",
+  "vol_cm3": 0.042,
+  "bbox_mm": [
+   5.5,
+   14.6,
+   6.5
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_059",
+  "role": "fastener-dark",
+  "vol_cm3": 0.025,
+  "bbox_mm": [
+   4.5,
+   9.2,
+   4.2
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_060",
+  "role": "fastener-dark",
+  "vol_cm3": 0.206,
+  "bbox_mm": [
+   29.6,
+   38.2,
+   15.2
+  ],
+  "faces": 24,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_061",
+  "role": "fastener-dark",
+  "vol_cm3": 0.022,
+  "bbox_mm": [
+   6.2,
+   4.6,
+   5.5
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_062",
+  "role": "fastener-dark",
+  "vol_cm3": 0.022,
+  "bbox_mm": [
+   6.2,
+   4.6,
+   5.5
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_063",
+  "role": "fastener-dark",
+  "vol_cm3": 0.022,
+  "bbox_mm": [
+   6.2,
+   4.6,
+   5.5
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_064",
+  "role": "fastener-dark",
+  "vol_cm3": 0.022,
+  "bbox_mm": [
+   6.2,
+   4.6,
+   5.5
+  ],
+  "faces": 7,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_065",
+  "role": "fastener-dark",
+  "vol_cm3": 0.155,
+  "bbox_mm": [
+   16.0,
+   43.8,
+   14.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_066",
+  "role": "fastener-dark",
+  "vol_cm3": 0.181,
+  "bbox_mm": [
+   17.4,
+   48.0,
+   14.9
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_067",
+  "role": "fastener-dark",
+  "vol_cm3": 0.083,
+  "bbox_mm": [
+   14.5,
+   19.8,
+   7.6
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_068",
+  "role": "fastener-dark",
+  "vol_cm3": 0.089,
+  "bbox_mm": [
+   15.4,
+   17.7,
+   11.4
+  ],
+  "faces": 15,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_069",
+  "role": "chassis-alu",
+  "vol_cm3": 0.135,
+  "bbox_mm": [
+   35.8,
+   31.5,
+   2.2
+  ],
+  "faces": 30,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_070",
+  "role": "fastener-dark",
+  "vol_cm3": 0.09,
+  "bbox_mm": [
+   23.2,
+   11.0,
+   12.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_071",
+  "role": "fastener-dark",
+  "vol_cm3": 0.066,
+  "bbox_mm": [
+   10.5,
+   21.4,
+   2.7
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_072",
+  "role": "fastener-dark",
+  "vol_cm3": 0.072,
+  "bbox_mm": [
+   17.7,
+   18.0,
+   2.2
+  ],
+  "faces": 21,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_073",
+  "role": "fastener-dark",
+  "vol_cm3": 0.055,
+  "bbox_mm": [
+   15.0,
+   16.0,
+   1.8
+  ],
+  "faces": 5,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_074",
+  "role": "fastener-dark",
+  "vol_cm3": 0.084,
+  "bbox_mm": [
+   11.8,
+   20.5,
+   12.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_075",
+  "role": "fastener-dark",
+  "vol_cm3": 0.097,
+  "bbox_mm": [
+   22.2,
+   10.5,
+   13.5
+  ],
+  "faces": 11,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_076",
+  "role": "electro-green",
+  "vol_cm3": 18.7,
+  "bbox_mm": [
+   57.5,
+   34.5,
+   20.0
+  ],
+  "faces": 6,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_077",
+  "role": "chassis-alu",
+  "vol_cm3": 5.974,
+  "bbox_mm": [
+   66.6,
+   70.9,
+   3.5
+  ],
+  "faces": 94,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_078",
+  "role": "weapon-steel",
+  "vol_cm3": 32.668,
+  "bbox_mm": [
+   128.1,
+   136.7,
+   3.5
+  ],
+  "faces": 273,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_079",
+  "role": "weapon-steel",
+  "vol_cm3": 25.651,
+  "bbox_mm": [
+   128.1,
+   136.7,
+   3.9
+  ],
+  "faces": 278,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_080",
+  "role": "shell-tpu",
+  "vol_cm3": 80.134,
+  "bbox_mm": [
+   137.7,
+   131.5,
+   167.8
+  ],
+  "faces": 604,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_081",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_082",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_083",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_084",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_085",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_086",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_087",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_088",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_089",
+  "role": "fastener-dark",
+  "vol_cm3": 0.116,
+  "bbox_mm": [
+   9.3,
+   11.4,
+   11.7
+  ],
+  "faces": 28,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_090",
+  "role": "fastener-dark",
+  "vol_cm3": 0.033,
+  "bbox_mm": [
+   6.6,
+   7.2,
+   6.8
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_091",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.8,
+   7.3,
+   8.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_092",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.8,
+   7.3,
+   8.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_093",
+  "role": "pod-metal",
+  "vol_cm3": 0.797,
+  "bbox_mm": [
+   18.9,
+   25.2,
+   27.9
+  ],
+  "faces": 48,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_094",
+  "role": "pod-metal",
+  "vol_cm3": 1.773,
+  "bbox_mm": [
+   25.4,
+   29.6,
+   28.0
+  ],
+  "faces": 891,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_095",
+  "role": "chassis-alu",
+  "vol_cm3": 0.471,
+  "bbox_mm": [
+   30.8,
+   22.1,
+   5.3
+  ],
+  "faces": 26,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_096",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   4.9,
+   2.5,
+   2.9
+  ],
+  "faces": 2,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_097",
+  "role": "fastener-dark",
+  "vol_cm3": 0.349,
+  "bbox_mm": [
+   11.8,
+   15.4,
+   8.5
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_098",
+  "role": "fastener-dark",
+  "vol_cm3": 0.164,
+  "bbox_mm": [
+   7.7,
+   8.8,
+   8.0
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_099",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.4,
+   9.5,
+   6.0
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_100",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_101",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_102",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_103",
+  "role": "fastener-dark",
+  "vol_cm3": 0.156,
+  "bbox_mm": [
+   7.8,
+   9.5,
+   9.2
+  ],
+  "faces": 37,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_104",
+  "role": "pod-metal",
+  "vol_cm3": 4.305,
+  "bbox_mm": [
+   26.6,
+   35.8,
+   22.6
+  ],
+  "faces": 27,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_105",
+  "role": "pod-metal",
+  "vol_cm3": 3.609,
+  "bbox_mm": [
+   28.7,
+   36.9,
+   22.0
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_106",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_107",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_108",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_109",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_110",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_111",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_112",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_113",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_114",
+  "role": "fastener-dark",
+  "vol_cm3": 0.116,
+  "bbox_mm": [
+   9.1,
+   11.1,
+   11.6
+  ],
+  "faces": 28,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_115",
+  "role": "fastener-dark",
+  "vol_cm3": 0.033,
+  "bbox_mm": [
+   6.6,
+   7.2,
+   6.0
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_116",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.7,
+   7.1,
+   8.4
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_117",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.7,
+   7.1,
+   8.4
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_118",
+  "role": "pod-metal",
+  "vol_cm3": 0.797,
+  "bbox_mm": [
+   18.4,
+   23.9,
+   27.9
+  ],
+  "faces": 48,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_119",
+  "role": "pod-metal",
+  "vol_cm3": 1.773,
+  "bbox_mm": [
+   24.7,
+   29.0,
+   28.0
+  ],
+  "faces": 891,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_120",
+  "role": "chassis-alu",
+  "vol_cm3": 0.471,
+  "bbox_mm": [
+   30.9,
+   22.2,
+   4.9
+  ],
+  "faces": 26,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_121",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   1.9,
+   1.3,
+   2.2
+  ],
+  "faces": 2,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_122",
+  "role": "fastener-dark",
+  "vol_cm3": 0.349,
+  "bbox_mm": [
+   11.7,
+   15.3,
+   8.3
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_123",
+  "role": "fastener-dark",
+  "vol_cm3": 0.164,
+  "bbox_mm": [
+   7.7,
+   8.8,
+   8.0
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_124",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_125",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_126",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_127",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_128",
+  "role": "fastener-dark",
+  "vol_cm3": 0.156,
+  "bbox_mm": [
+   7.8,
+   8.9,
+   9.3
+  ],
+  "faces": 37,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_129",
+  "role": "pod-metal",
+  "vol_cm3": 4.305,
+  "bbox_mm": [
+   26.6,
+   35.8,
+   22.6
+  ],
+  "faces": 27,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_130",
+  "role": "pod-metal",
+  "vol_cm3": 3.609,
+  "bbox_mm": [
+   28.7,
+   36.9,
+   22.0
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_131",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_132",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_133",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_134",
+  "role": "weapon-steel",
+  "vol_cm3": 10.479,
+  "bbox_mm": [
+   47.9,
+   32.8,
+   26.8
+  ],
+  "faces": 46,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_135",
+  "role": "weapon-steel",
+  "vol_cm3": 11.858,
+  "bbox_mm": [
+   36.1,
+   30.9,
+   22.0
+  ],
+  "faces": 45,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_136",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_137",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_138",
+  "role": "fastener-dark",
+  "vol_cm3": 0.122,
+  "bbox_mm": [
+   4.9,
+   4.9,
+   19.1
+  ],
+  "faces": 23,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_139",
+  "role": "weapon-steel",
+  "vol_cm3": 10.479,
+  "bbox_mm": [
+   47.9,
+   32.8,
+   26.8
+  ],
+  "faces": 46,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_140",
+  "role": "weapon-steel",
+  "vol_cm3": 11.858,
+  "bbox_mm": [
+   36.1,
+   30.9,
+   22.0
+  ],
+  "faces": 45,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_141",
+  "role": "electro-green",
+  "vol_cm3": 4.474,
+  "bbox_mm": [
+   32.0,
+   37.7,
+   35.0
+  ],
+  "faces": 4,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_142",
+  "role": "electro-green",
+  "vol_cm3": 5.76,
+  "bbox_mm": [
+   29.4,
+   34.5,
+   32.0
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_143",
+  "role": "electro-green",
+  "vol_cm3": 4.474,
+  "bbox_mm": [
+   32.0,
+   37.7,
+   35.0
+  ],
+  "faces": 4,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_144",
+  "role": "electro-green",
+  "vol_cm3": 5.76,
+  "bbox_mm": [
+   29.4,
+   34.5,
+   32.0
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ }
+]

@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Printing — Eyeliner</title><link rel="stylesheet" href="styles.css"/></head>
+<body><header class="nav"><a class="brand" href="index.html"><span class="dot"></span> EYELINER · 3LB MELTY</a><nav><a href="index.html">Hero + 3D</a><a href="build.html">Build</a><a href="pcbway.html">PCBWay files</a><a href="printing.html" class="active">3D printing</a><a href="parts.html">Parts</a><a href="firmware.html">Firmware + AI cam</a></nav></header>
+<div class="page"><h1>3D printing — unsliced on purpose</h1>
+<div class="warn">No pre-sliced G-code here. чужой G-code crashes nozzles. We give <b>STL (unsliced)</b>, you slice for <b>your printer + your spool</b>. Upload any STL on the <a href="index.html">hero 3D viewer</a> to preview.</div>
+<h2>1 · Get the STLs</h2><p>Export from <code>Main CAD.step</code> / <code>Wheel Pod.step</code>: isolate plastic body → Export STL binary (~0.1 mm chord) → <code>3d-printing/stl/NN-part-name.stl</code>. Typical: TPU shell halves, pod guards, LED mount, Pi/BEC mount, battery tray, wheel locks. Ring/teeth/plates/shafts are NEVER printed.</p>
+<h2>2 · What material</h2><table><tr><th>Use</th><th>For</th></tr><tr><td><b>TPU 95A</b> (Overture/SainSmart/Cheetah)</td><td>shell, cradle, guards — the shock absorber. Liftoff retired HDPE/UHMW for this.</td></tr><tr><td>PETG / ABS-ASA</td><td>jigs, pit stand, LED mounts</td></tr><tr><td>PLA</td><td>fit-check only — shatters in fights</td></tr></table>
+<h2>3 · Slice (Orca / Bambu / PrusaSlicer)</h2>
+<div class="step"><h3>TPU 95A — direct-drive strongly preferred</h3><p>Nozzle 225–240 °C, bed 40–60 °C + glue. Speed 20–35 mm/s. Retraction OFF or ≤1 mm, pressure advance OFF to start. Walls 4–6, top/bottom 5–6, infill 30–60 % gyroid (dense cradle, not hollow). Seam rear, no auto-supports in shock webs. Dry spool 65 °C 4–6 h — wet TPU = #1 failure.</p></div>
+<div class="step"><h3>PETG/ASA</h3><p>4 walls, 40 %+ gyroid, brim for tall pods.</p></div>
+<h2>4 · Finish</h2><p>Heat-set inserts M3/M4 with 200–220 °C iron — never tap TPU. Weigh prints, log in BOM. Don't print shell 100 % solid “for strength” — TPU 1.21 g/cc gets heavy; walls do the work.</p>
+</div></body></html>

@@ -1,0 +1,302 @@
+[
+ {
+  "node": "solid_000",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_001",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_002",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_003",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_004",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_005",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_006",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_007",
+  "role": "fastener-dark",
+  "vol_cm3": 0.001,
+  "bbox_mm": [
+   1.2,
+   1.2,
+   1.2
+  ],
+  "faces": 1,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_008",
+  "role": "fastener-dark",
+  "vol_cm3": 0.116,
+  "bbox_mm": [
+   9.3,
+   11.4,
+   11.7
+  ],
+  "faces": 28,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_009",
+  "role": "fastener-dark",
+  "vol_cm3": 0.033,
+  "bbox_mm": [
+   6.6,
+   7.2,
+   6.8
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_010",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.8,
+   7.3,
+   8.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_011",
+  "role": "fastener-dark",
+  "vol_cm3": 0.002,
+  "bbox_mm": [
+   4.8,
+   7.3,
+   8.8
+  ],
+  "faces": 9,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_012",
+  "role": "pod-metal",
+  "vol_cm3": 0.797,
+  "bbox_mm": [
+   18.9,
+   25.2,
+   27.9
+  ],
+  "faces": 48,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_013",
+  "role": "pod-metal",
+  "vol_cm3": 1.773,
+  "bbox_mm": [
+   25.4,
+   29.6,
+   28.0
+  ],
+  "faces": 891,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_014",
+  "role": "chassis-alu",
+  "vol_cm3": 0.471,
+  "bbox_mm": [
+   30.8,
+   22.1,
+   5.3
+  ],
+  "faces": 26,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_015",
+  "role": "fastener-dark",
+  "vol_cm3": 0.0,
+  "bbox_mm": [
+   4.9,
+   2.5,
+   2.9
+  ],
+  "faces": 2,
+  "dropped_from_glb": true
+ },
+ {
+  "node": "solid_016",
+  "role": "fastener-dark",
+  "vol_cm3": 0.349,
+  "bbox_mm": [
+   11.8,
+   15.4,
+   8.5
+  ],
+  "faces": 10,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_017",
+  "role": "fastener-dark",
+  "vol_cm3": 0.164,
+  "bbox_mm": [
+   7.7,
+   8.8,
+   8.0
+  ],
+  "faces": 12,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_018",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.4,
+   9.5,
+   6.0
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_019",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_020",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_021",
+  "role": "fastener-dark",
+  "vol_cm3": 0.117,
+  "bbox_mm": [
+   11.3,
+   9.3,
+   5.5
+  ],
+  "faces": 19,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_022",
+  "role": "fastener-dark",
+  "vol_cm3": 0.156,
+  "bbox_mm": [
+   7.8,
+   9.5,
+   9.2
+  ],
+  "faces": 37,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_023",
+  "role": "pod-metal",
+  "vol_cm3": 4.305,
+  "bbox_mm": [
+   26.6,
+   35.8,
+   22.6
+  ],
+  "faces": 27,
+  "dropped_from_glb": false
+ },
+ {
+  "node": "solid_024",
+  "role": "pod-metal",
+  "vol_cm3": 3.609,
+  "bbox_mm": [
+   28.7,
+   36.9,
+   22.0
+  ],
+  "faces": 41,
+  "dropped_from_glb": false
+ }
+]
