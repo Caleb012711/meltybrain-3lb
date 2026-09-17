@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
 import { ExplodingModel, GlErrorBoundary, useModelParts, type ColorMode } from '../components/CadViewer';
-import { ROLE_CSS, ROLE_LABELS, partLabel, type PartInfo } from '../components/materials';
+import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel, type PartInfo } from '../components/materials';
 import { Reveal } from '../components/Layout';
 
 function roleOf(parts: PartInfo[], i: number): string {
@@ -407,6 +407,8 @@ export function Explorer() {
                 <dl>
                   <dt>Volume</dt>
                   <dd>{sel.vol_cm3} cm³</dd>
+                  <dt>Mass</dt>
+                  <dd>{massLabel(sel.role, sel.vol_cm3)}</dd>
                   <dt>BBox</dt>
                   <dd>{sel.bbox_mm.map((d) => d.toFixed(1)).join(' × ')} mm</dd>
                   <dt>CAD faces</dt>

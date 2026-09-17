@@ -7,7 +7,7 @@ import { cadModels } from '../data/content';
 import { BUILD_GUIDE, STEP_ROLES, type BuildStepKey } from '../data/buildGuide';
 import { usePrefersReducedMotion } from '../hooks/hooks';
 import { ExplodingModel, GlErrorBoundary, useModelParts, EMPTY_SET } from '../components/CadViewer';
-import { ROLE_CSS, ROLE_LABELS, partLabel } from '../components/materials';
+import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel } from '../components/materials';
 
 // ---------- drive physics (arcade melty: no spin = no move) ----------
 const RPM_MAX = 4000;
@@ -89,27 +89,32 @@ function DriveBot({
   useFrame((_, delta) => {
     const st = stateRef.current;
     stepDrive(st, inputRef.current, delta);
-    if (group.current) group.current.position.set(st.pos.x, 1.6, st.pos.y);
-    if (spinner.current && !reduced) spinner.current.rotation.y = st.spinAngle;
+    if (group.current) group.current.position.set(st.pos.x, 2.05, st.pos.y);
+    if (spinner.current && !reduced) spinner.current.rotation.z = st.spinAngle;
   });
   return (
-    <group ref={group} position={[0, 1.6, 0]}>
-      <group ref={spinner}>
-        <ExplodingModel
-          url="cad/main-cad.glb"
-          parts={parts}
-          explode={0}
-          wireframe={false}
-          xray={false}
-          spin={false}
-          colorMode="role"
-          selected={null}
-          hovered={null}
-          hidden={EMPTY_SET}
-          isolated={null}
-          onSelect={() => undefined}
-          onHover={() => undefined}
-        />
+    // CAD is Z-up with the weapon axis along Z; level it flat (rotation.x)
+    // so the ring lies horizontal on the arena floor, then spin the inner
+    // group about its own Z — which is world-vertical after leveling.
+    <group ref={group} position={[0, 2.05, 0]}>
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <group ref={spinner}>
+          <ExplodingModel
+            url="cad/main-cad.glb"
+            parts={parts}
+            explode={0}
+            wireframe={false}
+            xray={false}
+            spin={false}
+            colorMode="role"
+            selected={null}
+            hovered={null}
+            hidden={EMPTY_SET}
+            isolated={null}
+            onSelect={() => undefined}
+            onHover={() => undefined}
+          />
+        </group>
       </group>
     </group>
   );
@@ -138,7 +143,7 @@ function DriveCam({
     }
     const k = 1 - Math.exp(-3.0 * Math.min(delta, 0.05));
     camera.position.lerp(desired.current, k);
-    const ly = top ? 0 : 1.0;
+    const ly = top ? 0 : 1.6;
     look.current.lerp(
       new THREE.Vector3(st.pos.x, ly, st.pos.y),
       1 - Math.exp(-4.0 * Math.min(delta, 0.05))
@@ -910,6 +915,8 @@ export function Studio() {
                     <dd>{selGuide.stepDetail}</dd>
                     <dt>Volume</dt>
                     <dd>{bparts[selected].vol_cm3} cm³</dd>
+                    <dt>Mass</dt>
+                    <dd>{massLabel(bparts[selected].role, bparts[selected].vol_cm3)}</dd>
                     <dt>BBox</dt>
                     <dd>{bparts[selected].bbox_mm.map((d) => d.toFixed(1)).join(' × ')} mm</dd>
                   </dl>

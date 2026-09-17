@@ -69,5 +69,16 @@ export interface PartInfo {
 
 export function partLabel(p: PartInfo, index: number): string {
   const dims = p.bbox_mm.map((d) => d.toFixed(1)).join('×');
-  return `#${index} ${p.role} · ${dims} mm · ${p.vol_cm3} cm³`;
+  return `#${index} ${p.role} · ${dims} mm · ${p.vol_cm3} cm³ · ${massLabel(p.role, p.vol_cm3)}`;
+}
+
+// Mass from measured volume × material density. Weapon shows both sides of
+// the steel-vs-titanium decision; keepouts show an aluminum reference.
+export function massLabel(role: string, volCm3: number): string {
+  const g = (d: number) => `${(volCm3 * d).toFixed(1)} g`;
+  if (role === 'weapon-steel') return `${g(7.85)} steel / ${g(4.43)} Ti`;
+  if (role === 'shell-tpu') return `${g(1.21)} TPU`;
+  if (role === 'electro-green') return `${g(2.7)} alu ref (keepout)`;
+  if (role === 'chassis-alu' || role === 'pod-metal') return `${g(2.7)} alu`;
+  return `${g(7.85)} steel`;
 }
