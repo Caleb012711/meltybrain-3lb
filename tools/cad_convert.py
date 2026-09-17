@@ -19,6 +19,11 @@ def solid_stats(solid):
     props = GProp_GProps()
     BRepGProp.VolumeProperties_s(solid, props)
     vol_cm3 = round(props.Mass() / 1000.0, 3)
+    try:
+        cog = props.CentreOfMass()
+        centroid = [round(cog.X(), 1), round(cog.Y(), 1), round(cog.Z(), 1)]
+    except Exception:
+        centroid = [0.0, 0.0, 0.0]
     box = Bnd_Box()
     BRepBndLib.Add_s(solid, box)
     try:
@@ -27,7 +32,7 @@ def solid_stats(solid):
     except Exception:
         xmin = ymin = zmin = xmax = ymax = zmax = 0.0
     bbox = [round(xmax - xmin, 1), round(ymax - ymin, 1), round(zmax - zmin, 1)]
-    return vol_cm3, bbox, nfaces
+    return vol_cm3, bbox, nfaces, centroid
 
 
 def assign_role(vol, bbox, faces):
@@ -51,6 +56,8 @@ def assign_role(vol, bbox, faces):
     if 2 <= vol <= 20 and faces <= 12 and chunk >= 0.3:
         return "electro-green"
     if 0.5 <= vol < 8 and dmin >= 8 and faces >= 15:
+        return "pod-metal"
+    if vol < 8 and faces >= 300:
         return "pod-metal"
     return "fastener-dark"
 
@@ -76,7 +83,7 @@ def step_to_meshes(path, linear=0.1, angular=0.2618):
     while exp.More():
         solid = exp.Current()
         n += 1
-        vol_cm3, bbox, nfaces = solid_stats(solid)
+        vol_cm3, bbox, nfaces, centroid = solid_stats(solid)
         BRepMesh_IncrementalMesh(solid, linear, False, angular, True)
         # walk faces via explorer for triangulation
         from OCP.TopExp import TopExp_Explorer as E2
@@ -85,6 +92,7 @@ def step_to_meshes(path, linear=0.1, angular=0.2618):
         from OCP.Poly import Poly_Triangulation
         fe = E2(solid, TopAbs_FACE)
         from OCP.TopoDS import TopoDS
+        from OCP.TopAbs import TopAbs_REVERSED
         verts_all, faces_all = [], []
         voff = 0
         while fe.More():
@@ -93,6 +101,7 @@ def step_to_meshes(path, linear=0.1, angular=0.2618):
             tri = BT.Triangulation_s(face, loc)
             if tri is None:
                 fe.Next(); continue
+            rev = face.Orientation() == TopAbs_REVERSED
             tr = loc.Transformation()
             # nodes
             nn = tri.NbNodes()
@@ -106,22 +115,37 @@ def step_to_meshes(path, linear=0.1, angular=0.2618):
             for i in range(1, nt+1):
                 t = tri.Triangle(i)
                 a, b, c = t.Get()
-                fl.append([a-1+voff, b-1+voff, c-1+voff])
+                if rev:
+                    fl.append([a-1+voff, c-1+voff, b-1+voff])
+                else:
+                    fl.append([a-1+voff, b-1+voff, c-1+voff])
             verts_all.append(arr); faces_all.extend(fl)
             voff += nn
             fe.Next()
         if verts_all:
             V = np.vstack(verts_all)
             F = np.array(faces_all, dtype=np.int64)
-            m = trimesh.Trimesh(vertices=V, faces=F, process=True)
-            m.remove_infinite_values()
+            m = trimesh.Trimesh(vertices=V, faces=F, process=False)
+            m.merge_vertices(merge_tex=True, merge_norm=True, digits_vertex=8, digits_norm=8)
             m.update_faces(m.nondegenerate_faces())
+            m.remove_infinite_values()
+            m.remove_unreferenced_vertices()
+            try:
+                m.fix_inversion()
+            except Exception:
+                pass
+            m.fix_normals()
+            m.process(validate=True)
             meshes.append(m)
+            q = 1 if (vol_cm3 < 0.01 or nfaces <= 6) else 0
             stats.append({
                 "vol_cm3": vol_cm3,
                 "bbox_mm": bbox,
                 "faces": nfaces,
                 "role": assign_role(vol_cm3, bbox, nfaces),
+                "c": centroid,
+                "m": [round(vol_cm3 * 7.85, 1), round(vol_cm3 * 2.7, 1)],
+                "q": q,
             })
         exp.Next()
     return meshes, stats, n
@@ -141,10 +165,10 @@ def main():
     if a.all:
         # (src, name, linear_mm, angular_rad, face_budget, min_share)
         jobs = [
-            (f"{root}/Standard Weapon Teeth.step", "standard-weapon-teeth", 0.03, 0.11, 60000, 2000),
-            (f"{root}/Undercutter Config.step", "undercutter-config", 0.05, 0.12, 120000, 1500),
-            (f"{root}/Wheel Pod.step", "wheel-pod", 0.05, 0.15, 150000, 1000),
-            (f"{root}/Main CAD.step", "main-cad", 0.05, 0.15, 180000, 600),
+            (f"{root}/Standard Weapon Teeth.step", "standard-weapon-teeth", 0.025, 0.08, 40000, 2000),
+            (f"{root}/Undercutter Config.step", "undercutter-config", 0.04, 0.10, 60000, 1500),
+            (f"{root}/Wheel Pod.step", "wheel-pod", 0.04, 0.10, 110000, 1000),
+            (f"{root}/Main CAD.step", "main-cad", 0.05, 0.12, 140000, 800),
         ]
     else:
         if not a.inp or not a.name:
@@ -163,7 +187,7 @@ def main():
         # degenerate thread artifacts: keep in STL/manifest, drop from GLB
         keep = []
         for m, st in zip(meshes, stats):
-            degen = (st["faces"] < 8 and st["vol_cm3"] < 0.005)
+            degen = (st["vol_cm3"] < 0.01)
             st["dropped_from_glb"] = bool(degen)
             if not degen:
                 keep.append((m, st))

@@ -1,49 +1,49 @@
 [
  {
   "filename": "standard-weapon-teeth.stl",
-  "bytes": 1242584,
+  "bytes": 1999984,
   "solids": 2,
   "units": "mm"
  },
  {
   "filename": "standard-weapon-teeth.glb",
-  "bytes": 448536,
+  "bytes": 721204,
   "solids": 2,
   "units": "mm"
  },
  {
   "filename": "undercutter-config.stl",
-  "bytes": 1962084,
+  "bytes": 2461284,
   "solids": 10,
   "units": "mm"
  },
  {
   "filename": "undercutter-config.glb",
-  "bytes": 565672,
+  "bytes": 717192,
   "solids": 10,
   "units": "mm"
  },
  {
   "filename": "wheel-pod.stl",
-  "bytes": 6556684,
+  "bytes": 5668484,
   "solids": 25,
   "units": "mm"
  },
  {
   "filename": "wheel-pod.glb",
-  "bytes": 2207404,
+  "bytes": 1878444,
   "solids": 25,
   "units": "mm"
  },
  {
   "filename": "main-cad.stl",
-  "bytes": 12645234,
+  "bytes": 13461884,
   "solids": 145,
   "units": "mm"
  },
  {
   "filename": "main-cad.glb",
-  "bytes": 4147252,
+  "bytes": 4427640,
   "solids": 145,
   "units": "mm"
  }

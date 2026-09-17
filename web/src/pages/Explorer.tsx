@@ -132,7 +132,12 @@ export function Explorer() {
                 <Canvas
                   camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
                   dpr={[1, 1.5]}
-                  onCreated={({ gl }) => gl.setClearColor('#ffffff')}
+                  onCreated={({ gl }) => {
+                    gl.toneMapping = THREE.NeutralToneMapping;
+                    gl.toneMappingExposure = 1.0;
+                    gl.outputColorSpace = THREE.SRGBColorSpace;
+                    gl.setClearColor('#ffffff', 1);
+                  }}
                   role="img"
                   aria-label={`3D explorer, ${model.label}, ${count} parts`}
                 >
@@ -244,11 +249,18 @@ export function Explorer() {
               </button>
             </div>
             <p className="status" role="status">
-              {model.label} · {count} parts{parts.length > 0 && <> ({meshed} meshed, {count - meshed} thread specks stats-only)</>} · {meshed - hidden.size} meshed visible
-              {isolated !== null && <> · isolated #{isolated} — <button className="mini" onClick={() => setIsolated(null)}>Exit isolate</button></>}
-              {hovered !== null && <> · hover #{hovered}</>}
+              {model.label} · {count} parts{parts.length > 0 && <> ({meshed} meshed, {count - meshed} thread specks stats-only)</>} ·{' '}
+              {isolated !== null ? `showing isolated #${isolated}` : `${meshed - hidden.size} meshed visible`}
             </p>
-            <div className="legend" aria-label="Heuristic material roles, verify in CAD">
+            {isolated !== null && (
+              <p className="status">
+                Isolated #{isolated} —{' '}
+                <button className="mini" onClick={() => setIsolated(null)}>
+                  Exit isolate
+                </button>
+              </p>
+            )}
+            <div className="legend" role="group" aria-label="Heuristic material roles, verify in CAD">
               <span className="meta" style={{ width: '100%' }}>
                 Heuristic roles from size — verify alloy in CAD, not measured:
               </span>
@@ -263,7 +275,7 @@ export function Explorer() {
 
           <Reveal>
             <div className="step" style={{ marginTop: 12 }}>
-              <h3>Direct downloads — {model.label}</h3>
+              <h2>Direct downloads — {model.label}</h2>
               <p className="path">
                 <b>cad/</b>
                 <i>/</i>
@@ -305,7 +317,7 @@ export function Explorer() {
                 onChange={(e) => setRoleFilter(e.target.value)}
                 style={{ minHeight: 40, flex: 1 }}
               >
-                <option value="all">All roles ({count})</option>
+                <option value="all">All roles ({parts.length > 0 ? count : '…'})</option>
                 {rolesPresent.map((r) => (
                   <option key={r} value={r}>
                     {(ROLE_LABELS as Record<string, string>)[r] ?? r}
@@ -420,8 +432,13 @@ export function Explorer() {
                   <button className="mini" onClick={() => selected !== null && isolatePart(selected)} disabled={selected !== null && !!parts[selected]?.dropped_from_glb} title={selected !== null && parts[selected]?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}>
                     Isolate
                   </button>
-                  <button className="mini" onClick={() => toggleHide(selected)}>
-                    {hidden.has(selected) ? 'Show' : 'Hide'}
+                  <button
+                    className="mini"
+                    onClick={() => toggleHide(selected)}
+                    disabled={selected !== null && !!parts[selected]?.dropped_from_glb}
+                    title={selected !== null && parts[selected]?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}
+                  >
+                    {selected !== null && hidden.has(selected) ? 'Show' : 'Hide'}
                   </button>
                   <button className="mini" onClick={() => setSelected(null)}>
                     Clear

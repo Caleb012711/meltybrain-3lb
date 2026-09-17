@@ -36,9 +36,10 @@ Outputs per assembly (`web/public/cad/`):
 | Undercutter Config | 10 | 226→553 KB | 1.9 MB | 458 KB |
 
 GLB keeps one node per solid (`solid_NNN`, original indices) so the viewer can
-explode the assembly. Thread-speck degenerates (`faces < 8` and `vol < 0.005 cm³`)
-are dropped from the GLB only — flagged `dropped_from_glb` in `*.parts.json` —
-while STL, manifest, and mass stats keep every solid. Roles
+explode the assembly. Thread-speck degenerates (`vol < 0.01 cm³`) are dropped from the
+GLB only — flagged `dropped_from_glb` in `*.parts.json`. STLs are decimated previews
+from the viewer mesh set (do not measure — STEP is the source); mass truth lives in
+`*.parts.json`. Roles
 (`weapon-steel`, `chassis-alu`, `pod-metal`, `fastener-dark`, `shell-tpu`,
 `electro-green`) are a volume-plus-bbox heuristic, labeled as such in the UI.
 Viewer materials render `DoubleSide` so thin sheet solids never cull to slivers.

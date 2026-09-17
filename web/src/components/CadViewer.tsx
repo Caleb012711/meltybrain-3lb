@@ -2,7 +2,6 @@ import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNo
 import * as THREE from 'three';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
 import { indexColor, roleMaterial, type PartInfo } from './materials';
@@ -29,16 +28,24 @@ export class GlErrorBoundary extends Component<
 }
 const EMISSIVE_ORANGE = new THREE.Color('#e8490f');
 
+const partsCache = new Map<string, Promise<PartInfo[]>>();
+
 async function loadParts(modelId: string): Promise<PartInfo[]> {
-  const base = cadModels.find((m) => m.id === modelId)?.glb ?? '';
-  const url = base.replace(/\.glb$/, '.parts.json');
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return [];
-    return (await r.json()) as PartInfo[];
-  } catch {
-    return [];
-  }
+  const hit = partsCache.get(modelId);
+  if (hit) return hit;
+  const p = (async () => {
+    const base = cadModels.find((m) => m.id === modelId)?.glb ?? '';
+    const url = base.replace(/\.glb$/, '.parts.json');
+    try {
+      const r = await fetch(encodeURI(url));
+      if (!r.ok) return [];
+      return (await r.json()) as PartInfo[];
+    } catch {
+      return [];
+    }
+  })();
+  partsCache.set(modelId, p);
+  return p;
 }
 
 export function useModelParts(modelId: string) {
@@ -101,6 +108,9 @@ export function ExplodingModel({
       }),
     []
   );
+  useEffect(() => () => {
+    xrayMat.dispose();
+  }, [xrayMat]);
 
   const scene = useMemo(() => {
     const s = gltf.scene.clone(true);
@@ -362,6 +372,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
   const [spin, setSpin] = useState(!reduced);
   const [stlGeo, setStlGeo] = useState<THREE.BufferGeometry | null>(null);
   const [stlName, setStlName] = useState('');
+  const [stlErr, setStlErr] = useState('');
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const parts = useModelParts(modelId);
@@ -381,11 +392,15 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
   const onStlFile = async (f: File | undefined) => {
     if (!f) return;
     if (f.size > 20 * 1024 * 1024) {
-      alert('STL over 20 MB — export a single part first.');
+      setStlErr('STL over 20 MB — export a single part first.');
       return;
     }
+    setStlErr('');
     try {
       const buf = await f.arrayBuffer();
+      const { STLLoader } = (await import(
+        'three/examples/jsm/loaders/STLLoader.js'
+      )) as unknown as { STLLoader: new () => { parse(b: ArrayBuffer): THREE.BufferGeometry } };
       const geo = new STLLoader().parse(buf);
       geo.computeVertexNormals();
       setStlGeo((prev) => {
@@ -394,7 +409,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
       });
       setStlName(f.name);
     } catch {
-      alert('Could not parse that STL.');
+      setStlErr('Could not parse that STL — is it a binary or ASCII .stl file?');
     }
   };
 
@@ -427,7 +442,12 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
         <Canvas
           camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
           dpr={[1, 1.5]}
-          onCreated={({ gl }) => gl.setClearColor('#ffffff')}
+          onCreated={({ gl }) => {
+            gl.toneMapping = THREE.NeutralToneMapping;
+            gl.toneMappingExposure = 1.0;
+            gl.outputColorSpace = THREE.SRGBColorSpace;
+            gl.setClearColor('#ffffff', 1);
+          }}
           role="img"
           aria-label={`3D model of Eyeliner combat robot, ${model.label}`}
         >
@@ -574,6 +594,11 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
           </button>
         )}
       </div>
+      {stlErr && (
+        <p className="status" role="alert" style={{ color: 'var(--danger)' }}>
+          {stlErr}
+        </p>
+      )}
       <p className="status path" role="status">
         <b>{model.label}</b> <i>·</i> {model.solids} solids, heuristic roles <i>·</i>{' '}
         <a href={cadHref(model.step)} download>

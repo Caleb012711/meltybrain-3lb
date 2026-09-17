@@ -79,6 +79,7 @@ export function massLabel(role: string, volCm3: number): string {
   if (role === 'weapon-steel') return `${g(7.85)} steel / ${g(4.43)} Ti`;
   if (role === 'shell-tpu') return `${g(1.21)} TPU`;
   if (role === 'electro-green') return `${g(2.7)} alu ref (keepout)`;
-  if (role === 'chassis-alu' || role === 'pod-metal') return `${g(2.7)} alu`;
+  if (role === 'chassis-alu') return `${g(2.7)} alu`;
+  if (role === 'pod-metal') return `${g(2.7)} alu / ${g(4.43)} Ti`;
   return `${g(7.85)} steel`;
 }

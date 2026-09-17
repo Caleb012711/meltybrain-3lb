@@ -453,7 +453,7 @@
    1.3
   ],
   "faces": 67,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_038",
@@ -469,7 +469,7 @@
  },
  {
   "node": "solid_039",
-  "role": "fastener-dark",
+  "role": "pod-metal",
   "vol_cm3": 0.385,
   "bbox_mm": [
    13.4,
@@ -541,7 +541,7 @@
  },
  {
   "node": "solid_045",
-  "role": "fastener-dark",
+  "role": "pod-metal",
   "vol_cm3": 0.716,
   "bbox_mm": [
    16.3,
@@ -645,7 +645,7 @@
    6.0
   ],
   "faces": 11,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_054",
@@ -657,7 +657,7 @@
    5.0
   ],
   "faces": 11,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_055",
@@ -1101,7 +1101,7 @@
    8.8
   ],
   "faces": 9,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_092",
@@ -1113,7 +1113,7 @@
    8.8
   ],
   "faces": 9,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_093",
@@ -1401,7 +1401,7 @@
    8.4
   ],
   "faces": 9,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_117",
@@ -1413,7 +1413,7 @@
    8.4
   ],
   "faces": 9,
-  "dropped_from_glb": false
+  "dropped_from_glb": true
  },
  {
   "node": "solid_118",
@@ -1456,9 +1456,9 @@
   "role": "fastener-dark",
   "vol_cm3": 0.0,
   "bbox_mm": [
-   1.9,
-   1.3,
-   2.2
+   2.3,
+   1.7,
+   2.6
   ],
   "faces": 2,
   "dropped_from_glb": true

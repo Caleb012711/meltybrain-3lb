@@ -11,18 +11,18 @@ import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel } from '../components/mater
 
 // ---------- drive physics (arcade melty: no spin = no move) ----------
 const RPM_MAX = 4000;
-const TAU_UP = 1.2;
-const TAU_DOWN = 2.0;
-const MAX_SPEED = 8.0;
-const K_ACCEL = 3.5;
-const K_DRAG = 1.5;
+const TAU_UP = 0.9;
+const TAU_DOWN = 1.3;
+const MAX_SPEED = 8.5;
+const K_ACCEL = 6.5;
+const K_DRAG = 4.5;
 const K_BRAKE = 6.0;
-const GRIP_LO = 600;
-const GRIP_HI = 3000;
-const GRIP_EXP = 1.2;
+const GRIP_LO = 1400;
+const GRIP_HI = 3100;
+const GRIP_EXP = 2.8;
 const HALF = 15;
 const BOT_R = 2.0;
-const BOUNCE = 0.35;
+const BOUNCE = 0.45;
 const TRAIL_N = 120;
 
 type DriveState = {
@@ -31,6 +31,8 @@ type DriveState = {
   rpm: number;
   throttleSm: number;
   spinAngle: number;
+  visOmega: number;
+  hitT: number;
 };
 
 type DriveInput = {
@@ -54,16 +56,34 @@ function stepDrive(st: DriveState, inp: DriveInput, dt: number) {
   const tvy = inp.move.y * MAX_SPEED * grip;
   st.vel.x += (tvx - st.vel.x) * (1 - Math.exp(-k * d));
   st.vel.y += (tvy - st.vel.y) * (1 - Math.exp(-k * d));
-  if (inp.brake) st.vel.multiplyScalar(Math.exp(-2.0 * d));
+  // brake = strong approach-to-zero only (no extra multiplier so K_BRAKE means what it says)
   st.pos.x += st.vel.x * d;
   st.pos.y += st.vel.y * d;
   const lim = HALF - BOT_R;
-  if (st.pos.x > lim) { st.pos.x = lim; st.vel.x *= -BOUNCE; }
-  if (st.pos.x < -lim) { st.pos.x = -lim; st.vel.x *= -BOUNCE; }
-  if (st.pos.y > lim) { st.pos.y = lim; st.vel.y *= -BOUNCE; }
-  if (st.pos.y < -lim) { st.pos.y = -lim; st.vel.y *= -BOUNCE; }
-  const omega = ((st.rpm * 2 * Math.PI) / 60) * 0.05;
-  st.spinAngle += omega * d;
+  // Per-axis resolve with min rebound so slow rolls still kick off the wall.
+  // Cooldown stops machine-gun re-trigger while grinding.
+  if (st.hitT > 0) { st.hitT -= d; return grip; }
+  if (st.pos.x > lim || st.pos.x < -lim) {
+    const sgn = st.pos.x > 0 ? 1 : -1;
+    st.pos.x = sgn * lim;
+    st.vel.x *= -BOUNCE;
+    st.vel.y *= 0.85; // wall scrub bleeds tangent speed
+    if (Math.abs(st.vel.x) < 2.5) st.vel.x = -sgn * 2.5;
+    st.hitT = 0.12; // bounce cooldown
+  }
+  if (st.pos.y > lim || st.pos.y < -lim) {
+    const sgn = st.pos.y > 0 ? 1 : -1;
+    st.pos.y = sgn * lim;
+    st.vel.y *= -BOUNCE;
+    st.vel.x *= 0.85;
+    if (Math.abs(st.vel.y) < 2.5) st.vel.y = -sgn * 2.5;
+    st.hitT = 0.12;
+  }
+  if (st.hitT > 0) st.hitT -= d;
+  const omegaTrue = ((st.rpm * 2 * Math.PI) / 60) * 0.05;
+  const omegaWant = Math.min(omegaTrue, 8);
+  st.visOmega += (omegaWant - st.visOmega) * (1 - Math.exp(-d / 0.3));
+  st.spinAngle += st.visOmega * d;
   st.throttleSm += ((inp.throttle ? 1 : 0) - st.throttleSm) * (1 - Math.exp(-8 * d));
   return grip;
 }
@@ -71,6 +91,7 @@ function stepDrive(st: DriveState, inp: DriveInput, dt: number) {
 const HANDLED = new Set([
   'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space',
   'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyR', 'KeyX',
+  'ShiftLeft', 'ShiftRight',
 ]);
 
 function DriveBot({
@@ -114,8 +135,107 @@ function DriveBot({
             onSelect={() => undefined}
             onHover={() => undefined}
           />
+          {/* heading LED on the rim — rotates with the bot, the steering cue */}
+          <mesh position={[2.4, 0, 0]}>
+            <sphereGeometry args={[0.22, 12, 12]} />
+            <meshBasicMaterial color="#12b76a" toneMapped={false} />
+          </mesh>
         </group>
       </group>
+    </group>
+  );
+}
+
+const _camDir = new THREE.Vector2();
+const _camWant = new THREE.Vector3();
+const _camLook = new THREE.Vector3();
+
+const _aiD = new THREE.Vector2();
+const _aiN = new THREE.Vector2();
+const _aiLead = new THREE.Vector2();
+
+function RivalBot({
+  selfRef,
+  foeRef,
+  parts,
+  reduced,
+}: {
+  selfRef: React.MutableRefObject<DriveState>;
+  foeRef: React.MutableRefObject<DriveState>;
+  parts: Parameters<typeof ExplodingModel>[0]['parts'];
+  reduced: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const spinner = useRef<THREE.Group>(null);
+  const inp = useRef<DriveInput>({ move: new THREE.Vector2(1, 0), throttle: true, brake: false });
+  useFrame(({ clock }, delta) => {
+    const me = selfRef.current;
+    const foe = foeRef.current;
+    // seek with velocity lead + strafe wobble; flee to spin up; avoid walls
+    const lim = HALF - BOT_R - 3;
+    if (Math.abs(me.pos.x) > lim || Math.abs(me.pos.y) > lim) {
+      _aiD.set(-me.pos.x, -me.pos.y).normalize();
+      inp.current.move.set(_aiD.y * 0.6 + _aiD.x, -_aiD.x * 0.6 + _aiD.y).normalize();
+    } else if (me.rpm < 1200) {
+      _aiD.copy(me.pos).sub(foe.pos);
+      if (_aiD.lengthSq() > 1e-6) inp.current.move.copy(_aiD.normalize());
+    } else {
+      _aiLead.copy(foe.pos).addScaledVector(foe.vel, 0.35);
+      _aiD.copy(_aiLead).sub(me.pos);
+      if (_aiD.lengthSq() > 1e-6) {
+        _aiD.normalize();
+        const w = Math.sin(clock.elapsedTime * 2) * 0.3;
+        inp.current.move.set(_aiD.x + -_aiD.y * w, _aiD.y + _aiD.x * w).normalize();
+      }
+    }
+    inp.current.throttle = true;
+    inp.current.brake = false;
+    stepDrive(me, inp.current, delta);
+    // collide: split penetration, reflect approach, both lose RPM
+    _aiN.copy(me.pos).sub(foe.pos);
+    const d = _aiN.length();
+    const minD = BOT_R * 2;
+    if (d > 1e-4 && d < minD) {
+      _aiN.divideScalar(d);
+      const push = (minD - d) / 2;
+      me.pos.addScaledVector(_aiN, push);
+      foe.pos.addScaledVector(_aiN, -push);
+      const pairs: [DriveState, number][] = [[me, 1], [foe, -1]];
+      for (const [s, sgn] of pairs) {
+        const vn = s.vel.dot(_aiN) * sgn;
+        if (vn < 0) s.vel.addScaledVector(_aiN, -(1 + BOUNCE) * vn * sgn);
+        s.rpm *= 0.75;
+      }
+    }
+    if (group.current) group.current.position.set(me.pos.x, 2.05, me.pos.y);
+    if (spinner.current && !reduced) spinner.current.rotation.z = me.spinAngle;
+  });
+  return (
+    <group ref={group} position={[8, 2.05, 8]}>
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <group ref={spinner}>
+          <ExplodingModel
+            url="cad/main-cad.glb"
+            parts={parts}
+            explode={0}
+            wireframe={false}
+            xray={false}
+            spin={false}
+            colorMode="index"
+            selected={null}
+            hovered={null}
+            hidden={EMPTY_SET}
+            isolated={null}
+            onSelect={() => undefined}
+            onHover={() => undefined}
+          />
+        </group>
+      </group>
+      {/* red ring marker: this one is the rival */}
+      <mesh position={[0, -1.9, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.2, 2.6, 32]} />
+        <meshBasicMaterial color="#c81e1e" transparent opacity={0.8} side={THREE.DoubleSide} />
+      </mesh>
     </group>
   );
 }
@@ -123,31 +243,57 @@ function DriveBot({
 function DriveCam({
   stateRef,
   top,
+  reduced,
 }: {
   stateRef: React.MutableRefObject<DriveState>;
   top: boolean;
+  reduced: boolean;
 }) {
-  const look = useRef(new THREE.Vector3(0, 0, 0));
-  const desired = useRef(new THREE.Vector3(0, 11, 9));
+  const look = useRef(new THREE.Vector3(0, 1.6, 0));
+  const dir = useRef(new THREE.Vector2(0, 1));
   useFrame(({ camera }, delta) => {
     const st = stateRef.current;
     if (top) {
-      desired.current.set(st.pos.x, 26, st.pos.y + 0.01);
+      _camWant.set(st.pos.x, 40, st.pos.y + 0.01);
     } else {
-      // Arena-level: ride down on the floor behind the bot, velocity lead.
-      desired.current.set(
-        THREE.MathUtils.clamp(st.pos.x + st.vel.x * 0.55, -HALF - 2, HALF + 2),
-        2.6,
-        THREE.MathUtils.clamp(st.pos.y + 7.5 + st.vel.y * 0.55, -HALF - 2, HALF + 2)
+      // chase: sit behind velocity, fall back to last heading at rest
+      const sp = st.vel.length();
+      if (sp > 1) dir.current.copy(st.vel).divideScalar(sp);
+      _camDir.copy(dir.current);
+      _camWant.set(
+        THREE.MathUtils.clamp(st.pos.x - _camDir.x * 7.5, -HALF - 0.5, HALF + 0.5),
+        2.6 - Math.min(0.6, sp * 0.08),
+        THREE.MathUtils.clamp(st.pos.y - _camDir.y * 7.5, -HALF - 0.5, HALF + 0.5)
       );
+      // never inside the bot
+      const dx = _camWant.x - st.pos.x;
+      const dz = _camWant.z - st.pos.y;
+      const dd = Math.hypot(dx, dz);
+      if (dd < 4 && dd > 1e-4) {
+        _camWant.x = st.pos.x + (dx / dd) * 4;
+        _camWant.z = st.pos.y + (dz / dd) * 4;
+      }
+      if (camera instanceof THREE.PerspectiveCamera) {
+        const wantFov = 42 + Math.min(10, (sp / MAX_SPEED) * 10);
+        if (Math.abs(camera.fov - wantFov) > 0.1) {
+          camera.fov += (wantFov - camera.fov) * 0.1;
+          camera.updateProjectionMatrix();
+        }
+      }
     }
-    const k = 1 - Math.exp(-3.0 * Math.min(delta, 0.05));
-    camera.position.lerp(desired.current, k);
-    const ly = top ? 0 : 1.6;
-    look.current.lerp(
-      new THREE.Vector3(st.pos.x, ly, st.pos.y),
-      1 - Math.exp(-4.0 * Math.min(delta, 0.05))
-    );
+    if (reduced || top) {
+      camera.position.copy(_camWant);
+      look.current.set(st.pos.x, top ? 0 : 1.6, st.pos.y);
+      if (camera instanceof THREE.PerspectiveCamera && camera.fov !== 42) {
+        camera.fov = 42;
+        camera.updateProjectionMatrix();
+      }
+    } else {
+      const k = 1 - Math.exp(-3.0 * Math.min(delta, 0.05));
+      camera.position.lerp(_camWant, k);
+      _camLook.set(st.pos.x, 1.6 - Math.min(0.3, st.vel.length() * 0.05), st.pos.y);
+      look.current.lerp(_camLook, 1 - Math.exp(-4.0 * Math.min(delta, 0.05)));
+    }
     camera.lookAt(look.current);
   });
   return null;
@@ -156,13 +302,21 @@ function DriveCam({
 function DriveTrail({
   stateRef,
   on,
+  gen,
 }: {
   stateRef: React.MutableRefObject<DriveState>;
   on: boolean;
+  gen: number;
 }) {
   const buf = useMemo(() => new Float32Array(TRAIL_N * 3), []);
   const count = useRef(0);
   const acc = useRef(0);
+  const lastGen = useRef(gen);
+  if (lastGen.current !== gen) {
+    lastGen.current = gen;
+    count.current = 0;
+    acc.current = 0;
+  }
   const lineObj = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(buf, 3));
@@ -257,9 +411,14 @@ function BuildCanvas({
       <Canvas
         camera={{ position: [4.4, 3.1, 5.4], fov: 42 }}
         dpr={[1, 1.5]}
-        onCreated={({ gl }) => gl.setClearColor('#ffffff')}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.NeutralToneMapping;
+          gl.toneMappingExposure = 1.0;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.setClearColor('#ffffff', 1);
+        }}
         role="img"
-        aria-label={`Build guide model, ${model.label}`}
+        aria-label={`Build guide model, ${model.label}. Model orbit is pointer-only; full part control is in the list below.`}
       >
         <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
         <directionalLight position={[5, 8, 4]} intensity={2.0} />
@@ -295,6 +454,76 @@ function BuildCanvas({
   );
 }
 
+function TourRow({ n, tour, text }: { n: number; tour: { idx: number; done: boolean[] }; text: string }) {
+  const st = tour.done[n] ? '●' : tour.idx === n ? '◐' : '○';
+  return (
+    <li aria-current={tour.idx === n ? 'step' : undefined}>
+      <span aria-hidden="true">{st}</span> {text}
+    </li>
+  );
+}
+
+function useSpinAudio(
+  stateRef: React.MutableRefObject<DriveState>,
+  enabled: boolean
+) {
+  const ac = useRef<AudioContext | null>(null);
+  const nodes =
+    useRef<{ osc: OscillatorNode; oct: OscillatorNode; gain: GainNode } | null>(null);
+  useEffect(() => {
+    if (!enabled) {
+      ac.current?.suspend();
+      return;
+    }
+    if (!ac.current) {
+      const Ctx = window.AudioContext;
+      if (!Ctx) return;
+      ac.current = new Ctx();
+      const osc = ac.current.createOscillator();
+      osc.type = 'sawtooth';
+      const oct = ac.current.createOscillator();
+      oct.type = 'sine';
+      const g2 = ac.current.createGain();
+      g2.gain.value = 0.3;
+      const gain = ac.current.createGain();
+      gain.gain.value = 0;
+      const lp = ac.current.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 800;
+      osc.connect(lp);
+      oct.connect(g2);
+      g2.connect(lp);
+      lp.connect(gain);
+      gain.connect(ac.current.destination);
+      osc.start();
+      oct.start();
+      nodes.current = { osc, oct, gain };
+    }
+    void ac.current.resume();
+    return () => {
+      ac.current?.suspend();
+    };
+  }, [enabled]);
+  useEffect(() => {
+    if (!enabled) return;
+    const id = window.setInterval(() => {
+      const st = stateRef.current;
+      if (!nodes.current || !ac.current) return;
+      const c = Math.min(1, Math.max(0, (st.rpm - 2000) / 2000));
+      const f = 60 + c * 70;
+      const t = ac.current.currentTime;
+      nodes.current.osc.frequency.setTargetAtTime(Math.max(1, f), t, 0.05);
+      nodes.current.oct.frequency.setTargetAtTime(Math.max(1, f * 2), t, 0.05);
+      nodes.current.gain.gain.setTargetAtTime(
+        st.throttleSm * 0.08 * (st.rpm > 50 ? 1 : 0),
+        t,
+        0.08
+      );
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [enabled, stateRef]);
+}
+
 export function Studio() {
   const reduced = usePrefersReducedMotion();
   const [mode, setMode] = useState<'drive' | 'build'>('drive');
@@ -303,21 +532,91 @@ export function Studio() {
   const [trailOn, setTrailOn] = useState(!reduced);
   const [brakeUi, setBrakeUi] = useState(false);
   const [help, setHelp] = useState(false);
-  const [hud, setHud] = useState({ rpm: 0, speed: 0, thr: 0, grip: 0 });
+  const [hud, setHud] = useState({ rpm: 0, speed: 0, thr: 0, grip: 0, x: 0, y: 0 });
   const [srText, setSrText] = useState('Stopped. Focus the viewport, then drive.');
   const [glFailed, setGlFailed] = useState(false);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const helpBtnRef = useRef<HTMLButtonElement | null>(null);
+  const helpRef = useRef(false);
+  helpRef.current = help;
+  const helpCardRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef<DriveState>({
     pos: new THREE.Vector2(0, 0),
     vel: new THREE.Vector2(0, 0),
     rpm: 0,
     throttleSm: 0,
     spinAngle: 0,
+    visOmega: 0,
+    hitT: 0,
   });
+  const rivalRef = useRef<DriveState>({
+    pos: new THREE.Vector2(8, 8),
+    vel: new THREE.Vector2(0, 0),
+    rpm: 0,
+    throttleSm: 0,
+    spinAngle: 0,
+    visOmega: 0,
+    hitT: 0,
+  });
+  const [rivalOn, setRivalOn] = useState(true);
+  const [soundOn, setSoundOn] = useState(false);
+  useSpinAudio(stateRef, soundOn);
+  const [tour, setTour] = useState<null | { idx: number; done: boolean[] }>(null);
+  useEffect(() => {
+    try {
+      if (!window.localStorage.getItem('studio-drive-tour-v1')) setTour({ idx: 0, done: [false, false, false, false, false] });
+    } catch {
+      /* private mode */
+    }
+  }, []);
+  const dismissTourRef = useRef(() => {});
+  const dismissTour = () => {
+    setTour(null);
+    try {
+      window.localStorage.setItem('studio-drive-tour-v1', '1');
+    } catch {
+      /* private mode */
+    }
+  };
+  dismissTourRef.current = dismissTour;
+  // tour advance from live drive state
+  useEffect(() => {
+    if (!tour || tour.done.every(Boolean)) return;
+    const st = stateRef.current;
+    const speed = st.vel.length();
+    const moved = Math.hypot(st.pos.x, st.pos.y);
+    const checks = [
+      armed,
+      st.rpm >= 3000,
+      speed > 1 && moved > 2,
+      brakeUi && speed < 0.5,
+      st.rpm < 20 && speed < 0.1 && (stateRef.current as { toured?: boolean }).toured === true,
+    ];
+    const idx = tour.idx;
+    if (idx < 5 && checks[idx]) {
+      const done = tour.done.slice();
+      done[idx] = true;
+      const next = done.every(Boolean) ? idx : Math.min(4, idx + 1);
+      if (done.every(Boolean)) {
+        try {
+          window.localStorage.setItem('studio-drive-tour-v1', '1');
+        } catch {
+          /* ignore */
+        }
+      }
+      setTour({ idx: next, done });
+      setSrText(`Tour step ${idx + 1} of 5 complete.`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hud, armed, brakeUi]);
   const inputRef = useRef<DriveInput>({ move: new THREE.Vector2(0, 0), throttle: false, brake: false });
   const keysRef = useRef(new Set<string>());
+  const keyThr = useRef(false);
+  const syncThr = () => {
+    inputRef.current.throttle = keyThr.current || thrTouchRef.current;
+  };
+  const thrTouchRef = useRef(false);
   const joyRef = useRef<{ x: number; y: number } | null>(null);
   const parts = useModelParts('full');
 
@@ -332,26 +631,64 @@ export function Studio() {
   const [stepFilter, setStepFilter] = useState<'all' | BuildStepKey>('all');
   const bparts = useModelParts(modelId);
   const bmodel = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
+  const buildListRef = useRef<HTMLUListElement | null>(null);
 
+  const trailGen = useRef(0);
   const disarm = () => {
     setArmed(false);
     keysRef.current.clear();
     inputRef.current.move.set(0, 0);
+    keyThr.current = false;
+    thrTouchRef.current = false;
     inputRef.current.throttle = false;
     inputRef.current.brake = false;
     setBrakeUi(false);
+    joyRef.current = null;
+    setStick({ x: 0, y: 0 });
+    setThrTouch(false);
+    setSrText('Stopped. Focus the viewport, then drive.');
   };
 
   const resetDrive = () => {
-    const st = stateRef.current;
-    st.pos.set(0, 0);
-    st.vel.set(0, 0);
-    st.rpm = 0;
-    st.spinAngle = 0;
-    st.throttleSm = 0;
+    trailGen.current += 1;
+    (stateRef.current as { toured?: boolean }).toured = true;
+    for (const st of [stateRef.current, rivalRef.current]) {
+      st.pos.set(st === rivalRef.current ? 8 : 0, st === rivalRef.current ? 8 : 0);
+      st.vel.set(0, 0);
+      st.rpm = 0;
+      st.spinAngle = 0;
+      st.throttleSm = 0;
+      st.visOmega = 0;
+      st.hitT = 0;
+    }
   };
 
-  // HUD + screen-reader telemetry at ~10 Hz / 1.2 Hz
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (helpRef.current) {
+        setHelp(false);
+        helpBtnRef.current?.focus();
+      } else {
+        dismissTourRef.current();
+      }
+    };
+    const f = () => disarm();
+    const onVis = () => {
+      if (document.hidden) disarm();
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', f);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', f);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // HUD numbers at 10 Hz; screen-reader state-class announcements at ~4 s
   useEffect(() => {
     if (mode !== 'drive') return;
     let lastSr = '';
@@ -361,13 +698,27 @@ export function Studio() {
       const speed = st.vel.length();
       const grip =
         Math.pow(Math.min(1, Math.max(0, (st.rpm - GRIP_LO) / (GRIP_HI - GRIP_LO))), GRIP_EXP);
-      setHud({ rpm: Math.round(st.rpm), speed, thr: st.throttleSm, grip });
+      setHud({
+        rpm: Math.round(st.rpm),
+        speed,
+        thr: st.throttleSm,
+        grip,
+        x: st.pos.x,
+        y: st.pos.y,
+      });
       const now = performance.now();
-      if (armed && now - lastSrAt > 800) {
-        const txt =
+      if (armed && now - lastSrAt > 4000) {
+        const cls =
           speed < 0.1 && st.rpm < 20
-            ? 'Stopped.'
-            : `Throttle ${Math.round(st.throttleSm * 100)} percent. ${Math.round(st.rpm)} RPM. ${speed.toFixed(1)} units per second. Position ${st.pos.x.toFixed(1)}, ${st.pos.y.toFixed(1)}.`;
+            ? 'Stopped'
+            : st.rpm < GRIP_LO
+              ? 'Spinning up'
+              : grip > 0.9
+                ? 'Full grip'
+                : 'Gripping';
+        const txt = inputRef.current.brake
+          ? `${cls}. Brake engaged.`
+          : `${cls}. ${Math.round(st.rpm)} RPM.`;
         if (txt !== lastSr) {
           lastSr = txt;
           lastSrAt = now;
@@ -415,7 +766,10 @@ export function Studio() {
       return;
     }
     keysRef.current.add(e.code);
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') inputRef.current.throttle = true;
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      keyThr.current = true;
+      syncThr();
+    }
     if (e.code === 'Space' || e.code === 'KeyX') {
       inputRef.current.brake = true;
       setBrakeUi(true);
@@ -427,7 +781,8 @@ export function Studio() {
     keysRef.current.delete(e.code);
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
       if (!keysRef.current.has('ShiftLeft') && !keysRef.current.has('ShiftRight')) {
-        inputRef.current.throttle = false;
+        keyThr.current = false;
+        syncThr();
       }
     }
     if (e.code === 'Space' || e.code === 'KeyX') {
@@ -443,19 +798,27 @@ export function Studio() {
   // touch joystick
   const stickRef = useRef<HTMLDivElement | null>(null);
   const stickId = useRef<number | null>(null);
+  const [stick, setStick] = useState({ x: 0, y: 0 });
+  const [thrTouch, setThrTouch] = useState(false);
   const onStick = (e: React.PointerEvent, phase: 'down' | 'move' | 'up') => {
     const el = stickRef.current;
     if (!el) return;
     if (phase === 'down') {
+      if (stickId.current !== null) return;
+      setArmed(true);
       stickId.current = e.pointerId;
-      el.setPointerCapture(e.pointerId);
-    }
-    if (phase === 'up' || e.pointerId !== stickId.current) {
-      if (phase === 'up') {
-        stickId.current = null;
-        joyRef.current = null;
-        pollKeys();
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* noop */
       }
+    }
+    if (e.pointerId !== stickId.current) return;
+    if (phase === 'up') {
+      stickId.current = null;
+      joyRef.current = null;
+      setStick({ x: 0, y: 0 });
+      pollKeys();
       return;
     }
     const r = el.getBoundingClientRect();
@@ -471,6 +834,7 @@ export function Studio() {
       dy = 0;
     }
     joyRef.current = { x: dx, y: dy };
+    setStick({ x: dx, y: dy });
     pollKeys();
   };
 
@@ -539,10 +903,17 @@ export function Studio() {
             <div className="viewer">
               <div className="hud-top" aria-hidden="true">
                 <span>
-                  RPM <b>{hud.rpm}</b>/4000
+                  RPM <b>{hud.rpm}</b>/{RPM_MAX}
                 </span>
-                <span className="rpm-track">
-                  <span className="rpm-fill" style={{ width: `${(hud.rpm / 4000) * 100}%` }} />
+                <span
+                  className="rpm-track"
+                  role="progressbar"
+                  aria-label="Weapon RPM"
+                  aria-valuenow={hud.rpm}
+                  aria-valuemin={0}
+                  aria-valuemax={RPM_MAX}
+                >
+                  <span className="rpm-fill" style={{ width: `${(hud.rpm / RPM_MAX) * 100}%` }} />
                 </span>
                 <span>
                   SPD <b>{hud.speed.toFixed(1)}</b> u/s
@@ -551,7 +922,7 @@ export function Studio() {
                   THR <b>{Math.round(hud.thr * 100)}%</b>
                 </span>
                 <span>
-                  GRIP <b>{Math.round(hud.grip * 100)}%</b>
+                  AUTH <b>{Math.round(hud.grip * 100)}%</b>
                 </span>
                 {brakeUi && (
                   <span>
@@ -606,9 +977,17 @@ export function Studio() {
                           parts={parts}
                           reduced={reduced}
                         />
-                        <DriveTrail stateRef={stateRef} on={trailOn && !reduced} />
+                        <DriveTrail stateRef={stateRef} on={trailOn && !reduced} gen={trailGen.current} />
+                        {rivalOn && (
+                          <RivalBot
+                            selfRef={rivalRef}
+                            foeRef={stateRef}
+                            parts={parts}
+                            reduced={reduced}
+                          />
+                        )}
                       </Suspense>
-                      <DriveCam stateRef={stateRef} top={top} />
+                      <DriveCam stateRef={stateRef} top={top} reduced={reduced} />
                     </Canvas>
                   </GlErrorBoundary>
                 )}
@@ -621,6 +1000,7 @@ export function Studio() {
                   className="mini drive-btn"
                   aria-pressed={brakeUi}
                   onPointerDown={() => {
+                    setArmed(true);
                     inputRef.current.brake = true;
                     setBrakeUi(true);
                   }}
@@ -629,6 +1009,10 @@ export function Studio() {
                     setBrakeUi(false);
                   }}
                   onPointerLeave={() => {
+                    inputRef.current.brake = false;
+                    setBrakeUi(false);
+                  }}
+                  onPointerCancel={() => {
                     inputRef.current.brake = false;
                     setBrakeUi(false);
                   }}
@@ -652,6 +1036,26 @@ export function Studio() {
                   {top ? 'Arena cam' : 'Top cam'}
                 </button>
                 <button
+                  className="mini drive-btn"
+                  aria-pressed={rivalOn}
+                  onClick={() => {
+                    setRivalOn((v) => !v);
+                    setSrText(rivalOn ? 'Rival off.' : 'Rival on.');
+                  }}
+                >
+                  Rival {rivalOn ? 'on' : 'off'}
+                </button>
+                <button
+                  className="mini drive-btn"
+                  aria-pressed={soundOn}
+                  onClick={() => {
+                    setSoundOn((v) => !v);
+                    setSrText(soundOn ? 'Spin audio off.' : 'Spin audio on.');
+                  }}
+                >
+                  Sound {soundOn ? 'on' : 'off'}
+                </button>
+                <button
                   ref={helpBtnRef}
                   className="mini drive-btn"
                   onClick={() => setHelp(true)}
@@ -666,12 +1070,28 @@ export function Studio() {
                   className="joystick"
                   role="slider"
                   aria-label="Drive stick"
-                  aria-valuetext={`x ${joyRef.current?.x.toFixed(1) ?? '0.0'}, y ${joyRef.current?.y.toFixed(1) ?? '0.0'}`}
+                  aria-valuemin={-1} aria-valuemax={1} aria-valuenow={Math.round(stick.x * 10) / 10} aria-valuetext={`x ${stick.x.toFixed(1)}, y ${stick.y.toFixed(1)}`}
                   tabIndex={0}
                   onPointerDown={(e) => void onStick(e, 'down')}
                   onPointerMove={(e) => void onStick(e, 'move')}
                   onPointerUp={(e) => void onStick(e, 'up')}
                   onPointerCancel={(e) => void onStick(e, 'up')}
+                  onKeyDown={(e) => {
+                    const step = 0.25;
+                    setStick((prev) => {
+                      let { x, y } = prev;
+                      if (e.key === 'ArrowLeft') x = Math.max(-1, x - step);
+                      else if (e.key === 'ArrowRight') x = Math.min(1, x + step);
+                      else if (e.key === 'ArrowUp') y = Math.max(-1, y - step);
+                      else if (e.key === 'ArrowDown') y = Math.min(1, y + step);
+                      else if (e.key === '0' || e.key === ' ') { x = 0; y = 0; }
+                      else return prev;
+                      e.preventDefault();
+                      joyRef.current = { x, y };
+                      pollKeys();
+                      return { x, y };
+                    });
+                  }}
                 >
                   <span
                     className="joystick-knob"
@@ -681,21 +1101,25 @@ export function Studio() {
                     }}
                   />
                 </div>
-                <label className="meta" style={{ flex: 1 }}>
-                  Throttle (Shift)
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={1}
-                    defaultValue={0}
-                    aria-label="Throttle hold"
-                    style={{ width: '100%', minHeight: 44 }}
-                    onChange={(e) => {
-                      inputRef.current.throttle = e.target.value === '1';
-                    }}
-                  />
-                </label>
+                <button
+                  className="mini drive-btn"
+                  aria-pressed={thrTouch}
+                  style={{ flex: 1, minHeight: 64 }}
+                  onPointerDown={() => {
+                    setArmed(true);
+                  }}
+                  onClick={() => {
+                    setArmed(true);
+                    setSrText(thrTouch ? 'Throttle off.' : 'Throttle full. Hold WASD to translate.');
+                    setThrTouch((v) => {
+                      thrTouchRef.current = !v;
+                      syncThr();
+                      return !v;
+                    });
+                  }}
+                >
+                  Throttle: {thrTouch ? 'ON' : 'OFF'}
+                </button>
               </div>
               <p id="drive-status" role="status" aria-live="polite" aria-atomic="true" className="status mono">
                 {srText}
@@ -711,23 +1135,25 @@ export function Studio() {
             <header>
               <b>Drive readout</b>
               <p className="meta" style={{ margin: '8px 0 0' }}>
-                Grip rises with RPM: under ~600 nothing translates, past ~3000 it grips fully.
-                That is the whole melty lesson — spin first, then steer.
+                Sim aid only: under ~1400 RPM this sim gives zero authority, ramping to full
+                past ~3100. The real lesson is the same shape — hold Shift for RPM <i>while</i>{' '}
+                holding WASD; spin and steer together. Walls scrub spin in real life — expect
+                stall, not bounce. See /firmware.
               </p>
             </header>
             <div className="readout">
               <dl>
                 <dt>RPM</dt>
-                <dd>{hud.rpm} / 4000</dd>
+                <dd>{hud.rpm} / {RPM_MAX}</dd>
                 <dt>Speed</dt>
                 <dd>{hud.speed.toFixed(2)} u/s</dd>
                 <dt>Throttle</dt>
                 <dd>{Math.round(hud.thr * 100)} %</dd>
-                <dt>Grip</dt>
+                <dt>Authority (sim)</dt>
                 <dd>{Math.round(hud.grip * 100)} %</dd>
                 <dt>Position</dt>
                 <dd>
-                  {stateRef.current.pos.x.toFixed(1)}, {stateRef.current.pos.y.toFixed(1)}
+                  {hud.x.toFixed(1)}, {hud.y.toFixed(1)}
                 </dd>
               </dl>
               <div className="btn-row" style={{ margin: '8px 0 0' }}>
@@ -756,6 +1182,9 @@ export function Studio() {
                         setSelected(null);
                         setHidden(new Set());
                         setIsolated(null);
+                        setQuery('');
+                        setRoleFilter('all');
+                        setStepFilter('all');
                       }}
                     >
                       {m.label}
@@ -785,16 +1214,20 @@ export function Studio() {
                 onSelect={setSelected}
               />
               <p className="status" role="status">
-                {bmodel.label} · {bparts.length} parts · click a part for placement guidance
-                {isolated !== null && (
-                  <>
-                    {' '}· isolated #{isolated} —{' '}
-                    <button className="mini" onClick={() => setIsolated(null)}>
-                      Exit isolate
-                    </button>
-                  </>
-                )}
+                {bmodel.label} · {bparts.length} parts ·{' '}
+                {isolated !== null
+                  ? `showing isolated #${isolated}`
+                  : `${bparts.filter((_, i) => !hidden.has(i)).length} visible`} · click a part for
+                placement guidance
               </p>
+              {isolated !== null && (
+                <p className="status">
+                  Isolated #{isolated} —{' '}
+                  <button className="mini" onClick={() => setIsolated(null)}>
+                    Exit isolate
+                  </button>
+                </p>
+              )}
               <div className="legend" aria-label="Heuristic material roles, verify in CAD">
                 {(Object.keys(ROLE_LABELS) as (keyof typeof ROLE_LABELS)[]).map((r) => (
                   <span key={r}>
@@ -844,8 +1277,20 @@ export function Studio() {
                 {entries.length}/{bparts.length} shown
               </p>
             </header>
-            <ul className="part-list" aria-label="Parts">
-              {entries.map(({ i, p }) => (
+            <ul
+              className="part-list"
+              aria-label="Parts"
+              aria-busy={bparts.length === 0}
+              ref={buildListRef}
+            >
+              {bparts.length === 0 &&
+                Array.from({ length: 8 }, (_, i) => (
+                  <li key={`sk-${i}`} aria-hidden="true">
+                    <span className="row-main" style={{ background: 'var(--inset)', height: 44, width: '100%' }} />
+                  </li>
+                ))}
+              {bparts.length > 0 &&
+                entries.map(({ i, p }) => (
                 <li key={i} data-idx={i} style={{ padding: 0 }}>
                   <button
                     type="button"
@@ -854,6 +1299,10 @@ export function Studio() {
                     onClick={() => {
                       setSelected(selected === i ? null : i);
                       if (selected !== i && !p.dropped_from_glb) setIsolated(i);
+                    }}
+                    onFocus={() => {
+                      const el = buildListRef.current?.querySelector(`[data-idx="${i}"]`);
+                      el?.scrollIntoView({ block: 'nearest' });
                     }}
                     style={{
                       all: 'unset',
@@ -879,8 +1328,9 @@ export function Studio() {
                     </span>
                   </button>
                 </li>
-              ))}
-              {entries.length === 0 && (
+              )
+              )}
+            {bparts.length > 0 && entries.length === 0 && (
                 <li>
                   <span className="row-main">
                     <b>No parts match</b>
@@ -945,11 +1395,74 @@ export function Studio() {
         </div>
       )}
 
+      {tour && !tour.done.every(Boolean) && (
+        <div className="viewer" style={{ marginTop: 12 }}>
+          <div className="step" role="dialog" aria-label="60-second drive tutorial">
+            <h3>
+              Drive check ({tour.done.filter(Boolean).length}/5)
+              <span className="stamp todo">60 s tour</span>
+            </h3>
+            <ol style={{ margin: '8px 0', paddingLeft: 20 }}>
+              <TourRow n={0} tour={tour} text="Click the viewport (DRIVING shows)" />
+              <TourRow n={1} tour={tour} text="Hold Shift to 3000+ RPM" />
+              <TourRow n={2} tour={tour} text="Hold WASD too — move 2+ units" />
+              <TourRow n={3} tour={tour} text="Tap Space — brake to near stop" />
+              <TourRow n={4} tour={tour} text="Press R — reset to zero" />
+            </ol>
+            <div className="btn-row" style={{ margin: 0 }}>
+              <button className="mini drive-btn" onClick={dismissTour}>Skip tour (Esc)</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {tour && tour.done.every(Boolean) && (
+        <p className="status">
+          <span className="stamp ok">Drive check done</span>{' '}
+          <button className="mini" onClick={() => setTour({ idx: 0, done: [false, false, false, false, false] })}>Replay tour</button>
+        </p>
+      )}
       {help && (
         <>
           <div className="backdrop" aria-hidden="true" onClick={() => { setHelp(false); helpBtnRef.current?.focus(); }} />
           <div className="help-overlay">
-            <div className="help-card" role="dialog" aria-modal="true" aria-label="Drive keys">
+            <div
+              className="help-card"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Drive keys"
+              tabIndex={-1}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  setHelp(false);
+                  helpBtnRef.current?.focus();
+                  return;
+                }
+                if (e.key !== 'Tab') return;
+                const card = helpCardRef.current;
+                if (!card) return;
+                const items = Array.from(
+                  card.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')
+                ).filter((el) => el.getClientRects().length > 0);
+                if (items.length === 0) return;
+                const firstEl = items[0];
+                const lastEl = items[items.length - 1];
+                if (e.shiftKey && document.activeElement === firstEl) {
+                  e.preventDefault();
+                  lastEl.focus();
+                } else if (!e.shiftKey && document.activeElement === lastEl) {
+                  e.preventDefault();
+                  firstEl.focus();
+                }
+              }}
+              ref={(el) => {
+                helpCardRef.current = el;
+                if (el) {
+                  const btn = el.querySelector<HTMLElement>('button');
+                  btn?.focus();
+                }
+              }}
+            >
               <h3>Drive keys</h3>
               <table>
                 <tbody>

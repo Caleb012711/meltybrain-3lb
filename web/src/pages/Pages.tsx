@@ -82,7 +82,7 @@ export function Pcbway() {
       <h2>Source to export map</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Root STEP (do not upload)</th><th>Export each as</th><th>Lands in</th></tr></thead>
+          <thead><tr><th scope="col">Root STEP (do not upload)</th><th scope="col">Export each as</th><th scope="col">Lands in</th></tr></thead>
           <tbody>
             <tr><td className="mono">Main CAD.step</td><td>Machined bodies to STEP AP214 mm, one solid per file. Flat armor to DXF.</td><td className="mono">pcbway/cnc/ · sheet-metal/</td></tr>
             <tr><td className="mono">Wheel Pod.step</td><td>Same: one body, one STEP.</td><td className="mono">pcbway/cnc/</td></tr>
@@ -94,11 +94,11 @@ export function Pcbway() {
       <h2>Materials to pick on the quote</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Part</th><th>Pick</th><th>Finish / tolerance</th></tr></thead>
+          <thead><tr><th scope="col">Part</th><th scope="col">Pick</th><th scope="col">Finish / tolerance</th></tr></thead>
           <tbody>
             <tr><td>Chassis, structure, motor mounts</td><td><b>6061-T6 aluminum</b></td><td>As-machined, general ISO 2768-m</td></tr>
             <tr><td>Weapon hub, high load</td><td><b>7075-T6</b> or 4140 steel per CAD notes</td><td>H7 bearing bores only, note in comments</td></tr>
-            <tr><td>Teeth</td><td><b>AR500 0.25 in</b> default (241–326 g); Ti only as relief valve (saves ~190 g a pair)</td><td>As-cut, quantity 2 plus spares</td></tr>
+            <tr><td>Teeth</td><td><b>AR500 0.25 in</b> default — Liftoff tapered precedent 241–326 g; Eyeliner as-drawn 55.63 cm³ ≈ 437 g steel / 246 g Ti. Taper to tune, never drill; Ti only as relief valve (saves ~190 g a pair)</td><td>As-cut, quantity 2 plus spares</td></tr>
             <tr><td>Shafts, standoffs</td><td><b>303 stainless or 6061</b></td><td>As-machined</td></tr>
             <tr><td>Flat armor (DXF)</td><td><b>5052-H32 or 6061, 1.5–3 mm</b>, match CAD</td><td>Laser only</td></tr>
           </tbody>
@@ -131,7 +131,7 @@ export function Printing() {
       <h2>What prints, what never prints</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Prints (plastic)</th><th>Never prints — PCBWay metal</th></tr></thead>
+          <thead><tr><th scope="col">Prints (plastic)</th><th scope="col">Never prints — PCBWay metal</th></tr></thead>
           <tbody>
             <tr><td>TPU shell and cradle halves, pod guards, LED mount, Pi and BEC mount, battery tray, bench wheel locks</td><td>Ring, teeth, plates, shafts</td></tr>
           </tbody>
@@ -140,7 +140,7 @@ export function Printing() {
       <h2>Materials</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Use</th><th>For</th></tr></thead>
+          <thead><tr><th scope="col">Use</th><th scope="col">For</th></tr></thead>
           <tbody>
             <tr><td><b>TPU 95A</b> (Overture, SainSmart, Cheetah)</td><td>Shell, cradle, guards — the shock absorber. LiftOff retired HDPE and UHMW for this.</td></tr>
             <tr><td>PETG / ABS-ASA</td><td>Jigs, pit stand, LED mounts — not impact structure.</td></tr>
@@ -150,7 +150,7 @@ export function Printing() {
       </div>
       <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>      <div className="table-wrap">
         <table>
-          <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+          <thead><tr><th scope="col">Setting</th><th scope="col">Value</th></tr></thead>
           <tbody>
             <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams — direct drive or pick another project.</td></tr>
             <tr><td>Nozzle / bed</td><td>225–240 °C per spool after a temp tower. Bed 40–60 °C with glue on smooth plate.</td></tr>
@@ -180,17 +180,17 @@ export function Parts() {
     ['Accelerometers', 'H3LIS331DLTR at ±400 g. Two Adafruit 4627 breakouts to learn, two bare chips opposed at 45° on the final PCB.', '2 + 2'],
     ['Radio', 'ELRS receiver plus handset over CRSF into Teensy UART. FHSS link, failsafe throttle-cut, filmed.', '1'],
     ['Battery', 'Two 4S 550 mAh in parallel, XT30, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.', '2+ sets'],
-    ['Weapon', '0.25 in AR500 ring, symmetric 2-tooth, no holes, tapered toward 241 g.', '1 + spares'],
+    ['Weapon', '0.25 in AR500 teeth, symmetric 2-tooth, no holes. Liftoff tapered precedent 241–326 g; Eyeliner as-drawn 55.63 cm³ ≈ 437 g steel / 246 g Ti — taper mid-span toward precedent or Ti-swap.', '1 + spares'],
     ['Wheels', 'Rubber set to learn, 1.55 in titanium cleats to fight.', '2 + spares'],
     ['AI kit', 'Onboard Pi Zero 2W plus wide camera on an isolated BEC (about 40 g). Pit overhead camera plus laptop YOLO and cloud hints.', '1 set'],
   ];
   return (
     <div className="page">
       <p className="eyebrow">Parts — locked to LiftOff Rev9</p>
-      <h1>Buy this, not almost-this</h1>
+      <h1>Buy this — locked spec</h1>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Item</th><th>Spec</th><th>Qty</th></tr></thead>
+          <thead><tr><th scope="col">Item</th><th scope="col">Spec</th><th scope="col">Qty</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r[0]}><td><b>{r[0]}</b></td><td>{r[1]}</td><td className="mono">{r[2]}</td></tr>
@@ -207,8 +207,8 @@ export function Parts() {
           embeds in the arena wall — run it blunt. A single tooth plus counterweight throws
           the chassis when the tooth stops on impact — run symmetric 2-tooth. Bolt holes
           through the rim start cracks — remove them and taper mid-span instead (Liftoff's
-          precedent: 326 g down to 241 g). Our teeth measure 55.6 cm³ a pair in CAD: 436 g in
-          steel, 246 g in titanium — so steel is the energy king but titanium is the 3lb ticket.
+          precedent: 326 g down to 241 g). Our teeth measure 55.63 cm³ a pair in CAD: 437 g in
+          steel, 246 g in titanium — so steel is the energy king but titanium is the relief valve that buys ~190 g of margin.
           Steel carries 1.77× the energy of titanium at equal volume, which is exactly why the
           Ti-swap is the relief valve, not the default.
         </p>
@@ -247,7 +247,7 @@ export function Firmware() {
       <h2>OpenMelt2 learning rig to LiftOff fight stack</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th></th><th>OpenMelt2 (learn)</th><th>LiftOff Rev9 (fight)</th></tr></thead>
+          <thead><tr><th scope="col"></th><th scope="col">OpenMelt2 (learn)</th><th scope="col">LiftOff Rev9 (fight)</th></tr></thead>
           <tbody>
             <tr><td>MCU</td><td>Arduino Micro</td><td>Teensy 4.0 at 600 MHz</td></tr>
             <tr><td>Sensing</td><td>Single H3LIS331, 3.9 cm radius default</td><td>Dual H3LIS331DLTR, opposed at 45°, SPI</td></tr>
@@ -258,7 +258,7 @@ export function Firmware() {
       </div>
       <div className="step">
         <h3>Wiring, locked</h3>
-        <p>Battery to link to AM32 boards to PROPDRIVEs. ELRS CRSF to Teensy UART. Dual accelerometers on short stiff SPI near the center of gravity. 4700 uF across 5 V, 10:1 divider for battery sense. Green LED means front, raised and inset so it reads across the arena. Never power the Teensy from Pi USB inside the bot.</p>
+        <p>Battery to link (XT60 mains, 16 AWG — XT30 is 30 A continuous and inadequate per 48 A pack path) to AM32 boards to PROPDRIVEs (18 AWG minimum on short motor leads). ELRS CRSF to Teensy UART. Dual accelerometers on short stiff SPI within ~20 mm of the spin center (a ±400 g H3LIS331 saturates above ~2800 RPM at 45 mm and above ~3450 RPM at 30 mm — mount close or accept an RPM ceiling). 4700 uF across 5 V, 10:1 divider for battery sense. Green LED means front, raised and inset so it reads across the arena. Never power the Teensy from Pi USB inside the bot.</p>
       </div>
       <div className="step">
         <h3>Tune: bench, slide, 2k, 3k, 4k</h3>

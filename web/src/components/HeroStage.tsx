@@ -35,13 +35,13 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
     prev.current = x;
     s.x = x;
     // end fade via scale (no material traversal): parks off-screen at both ends
-    const fade = Math.min(clamp01(s.smooth / 0.1), 1 - clamp01((s.smooth - 0.88) / 0.12));
+    const fade = Math.min(clamp01((s.smooth - 0.1) / 0.08), 1 - clamp01((s.smooth - 0.72) / 0.1));
     const eFade = fade * fade * (3 - 2 * fade);
     const baseScale = mobile ? 0.62 : 1.0;
     g.visible = eFade > 0.02;
     g.scale.setScalar(Math.max(0.001, baseScale * (0.4 + 0.6 * eFade)));
-    const speed = Math.min(1, Math.abs(dx) * 30 + 0.12);
-    const hop = Math.abs(Math.sin((x / ROLL_R) * 2)) * 0.05 * speed * eFade;
+    const rolling = clamp01(Math.abs(dx) * 30);
+    const hop = (0.5 - 0.5 * Math.cos((2 * x) / ROLL_R)) * 0.05 * rolling * eFade;
     g.position.set(x, cfg.ground + hop, Math.sin(drive * Math.PI) * 0.6);
     g.rotation.set(0, 0.35 + drive * 0.25, 0);
     g.rotation.z -= dx / ROLL_R;
@@ -71,7 +71,7 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
 function ParkedBot() {
   const parts = useModelParts('full');
   return (
-    <group position={[-2.2, parked.ground, 0]} rotation={[0, 0.4, 0.5]}>
+    <group position={[-2.2, parked.ground, 0]} rotation={[0, 0.4, 0]}>
       <ExplodingModel
         url="cad/main-cad.glb"
         parts={parts}
@@ -97,13 +97,16 @@ const _lookTarget = new THREE.Vector3();
 function CameraRig({ shared, mobile }: { shared: React.MutableRefObject<Shared>; mobile: boolean }) {
   const look = useRef(new THREE.Vector3(0, -0.3, 0));
   useFrame(({ camera }, delta) => {
-    const e = ease(clamp01(shared.current.smooth));
+    const ds = mobile ? 0.12 : DRIVE_START;
+    const de = mobile ? 0.68 : DRIVE_END;
+    const drive = ease(clamp01((shared.current.smooth - ds) / (de - ds)));
+    const win = Math.sin(drive * Math.PI);
     const x = shared.current.x;
     const k = 1 - Math.exp(-3.2 * Math.min(delta, 0.05));
     const tz = mobile ? 10.4 : 9.2;
-    _camTarget.set(x * 0.32, 0.6 - Math.sin(e * Math.PI) * 0.15, tz - e * 0.6);
+    _camTarget.set(x * 0.32 * win, 0.6 - win * 0.15, tz - drive * 0.6);
     camera.position.lerp(_camTarget, k);
-    _lookTarget.set(x * 0.45, -0.3, 0);
+    _lookTarget.set(x * 0.45 * win, -0.3, 0);
     look.current.lerp(_lookTarget, k);
     camera.lookAt(look.current);
   });
@@ -134,18 +137,30 @@ function SplitLine({ text, register }: { text: string; register: (el: HTMLSpanEl
   );
 }
 
+function HeroReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+  return null;
+}
+
 function HeroScene({
   shared,
   mobile,
   cameraRef,
+  inView,
+  onReady,
 }: {
   shared: React.MutableRefObject<Shared>;
   mobile: boolean;
   cameraRef: React.MutableRefObject<THREE.Camera | null>;
+  inView: boolean;
+  onReady: () => void;
 }) {
   return (
     <Canvas
-      dpr={[1, mobile ? 1 : 1.75]}
+      frameloop={inView ? 'always' : 'never'}
+      dpr={[1, mobile ? 1 : 1.5]}
       gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
       camera={{ position: [0, 0.6, mobile ? 10.4 : 9.2], fov: mobile ? 40 : 36, near: 0.1, far: 60 }}
       onCreated={({ gl, camera }) => {
@@ -164,6 +179,7 @@ function HeroScene({
       <directionalLight position={[-2, 2, 6]} intensity={0.35} color="#ffffff" />
       <Suspense fallback={null}>
         <RollingBot shared={shared} mobile={mobile} />
+        <HeroReady onReady={onReady} />
       </Suspense>
       <ContactShadows
         position={[0, mobile ? -0.68 : -0.83, 0]}
@@ -193,21 +209,42 @@ export function HeroStage() {
   const centers = useRef<number[]>([]);
 
   const register = (el: HTMLSpanElement | null) => {
-    if (el && !letters.current.includes(el)) letters.current.push(el);
+    if (el) {
+      if (!letters.current.includes(el)) letters.current.push(el);
+    } else {
+      letters.current = letters.current.filter((n) => n.isConnected);
+    }
   };
 
+  // Stage-relative centers: botPx is computed in stage space.
   const measure = () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const sl = stage.getBoundingClientRect().left;
     centers.current = letters.current.map((el) => {
       const r = el.getBoundingClientRect();
-      return r.left + r.width / 2;
+      return r.left + r.width / 2 - sl;
     });
   };
+
+  const clearLetters = () => {
+    for (const el of letters.current) {
+      el.style.transform = '';
+      el.style.background = '';
+      el.style.color = '';
+      el.style.willChange = 'auto';
+    }
+  };
+
+  const [inView, setInView] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (reduced) return;
     const stage = stageRef.current;
     if (!stage) return;
     let raf = 0;
+    let visible = true;
     const onScroll = () => {
       const rect = stage.getBoundingClientRect();
       const total = rect.height - window.innerHeight;
@@ -215,35 +252,48 @@ export function HeroStage() {
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    const onResize = () => {
+    const ro = new ResizeObserver(() => {
       measure();
+      onScroll();
+    });
+    ro.observe(stage);
+    const text = stage.querySelector('.hero-text');
+    if (text) ro.observe(text);
     if (document.fonts) {
       void document.fonts.ready.then(() => measure());
     }
-      onScroll();
-    };
-    window.addEventListener('resize', onResize);
     measure();
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        setInView(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    io.observe(stage);
     const proj = new THREE.Vector3();
     let lastX = Number.NaN;
     const tick = () => {
       raf = requestAnimationFrame(tick);
+      if (!visible) return;
       const cam = cameraRef.current;
       const stageEl = stageRef.current;
       const hud = hudRef.current;
-      if (!cam || !stageEl) return;
       if (hud) {
         const p = shared.current.p;
-        const stage = p < 0.15 ? 'ENTER' : p < 0.7 ? 'CROSSING' : p < 0.88 ? 'EXIT' : 'DONE';
-        hud.textContent = `SCROLL ${Math.round(p * 100)}% — ${stage}`;
+        const label = p < 0.15 ? 'ENTER' : p < 0.7 ? 'CROSSING' : p < 0.88 ? 'EXIT' : 'DONE';
+        const txt = `SCROLL ${Math.round(p * 100)}% — ${label}`;
+        if (hud.textContent !== txt) hud.textContent = txt;
       }
-      if (Math.abs(shared.current.x - lastX) < 0.5) return;
+      if (!cam || !stageEl) return;
+      if (Math.abs(shared.current.x - lastX) < 0.03) return;
       lastX = shared.current.x;
       const w = stageEl.clientWidth;
       proj.set(shared.current.x, mobile ? -0.55 : -0.7, 0).project(cam);
       const botPx = (proj.x * 0.5 + 0.5) * w;
       const sigma = mobile ? 110 : 140;
       const tiltOn = !mobile;
+      const styling = shared.current.p > 0.05 && shared.current.p < 0.95;
       for (let i = 0; i < letters.current.length; i++) {
         const el = letters.current[i];
         const cx = centers.current[i];
@@ -251,27 +301,39 @@ export function HeroStage() {
         const d = cx - botPx;
         const ad = Math.abs(d);
         const fall = Math.exp(-(d * d) / (2 * sigma * sigma));
-        if (tiltOn) {
+        if (tiltOn && styling) {
           const gate = ad < 260 ? 1 - ad / 260 : 0;
           const tilt = Math.max(-14, Math.min(14, -d * 0.045)) * gate;
           const lift = -18 * fall;
-          el.style.transform = `translateY(${lift.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
+          const t = `translateY(${lift.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
+          if (el.style.transform !== t) el.style.transform = t;
+          el.style.willChange = 'transform';
+        } else if (!tiltOn) {
+          el.style.transform = '';
+          el.style.willChange = 'auto';
         }
         const hi = Math.round(fall * 100) / 100;
-        el.style.background = hi > 0.03 ? `rgba(232,73,15,${(0.22 * hi).toFixed(3)})` : 'transparent';
-        el.style.color = hi > 0.5 ? '#b23600' : '';
+        const bg = styling && hi > 0.03 ? `rgba(232,73,15,${(0.22 * hi).toFixed(3)})` : 'transparent';
+        if (el.style.background !== bg) el.style.background = bg;
+        const fg = styling && hi > 0.5 ? '#b23600' : '';
+        if (el.style.color !== fg) el.style.color = fg;
       }
+      // blob tracks the end-fade so it never pops in detached
+      const e = shared.current.smooth;
+      const fade = Math.min(clamp01((e - 0.1) / 0.08), 1 - clamp01((e - 0.72) / 0.1));
       const blob = blobRef.current;
       if (blob) {
         blob.style.left = `${botPx}px`;
-        blob.style.opacity = '0.85';
+        blob.style.opacity = (0.85 * fade).toFixed(2);
       }
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      ro.disconnect();
+      io.disconnect();
+      clearLetters();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced, mobile]);
@@ -291,7 +353,14 @@ export function HeroStage() {
     return (
       <div className="hero-static">
         <h1 className="hero-giant">SPIN THE WHOLE BOT. DRIVE LIKE IT'S STANDING STILL.</h1>
+        <p className="hero-kicker">3 lb translational-drift combat robot</p>
         <div className="viewer" style={{ marginTop: 16 }}>
+          {glFailed ? (
+            <div className="hero-poster" style={{ position: 'static', padding: 24 }}>
+              <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" style={{ maxWidth: '100%' }} />
+            </div>
+          ) : (
+          <GlErrorBoundary onFail={() => setGlFailed(true)}>
           <Canvas
             dpr={[1, 1.5]}
             gl={{ antialias: true, alpha: true }}
@@ -306,11 +375,15 @@ export function HeroStage() {
           >
             <hemisphereLight args={['#ffffff', '#d8dce2', 1.0]} />
             <directionalLight position={[4, 7, 3]} intensity={2.2} />
+            <directionalLight position={[-6, 3, -6]} intensity={0.9} color="#dfe8ff" />
+            <directionalLight position={[-2, 2, 6]} intensity={0.35} color="#ffffff" />
             <Suspense fallback={null}>
               <ParkedBot />
             </Suspense>
-            <ContactShadows position={[0, -1.68, 0]} scale={14} far={3.2} resolution={256} blur={2.6} opacity={0.42} color="#1a1e23" frames={1} />
+            <ContactShadows position={[0, -0.83, 0]} scale={14} far={3.2} resolution={256} blur={2.6} opacity={0.42} color="#1a1e23" frames={1} />
           </Canvas>
+          </GlErrorBoundary>
+          )}
         </div>
       </div>
     );
@@ -328,20 +401,26 @@ export function HeroStage() {
         <div ref={blobRef} className="hero-shadow-blob" aria-hidden="true" />
         {glFailed ? (
           <div className="hero-poster">
-            <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" />
+            <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
         ) : (
-        <Suspense
-          fallback={
+        <>
+          {!ready && (
             <div className="hero-poster">
-              <img src="eyeliner_summer_2025_render.png" alt="Overhead render of the Eyeliner 3lb meltybrain" />
+              <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="eager" decoding="async" fetchPriority="high" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
-          }
-        >
+          )}
           <GlErrorBoundary onFail={() => setGlFailed(true)}>
-          <HeroScene shared={shared} mobile={mobile} cameraRef={cameraRef} />
+          <HeroScene
+            key={mobile ? 'hero-m' : 'hero-d'}
+            shared={shared}
+            mobile={mobile}
+            cameraRef={cameraRef}
+            inView={inView}
+            onReady={() => setReady(true)}
+          />
           </GlErrorBoundary>
-        </Suspense>
+        </>
         )}
         <div className="hero-hud" aria-hidden="true">
           <span ref={hudRef}>SCROLL 0%</span>

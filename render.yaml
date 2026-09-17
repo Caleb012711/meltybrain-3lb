@@ -28,7 +28,19 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
-      - path: /cad/*
+      - path: /cad/*.glb
+        name: Cache-Control
+        value: public, max-age=3600
+      - path: /cad/*.parts.json
+        name: Cache-Control
+        value: no-cache
+      - path: /cad/manifest.json
+        name: Cache-Control
+        value: no-cache
+      - path: /cad/*.step
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /cad/*.stl
         name: Cache-Control
         value: public, max-age=86400
       - path: /index.html
@@ -40,3 +52,8 @@ services:
       paths:
         - web/**
         - render.yaml
+        - tools/cad_convert.py
+        - Main CAD.step
+        - Wheel Pod.step
+        - Standard Weapon Teeth.step
+        - Undercutter Config.step

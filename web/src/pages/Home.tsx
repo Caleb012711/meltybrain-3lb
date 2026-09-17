@@ -54,7 +54,7 @@ function StackSection() {
       <h2>Every gram has a job.</h2>
       <p className="lede">
         Teensy 4.0 plus dual ±400 g accels plus DShot600 at 8 kHz. Copy LiftOff Rev9,
-        don’t freestyle. Branch E or bust — fight-ready at or under 1361 g.
+        don’t freestyle. Follow Branch E math — fight-ready at or under 1361 g (1360.8 g cap).
       </p>
       <div className="stack-stats" aria-label="Key system figures">
         <div><b>600 MHz</b><span>Cortex-M7 Teensy 4.0</span></div>
@@ -171,7 +171,7 @@ export function Home() {
           <figure className="render-figure">
             <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" width="1600" height="1200" loading="lazy" decoding="async" />
             <figcaption className="mono">
-              eyeliner_summer_2025_render.png — steel ring plus TPU shell. Balance is everything:
+              eyeliner_summer_2025_render.webp (PNG source in repo root) — steel ring plus TPU shell. Balance is everything:
               3–5 g off means violent hop at 3000 RPM.
             </figcaption>
           </figure>
@@ -186,7 +186,7 @@ export function Home() {
           <div className="cards">
             <div className="card">
               <h3>Weapon: AR500 ring</h3>
-              <p>Symmetric 2-tooth weapon, measured 55.6 cm³ a pair in CAD: 436 g in AR500 steel, 246 g in Grade 5 titanium. No lightening holes, no bolt holes through the rim — holes start cracks. The 3lb path is titanium teeth (Liftoff's tapered steel ring hit 241 g; ours reaches the same budget in Ti).</p>
+              <p>Symmetric 2-tooth weapon, measured 55.63 cm³ a pair in CAD: 437 g in AR500 steel, 246 g in Grade 5 titanium. No lightening holes, no bolt holes through the rim — holes start cracks. Steel teeth fly at ~1245 g with ~65 g of margin — legal but tight; titanium at ~1055 g is comfortable (Liftoff's tapered steel ring hit 241 g).</p>
               <footer className="foot meta mono">Standard Weapon Teeth.step · 295 KB · 2 solids</footer>
             </div>
             <div className="card">
@@ -242,7 +242,7 @@ export function Home() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>File</th><th>Size</th><th>Solids</th><th>Role</th><th>Get</th></tr>
+                <tr><th scope="col">File</th><th scope="col">Size</th><th scope="col">Solids</th><th scope="col">Role</th><th scope="col">Get</th></tr>
               </thead>
               <tbody>
                 {cadModels.map((m) => (
@@ -251,7 +251,7 @@ export function Home() {
                     <td className="mono">{m.stepSize}</td>
                     <td className="mono">{m.solids}</td>
                     <td><span className="stamp todo">Source — do not upload</span><br />{m.note}</td>
-                    <td><Link to="/explorer">Inspect</Link> · <a href={cadHref(m.step)} download>STEP</a> · <a href={cadHref(m.glb)} download>GLB</a></td>
+                    <td><Link to="/explorer" aria-label={`Inspect ${m.step} in the 3D explorer`}>Inspect</Link> · <a href={cadHref(m.step)} download aria-label={`Download ${m.step}`}>STEP</a> · <a href={cadHref(m.glb)} download aria-label={`Download ${m.glb} viewer mesh`}>GLB</a></td>
                   </tr>
                 ))}
               </tbody>
@@ -268,7 +268,7 @@ export function Home() {
       <Reveal as="section">
         <section id="more" className="section">
           <p className="eyebrow">07 — Metal, plastic, firmware</p>
-          <h2>Three pages, with TODOs marked</h2>
+          <h2>Metal, plastic, firmware</h2>
           <div className="cards">
             <Link className="card" to="/pcbway">
               <h3>Send metal to PCBWay</h3>

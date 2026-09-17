@@ -11,6 +11,7 @@ export const nav: NavEntry[] = [
   { to: '/printing', label: '3D printing' },
   { to: '/parts', label: 'Parts' },
   { to: '/bom', label: 'BOM + cost' },
+  { to: '/engineering', label: 'Engineering' },
   { to: '/firmware', label: 'Firmware + AI' },
 ];
 
@@ -41,7 +42,7 @@ export const cadModels: CadModel[] = [
   {
     id: 'teeth', label: 'Standard teeth',
     glb: 'cad/standard-weapon-teeth.glb', step: 'cad/Standard Weapon Teeth.step', stepSize: '295 KB',
-    solids: 2, note: 'Symmetric 2-tooth set. 55.6 cm³ total, 218 g each in steel.',
+    solids: 2, note: 'Symmetric 2-tooth set. 55.63 cm³ total, ~218 g each steel (~437 g pair / ~246 g Ti).',
   },
   {
     id: 'undercutter', label: 'Undercutter',
@@ -59,7 +60,7 @@ export const proofStats = [
 
 export const buildSteps = [
   { n: '0', title: 'Rules + safety', body: 'Read SPARC plus your event rules. Match link: ELRS (FHSS, legal). DIY/custom handset: trainer/pit tool only until TRC pre-clears under SPARC §6.4.3 — message the organizer now. Removable link, failsafe (TX off stops spin under 1 s), LiPo bag, wheel locks. Cloud and pit software never drive.' },
-  { n: '1', title: 'Order metal first', body: 'Longest lead time. Export Main CAD.step bodies to manufacturing/pcbway/cnc/*.step (one solid per file) and flat plates to sheet-metal/*.dxf (1:1 mm). Titanium teeth (246 g a pair — steel would be 436 g), 6061-T6 plates, titanium cleats. See Onshape page, then PCBWay page.' },
+  { n: '1', title: 'Order metal first', body: 'Longest lead time. Export Main CAD.step bodies to manufacturing/pcbway/cnc/*.step (one solid per file) and flat plates to sheet-metal/*.dxf (1:1 mm). Teeth pair (Ti 246 g comfortable; steel 437 g legal but tight), 6061-T6 plates, titanium cleats. See Onshape page, then PCBWay page.' },
   { n: '2', title: 'Order electronics', body: 'Two PROPDRIVE v2 2836 1200KV (82 g each), AM32 55 A board with bidirectional DShot600, Teensy 4.0 lockable without pins, two H3LIS331DLTR breakouts to start, ELRS receiver plus handset, two 4S 550 mAh packs in parallel.' },
   { n: '3', title: 'Print plastics', body: 'Test-fit in PLA, fight in TPU 95A. No pre-sliced G-code here — slice for your printer and your spool. Shell halves, pod guards, LED mount, Pi and BEC mount, battery tray, wheel locks.' },
   { n: '4', title: 'Assemble frame', body: 'Deburr, hand-thread every bolt, press 626 bearings straight, hubmotor dead axle with aluminum hubs, titanium cleats last. Ring bolts in 12.9 with Loctite 243 in a star pattern. Balance on a point jig until level in four or more orientations.' },
@@ -138,8 +139,8 @@ export const stackCards: StackCard[] = [
   { id: 'tx', group: 'Link', part: 'RadioMaster Pocket ELRS', spec: 'One-time buy — bind, confirm sticks in configurator', role: 'Driver input. Cloud and pit software never drive.', stamp: 'Locked' },
   { id: 'batt', group: 'Power', part: '2× 4S 550 mAh in parallel', spec: '95C XT30 — 4 packs makes 2 flight sets', role: 'Liftoff Rev5+ spec. Must fit the TPU cradle and make weight.', stamp: 'Locked' },
   { id: 'link', group: 'Power', part: 'Removable link + harness + BEC', spec: 'Combat link, XT30, 16–20 AWG + 5 V / 3 A UBEC', role: 'Legal arming plus isolated 5 V, so a Pi brown-out cannot fail the failsafe.', stamp: 'Locked' },
-  { id: 'ring', group: 'Weapon', part: 'Teeth pair — titanium to make weight', spec: '55.6 cm³ measured: 436 g steel / 246 g Ti — no rim holes, taper to tune', role: 'Steel carries 1.77× the energy of Ti at equal volume, but 436 g of steel teeth blows the 1310 g target — Ti teeth at 246 g match Liftoff’s 241 g ring budget. Weigh yours.', stamp: 'Estimate' },
-  { id: 'teeth', group: 'Weapon', part: 'Standard teeth + 12.9 hardware', spec: '55.6 cm³ pair, 218 g ea in steel — 12.9 + Loctite 243', role: 'Symmetric 2-tooth. Balance on a point jig or it hops at 3000 RPM. Fallback: order DXF waterjet teeth via SendCutSend while CNC exports are pending.', stamp: 'TODO-export' },
+  { id: 'ring', group: 'Weapon', part: 'Teeth pair — steel default, Ti relief', spec: '55.63 cm³ measured: 437 g steel / 246 g Ti — no rim holes, taper to tune', role: 'Steel carries 1.77× the energy of Ti at equal volume, steel at 437 g still flies (~1245 g all-in, ~65 g margin) but Ti at 246 g (~1055 g all-in) is comfortable. Weigh yours.', stamp: 'Estimate' },
+  { id: 'teeth', group: 'Weapon', part: 'Standard teeth + 12.9 hardware', spec: '55.63 cm³ pair, ~218 g ea steel — 12.9 + Loctite 243', role: 'Symmetric 2-tooth. Balance on a point jig or it hops at 3000 RPM. Fallback: order DXF waterjet teeth via SendCutSend while CNC exports are pending.', stamp: 'TODO-export' },
   { id: 'plates', group: 'Weapon', part: '6061-T6 plates + TPU cradle', spec: '6061 0.063–0.080 in + poly LED window + TPU 95A shell', role: 'Branch E formula: aluminum structure, TPU shock, never full-steel. Weigh yours.', stamp: 'Estimate' },
   { id: 'pi', group: 'Vision+AI', part: 'Pi Zero 2W supervisor', spec: 'No header, UART 115200 to Teensy, ~35–50 g with BEC', role: 'Logs RPM, g, and battery; RPM-hold trim plus telemetry. Budget in Branch E.', stamp: 'Locked' },
   { id: 'cam', group: 'Vision+AI', part: 'Pi Camera 3 Wide + pit/cloud', spec: 'Onboard 1080p and flow — pit YOLO plus LLM hints, advisory only', role: 'Post-match review plus human-gated hints. Never drives.', stamp: 'Locked' },

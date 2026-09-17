@@ -53,7 +53,7 @@ Liftoff Rev9 runs: Teensy 4.0 + 2x H3LIS331DL ±400g + PropDrive 2836 1200kv hub
 | TPU 95A (wheel pods / guards) | 1kg | [ ] |
 | PLA+ / PETG / ABS-ASA / Nylon (jigs, mounts) | per `3d-printing/README.md` | [ ] |
 
-## Weight budget (3lb = 1360g max)
+## Weight budget (3lb = 1360.8g cap (use 1361g))
 
 Weigh as you go. Typical split — adjust to YOUR build:
 

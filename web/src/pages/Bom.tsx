@@ -16,12 +16,12 @@ function CostTable({ rows, caption }: { rows: CostRow[]; caption: string }) {
         </caption>
         <thead>
           <tr>
-            <th>Item</th>
-            <th>Spec</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Line</th>
-            <th>Vendor hint</th>
+            <th scope="col">Item</th>
+            <th scope="col">Spec</th>
+            <th scope="col">Qty</th>
+            <th scope="col">Unit</th>
+            <th scope="col">Line</th>
+            <th scope="col">Vendor hint</th>
           </tr>
         </thead>
         <tbody>
@@ -71,20 +71,20 @@ export function Bom() {
       </p>
       <CostTable rows={costRows} caption="Fight build — one bot plus two flight battery sets" />
       <div className="step">
-        <h3>
+        <h2>
           Build total <span className="mono">{formatUsd(buildTotal)}</span> <span className="stamp todo">Estimate</span>
-        </h3>
+        </h2>
         <p className="muted">
-          About $590 excluding the handset ($662 with it) at listed prices; fab variance runs $592–737 plus tax and ship. Add spares near $161.
+          About $590 excluding the handset ($662 with it) at listed prices; fab variance runs $592–737 plus tax and ship. Add spares near $161. Priced = listing checked Sep 2026; Range = fab quote moves — verify before ordering.
         </p>
       </div>
       <h2>Spares keep you in the event</h2>
       <CostTable rows={sparesRows} caption="Recommended spares — motors and ESCs die in meltybrains" />
       <div className="step">
-        <h3>
+        <h2>
           Spares total <span className="mono">{formatUsd(sparesTotal)}</span>{' '}
           <span className="stamp todo">Estimate</span>
-        </h3>
+        </h2>
         <p className="muted">
           Add a full spare armor lot ($100–180) if budget allows. Bring a calibrated scale,
           a lightening plan, and a backup 450 mAh pack option for weigh-in day.
@@ -95,13 +95,13 @@ export function Bom() {
         <table>
           <thead>
             <tr>
-              <th>Subsystem</th>
-              <th>Target (estimate — weigh yours)</th>
-              <th>Yours</th>
+              <th scope="col">Subsystem</th>
+              <th scope="col">Target (estimate — weigh yours)</th>
+              <th scope="col">Yours</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Weapon (Ti teeth pair, 55.6 cm³)</td><td className="mono">~246 g (steel pair = 436 g — overweight, Ti required)</td><td className="mono">___ g</td></tr>
+            <tr><td>Weapon (teeth pair, 55.63 cm³)</td><td className="mono">~246 g (steel pair = 437 g flies at ~1245 g with ~65 g margin — legal but tight; Ti (~1055 g) is comfortable)</td><td className="mono">___ g</td></tr>
             <tr><td>Plates + structure (alu)</td><td className="mono">300–400 g</td><td className="mono">___ g</td></tr>
             <tr><td>Shell + cradle (TPU)</td><td className="mono">80–120 g</td><td className="mono">___ g</td></tr>
             <tr><td>Pods (hubs + cleats)</td><td className="mono">~50 g</td><td className="mono">___ g</td></tr>
@@ -151,7 +151,7 @@ export function DownloadCards({ modelId }: { modelId: string }) {
           <i>/</i>
           {model.glb.split('/').pop()} <i>·</i> {model.glb.replace(/\.glb$/, '.stl').split('/').pop()}
         </p>
-        <p className="verify">✓ viewer mesh + reference STL · mm · preview only</p>
+        <p className="verify">✓ viewer mesh + decimated-preview STL (do not measure — STEP is the source) · mm</p>
         <div className="btn-row">
           <a className="btn" href={cadHref(model.glb)} download>
             GLB
