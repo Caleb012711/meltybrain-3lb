@@ -228,12 +228,13 @@ export function ExplodingModel({
   }, [scene, parts]);
 
   // Position + visibility only (cheap per slider tick — no material allocs).
+  // Spread 2.6: full assembly needs room for 96 nodes to read as separate parts.
   useEffect(() => {
     scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       const idx = (o.userData.partIndex as number) ?? 0;
       const rec = base.current.get(o.uuid);
-      if (rec) o.position.copy(rec.pos).addScaledVector(rec.dir, explode * 1.4);
+      if (rec) o.position.copy(rec.pos).addScaledVector(rec.dir, explode * 2.6);
       o.visible = !hidden.has(idx) && (isolated === null || isolated === idx);
     });
   }, [scene, explode, hidden, isolated]);

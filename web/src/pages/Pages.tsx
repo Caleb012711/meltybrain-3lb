@@ -199,6 +199,37 @@ export function Parts() {
         </table>
       </div>
       <p className="meta">Full tick-box BOM with vendor-link column lives in <code>BOM.md</code>. Cap is 1361 g — weigh every subassembly.</p>
+      <h2>Blade lab — what the winners run</h2>
+      <div className="step">
+        <h3>AR500 ring, blunt symmetric teeth, no holes</h3>
+        <p>
+          Project Liftoff's hard lessons, all confirmed in competition: a pointed tooth
+          embeds in the arena wall — run it blunt. A single tooth plus counterweight throws
+          the chassis when the tooth stops on impact — run symmetric 2-tooth. Bolt holes
+          through the rim start cracks — remove them and taper mid-span instead (326 g down
+          to 241 g precedent). Steel carries 1.77× the energy of titanium at equal volume,
+          so AR500 0.25 in is the default; titanium is only the weight relief valve.
+        </p>
+      </div>
+      <div className="step">
+        <h3>Bite beats tip speed</h3>
+        <p>
+          Fewer teeth mean deeper bites — going from 1 tooth to 2 halves it. Usable tooth
+          height ≈ attack speed × 60 ÷ (RPM × teeth); make teeth stick out about 1.5× your
+          max bite so slow engagements still connect. A melty closes fast once spinning,
+          which is why the symmetric 2-tooth works: full-width hits with real engagement.
+          Sources: RioBotz §6.3 bite math, RunAmok spinner FAQ, JustCuz spinner design.
+        </p>
+      </div>
+      <div className="step">
+        <h3>Modular configs</h3>
+        <p>
+          Liftoff Rev8+ runs swappable mid-cutter, undercutter, and flying-wedge configs —
+          reach against other horizontals, low attacks against big wheels. This repo ships
+          both <code>Standard Weapon Teeth.step</code> and <code>Undercutter Config.step</code>;
+          compare them in the <Link to="/explorer">3D explorer</Link> before ordering steel.
+        </p>
+      </div>
     </div>
   );
 }

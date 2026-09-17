@@ -129,15 +129,20 @@ function DriveCam({
     if (top) {
       desired.current.set(st.pos.x, 26, st.pos.y + 0.01);
     } else {
+      // Arena-level: ride down on the floor behind the bot, velocity lead.
       desired.current.set(
-        st.pos.x + st.vel.x * 0.55,
-        11,
-        st.pos.y + 9 + st.vel.y * 0.55
+        THREE.MathUtils.clamp(st.pos.x + st.vel.x * 0.55, -HALF - 2, HALF + 2),
+        2.6,
+        THREE.MathUtils.clamp(st.pos.y + 7.5 + st.vel.y * 0.55, -HALF - 2, HALF + 2)
       );
     }
     const k = 1 - Math.exp(-3.0 * Math.min(delta, 0.05));
     camera.position.lerp(desired.current, k);
-    look.current.lerp(new THREE.Vector3(st.pos.x, 0, st.pos.y), 1 - Math.exp(-4.0 * Math.min(delta, 0.05)));
+    const ly = top ? 0 : 1.0;
+    look.current.lerp(
+      new THREE.Vector3(st.pos.x, ly, st.pos.y),
+      1 - Math.exp(-4.0 * Math.min(delta, 0.05))
+    );
     camera.lookAt(look.current);
   });
   return null;
@@ -639,7 +644,7 @@ export function Studio() {
                   aria-pressed={top}
                   onClick={() => setTop((v) => !v)}
                 >
-                  {top ? 'Follow cam' : 'Top cam'}
+                  {top ? 'Arena cam' : 'Top cam'}
                 </button>
                 <button
                   ref={helpBtnRef}
