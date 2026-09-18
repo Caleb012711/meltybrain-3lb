@@ -380,8 +380,17 @@ export function FocusRig({
     } else {
       let found: THREE.Object3D | null = null;
       scene.traverse((o) => {
-        if (!found && o.userData.partIndex === idx && (o as THREE.Mesh).isMesh) found = o;
+        if (!found && o.userData.partIndex === idx && (o as THREE.Mesh).isMesh && o.visible) {
+          found = o;
+        }
       });
+      if (!found) {
+        scene.traverse((o) => {
+          if (!found && o.userData.partIndex === idx && (o as THREE.Mesh).isMesh) {
+            found = o;
+          }
+        });
+      }
       if (!found) return;
       const box = new THREE.Box3().setFromObject(found);
       const center = box.getCenter(new THREE.Vector3());

@@ -72,32 +72,58 @@ function stepDrive(st: DriveState, inp: DriveInput, dt: number) {
   st.pos.x += st.vel.x * d;
   st.pos.y += st.vel.y * d;
   const lim = HALF - BOT_R;
-  // Per-axis resolve with min rebound so slow rolls still kick off the wall.
-  // Cooldown stops machine-gun re-trigger while grinding without freezing visual spin.
-  if (st.hitT > 0) {
-    st.hitT -= d;
-  } else {
-    let hit = false;
-    if (st.pos.x > lim || st.pos.x < -lim) {
-      const sgn = st.pos.x > 0 ? 1 : -1;
-      st.pos.x = sgn * lim;
-      st.vel.x *= -BOUNCE;
-      st.vel.y *= 0.85; // wall scrub bleeds tangent speed
-      if (Math.abs(st.vel.x) < 2.5) st.vel.x = -sgn * 2.5;
-      st.rpm *= 0.82; // wall impact drops weapon rotational kinetic energy
-      hit = true;
+  // Directional normal velocity checks: prevents machine-gun jitter without
+  // artificial cooldowns that allow wall penetration during high-speed impacts.
+  let hitX = false;
+  let hitY = false;
+
+  if (st.pos.x >= lim) {
+    st.pos.x = lim;
+    if (st.vel.x > 0) {
+      st.vel.x = -Math.max(st.vel.x * BOUNCE, 2.5);
+      hitX = true;
     }
-    if (st.pos.y > lim || st.pos.y < -lim) {
-      const sgn = st.pos.y > 0 ? 1 : -1;
-      st.pos.y = sgn * lim;
-      st.vel.y *= -BOUNCE;
-      st.vel.x *= 0.85;
-      if (Math.abs(st.vel.y) < 2.5) st.vel.y = -sgn * 2.5;
-      st.rpm *= 0.82; // wall impact drops weapon rotational kinetic energy
-      hit = true;
+  } else if (st.pos.x <= -lim) {
+    st.pos.x = -lim;
+    if (st.vel.x < 0) {
+      st.vel.x = Math.max(-st.vel.x * BOUNCE, 2.5);
+      hitX = true;
     }
-    if (hit) st.hitT = 0.12;
   }
+
+  if (st.pos.y >= lim) {
+    st.pos.y = lim;
+    if (st.vel.y > 0) {
+      st.vel.y = -Math.max(st.vel.y * BOUNCE, 2.5);
+      hitY = true;
+    }
+  } else if (st.pos.y <= -lim) {
+    st.pos.y = -lim;
+    if (st.vel.y < 0) {
+      st.vel.y = Math.max(-st.vel.y * BOUNCE, 2.5);
+      hitY = true;
+    }
+  }
+
+  // Pure wall scrubs bleed tangent speed; corner collisions rebound both axes symmetrically
+  if (hitX && !hitY) {
+    st.vel.y *= 0.85;
+  } else if (hitY && !hitX) {
+    st.vel.x *= 0.85;
+  }
+
+  // Wall impact drops weapon rotational kinetic energy once per collision event
+  if (hitX || hitY) {
+    st.rpm *= 0.82;
+    st.hitT = 0.12;
+  } else if (st.hitT > 0) {
+    st.hitT -= d;
+  }
+
+  // Unconditional boundary clamp: guarantees the bot never penetrates or tunnels through arena walls
+  st.pos.x = Math.max(-lim, Math.min(lim, st.pos.x));
+  st.pos.y = Math.max(-lim, Math.min(lim, st.pos.y));
+
   const omegaTrue = ((st.rpm * 2 * Math.PI) / 60) * 0.05;
   const omegaWant = Math.min(omegaTrue, 8);
   st.visOmega += (omegaWant - st.visOmega) * (1 - Math.exp(-d / 0.3));
@@ -120,6 +146,14 @@ function DriveBot({
   circularShell = true,
   shellMaterial = 'titanium',
   shellProfile = 'body',
+  keysRef,
+  keyThr,
+  thrTouchRef,
+  joyRef,
+  armedRef,
+  onArm,
+  onDisarm,
+  onReset,
 }: {
   stateRef: React.MutableRefObject<DriveState>;
   inputRef: React.MutableRefObject<DriveInput>;
@@ -128,11 +162,86 @@ function DriveBot({
   circularShell?: boolean;
   shellMaterial?: ShellMaterialPreset;
   shellProfile?: ShellProfilePreset;
+  keysRef: React.MutableRefObject<Set<string>>;
+  keyThr: React.MutableRefObject<boolean>;
+  thrTouchRef: React.MutableRefObject<boolean>;
+  joyRef: React.MutableRefObject<{ x: number; y: number } | null>;
+  armedRef: React.MutableRefObject<boolean>;
+  onArm: () => void;
+  onDisarm: () => void;
+  onReset: () => void;
 }) {
   const group = useRef<THREE.Group>(null);
   const spinner = useRef<THREE.Group>(null);
+  const btnPrev = useRef({ arm: false, reset: false });
+
   useFrame((_, delta) => {
     const st = stateRef.current;
+
+    // Physical Gamepad API support (EdgeTX / FrSky USB / Xbox / PlayStation / DirectInput)
+    if (typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function') {
+      const gps = navigator.getGamepads();
+      let gp: Gamepad | null = null;
+      for (let i = 0; i < gps.length; i++) {
+        const candidate = gps[i];
+        if (candidate && candidate.connected) {
+          gp = candidate;
+          break;
+        }
+      }
+      if (gp) {
+        const ax = gp.axes[0] ?? 0;
+        const ay = gp.axes[1] ?? 0;
+        const deadband = 0.15;
+        const mag = Math.hypot(ax, ay);
+        const hasKey = keysRef.current.size > 0;
+        const hasTouch = joyRef.current !== null;
+        if (mag > deadband) {
+          const norm = (mag - deadband) / (1 - deadband);
+          inputRef.current.move.set((ax / mag) * Math.min(1, norm), (ay / mag) * Math.min(1, norm));
+        } else if (!hasKey && !hasTouch) {
+          inputRef.current.move.set(0, 0);
+        }
+
+        const thrBtn =
+          Boolean(gp.buttons[7]?.pressed || (gp.buttons[7]?.value ?? 0) > 0.2) ||
+          Boolean(gp.buttons[5]?.pressed) ||
+          Boolean(gp.buttons[0]?.pressed);
+        const brkBtn =
+          Boolean(gp.buttons[6]?.pressed || (gp.buttons[6]?.value ?? 0) > 0.2) ||
+          Boolean(gp.buttons[4]?.pressed) ||
+          Boolean(gp.buttons[1]?.pressed);
+
+        if (thrBtn) {
+          inputRef.current.throttle = true;
+        } else if (!keyThr.current && !thrTouchRef.current) {
+          inputRef.current.throttle = false;
+        }
+
+        if (brkBtn) {
+          inputRef.current.brake = true;
+        } else if (!keysRef.current.has('Space') && !keysRef.current.has('KeyX')) {
+          inputRef.current.brake = false;
+        }
+
+        const startPressed = Boolean(gp.buttons[9]?.pressed);
+        const selectPressed = Boolean(gp.buttons[8]?.pressed);
+        const yPressed = Boolean(gp.buttons[3]?.pressed);
+
+        if (startPressed && !btnPrev.current.arm && !armedRef.current) {
+          onArm();
+        }
+        if (selectPressed && armedRef.current) {
+          onDisarm();
+        }
+        if (yPressed && !btnPrev.current.reset) {
+          onReset();
+        }
+        btnPrev.current.arm = startPressed;
+        btnPrev.current.reset = yPressed;
+      }
+    }
+
     stepDrive(st, inputRef.current, delta);
     if (group.current) group.current.position.set(st.pos.x, REST_Y, st.pos.y);
     if (spinner.current && !reduced) spinner.current.rotation.z = st.spinAngle;
@@ -240,6 +349,11 @@ function RivalBot({
         if (vn < 0) s.vel.addScaledVector(_aiN, -(1 + BOUNCE) * vn * sgn);
         s.rpm *= 0.75;
       }
+      const arenaLim = HALF - BOT_R;
+      me.pos.x = Math.max(-arenaLim, Math.min(arenaLim, me.pos.x));
+      me.pos.y = Math.max(-arenaLim, Math.min(arenaLim, me.pos.y));
+      foe.pos.x = Math.max(-arenaLim, Math.min(arenaLim, foe.pos.x));
+      foe.pos.y = Math.max(-arenaLim, Math.min(arenaLim, foe.pos.y));
     }
     if (group.current) group.current.position.set(me.pos.x, REST_Y, me.pos.y);
     if (spinner.current && !reduced) spinner.current.rotation.z = me.spinAngle;
@@ -646,6 +760,9 @@ export function Studio() {
   const reduced = usePrefersReducedMotion();
   const [mode, setMode] = useState<'drive' | 'build'>('drive');
   const [armed, setArmed] = useState(false);
+  const armedRef = useRef(armed);
+  armedRef.current = armed;
+  const [gamepadName, setGamepadName] = useState<string | null>(null);
   const [top, setTop] = useState(false);
   const [trailOn, setTrailOn] = useState(!reduced);
   const [brakeUi, setBrakeUi] = useState(false);
@@ -787,6 +904,12 @@ export function Studio() {
     setSrText('Drive reset to arena center at 0 RPM.');
   };
 
+  const armBot = () => {
+    setArmed(true);
+    rootRef.current?.focus();
+    setSrText('Armed. Hold Shift to spin up, WASD to translate.');
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -801,13 +924,25 @@ export function Studio() {
     const onVis = () => {
       if (document.hidden) disarm();
     };
+    const onGpConnect = (e: GamepadEvent) => {
+      setGamepadName(e.gamepad.id);
+      setSrText(`Gamepad connected: ${e.gamepad.id.slice(0, 28)}. Left stick drives, RT spins up.`);
+    };
+    const onGpDisconnect = () => {
+      setGamepadName(null);
+      setSrText('Gamepad disconnected.');
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('blur', f);
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('gamepadconnected', onGpConnect);
+    window.addEventListener('gamepaddisconnected', onGpDisconnect);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('blur', f);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('gamepadconnected', onGpConnect);
+      window.removeEventListener('gamepaddisconnected', onGpDisconnect);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1122,6 +1257,14 @@ export function Studio() {
                           circularShell={circularShell}
                           shellMaterial={shellMaterial}
                           shellProfile={shellProfile}
+                          keysRef={keysRef}
+                          keyThr={keyThr}
+                          thrTouchRef={thrTouchRef}
+                          joyRef={joyRef}
+                          armedRef={armedRef}
+                          onArm={armBot}
+                          onDisarm={disarm}
+                          onReset={resetDrive}
                         />
                         <DriveTrail stateRef={stateRef} on={trailOn && !reduced} gen={trailGen.current} />
                         {rivalOn && (
@@ -1148,15 +1291,33 @@ export function Studio() {
                     if (armed) {
                       disarm();
                     } else {
-                      setArmed(true);
-                      rootRef.current?.focus();
-                      setSrText('Armed. Hold Shift to spin up, WASD to translate.');
+                      armBot();
                     }
                   }}
                   title={armed ? 'Disarm weapon & drive' : 'Arm weapon & drive'}
                 >
                   {armed ? 'Disarm' : 'Arm'}
                 </button>
+                {gamepadName && (
+                  <span
+                    className="badge mono"
+                    style={{
+                      background: '#ecfdf5',
+                      color: '#059669',
+                      border: '1px solid #a7f3d0',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      fontWeight: 650,
+                      borderRadius: 999,
+                    }}
+                    title={`Gamepad active: ${gamepadName}`}
+                  >
+                    🎮 Controller
+                  </span>
+                )}
                 <button className="mini drive-btn" onClick={resetDrive}>
                   Reset (R)
                 </button>
@@ -1330,7 +1491,7 @@ export function Studio() {
               <p id="drive-help" className="status">
                 <span className="mono">WASD/arrows</span> move · <span className="mono">Shift</span> hold to spin up ·{' '}
                 <span className="mono">Space</span> brake · <span className="mono">R</span> reset ·{' '}
-                <span className="mono">Esc</span> releases the viewport.
+                <span className="mono">🎮 Gamepad</span> supported · <span className="mono">Esc</span> releases.
               </p>
             </div>
           </div>
@@ -1789,6 +1950,7 @@ export function Studio() {
                   <tr><td><kbd className="mono">Space</kbd> / <kbd className="mono">X</kbd></td><td>Brake</td></tr>
                   <tr><td><kbd className="mono">R</kbd></td><td>Reset pose</td></tr>
                   <tr><td><kbd className="mono">Esc</kbd></td><td>Release the viewport</td></tr>
+                  <tr><td><kbd className="mono">🎮 Gamepad</kbd></td><td>Left stick = move · RT/RB/A = throttle · LT/LB/B = brake · Start = arm · Back = disarm · Y = reset</td></tr>
                 </tbody>
               </table>
               <p className="meta">Keys only work while the viewport is focused — click it first. No spin means no move.</p>

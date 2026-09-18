@@ -150,11 +150,17 @@ export function CircularOuterShell({
   // Geometry dimensions in CAD local coordinate frame:
   // solid_080 was centered at X=0, Y=0.004, Z=-0.246 with height 0.396.
   // In CAD local frame, Z is the vertical weapon/spin axis.
-  // Three.js CylinderGeometry defaults along Y, so rotation={[Math.PI / 2, 0, 0]} maps Y to Z.
   const zOffset = -0.246 - explode * 1.5;
-
   const showBody = profile === 'body' || profile === 'hybrid';
   const showPerimeter = profile === 'perimeter' || profile === 'hybrid';
+
+  useEffect(() => {
+    if (groupRef.current) {
+      groupRef.current.traverse((child) => {
+        child.userData.partIndex = 80;
+      });
+    }
+  }, [showBody, showPerimeter]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
