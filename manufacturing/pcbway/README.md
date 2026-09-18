@@ -49,7 +49,7 @@ Go to pcbway.com > CNC Machining / Sheet Metal Laser Cutting > Instant Quote > U
 - **Quantity:** 1x + 1 spare for weapon teeth / small breakable parts.
 
 ### For `sheet-metal/*.dxf`:
-- **Process:** Laser cutting (+ bending only if part has bend lines)
+- **Process:** Laser cutting, flat only — this folder takes no bend lines. If a part truly needs a third dimension, it is two flat plates + standoffs (see `sheet-metal/README.md`), not a bent part.
 - **Material / thickness:** match CAD — typically 5052-H32 or 6061 sheet, 1.5–3mm. Don't guess, measure CAD.
 - Upload DXF, set thickness, confirm hole sizes look right in the preview.
 

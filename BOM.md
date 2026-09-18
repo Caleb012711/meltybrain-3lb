@@ -62,6 +62,21 @@ Weigh as you go. Typical split — adjust to YOUR build:
 - Motors + ESCs + wiring: ___ g
 - Battery: ___ g
 - Fasteners: ___ g
-- **Total: ___ g (must be ≤ 1360g)**
+- **Total: ___ g (must be ≤ 1361g — 3 lb = 1360.8 g)**
 
 > Tip: order spare teeth, spare battery, spare fasteners, and one spare motor/ESC if budget allows. Those are the most common event killers.
+
+## 5. Event spares kit (pack this — per autonomy plan §3 + 00-start-here §8)
+
+Pre-balance teeth as pairs BEFORE the event. One hex size for the whole weapon swap; target <10 min + post-swap spin check (hand-spin → 1000 RPM → balance jig). Loctite 243 needs 24 h cure — pre-prep spares, do not assemble wet at the pit.
+
+| Spares item | Spec to pack | Qty | Packed? |
+|---|---|---|---|
+| Teeth pair (matched + pre-balanced) | `Standard Weapon Teeth.step` pair 55.63 cm³ → 437 g steel / 246 g Ti; OR `Undercutter Config.step` set 45.4 cm³ → 356 g steel / 201 g Ti. Symmetric only, no extra holes. See `manufacturing/P1-mass-audit.md` | 1 pair (fight config) + 1 alt-config pair if running modular blades | [ ] |
+| Cleats | Ti cleat set for 1.55" wheels (TRC wood/steel floors); rubber Phase-1 set to learn. See `manufacturing/materials-guide.md` §3.5 | 1 full wheel set + mounting hardware | [ ] |
+| ESC spare | Same AM32 55A 4-in-1 as §2 (DShot600 bidirectional) — pre-configured: motor direction + 8 kHz loop verified on bench | 1 board | [ ] |
+| Pack (flight set) | 2× 4S 550 mAh in parallel = 1 flight set (Liftoff Rev5+ spec); must fit TPU cradle. Carry 2 flight sets minimum | 2 flight sets (4 packs) charged + LiPo bag | [ ] |
+| Fasteners + link | M3/M4 12.9 button + socket heads (lengths per CAD) + nylocs + washers + blue Loctite 243 + spare removable link + 3.5 mm bullets + heat shrink. See `build-guide/01-frame-assembly.md` | 1 assortment (20+ nuts, full bolt lengths, 2–3 g trim screws for balance) | [ ] |
+
+- [ ] Spares weighed separately, logged above — they do NOT count toward the 1361 g fight-ready total
+- [ ] Post-swap ritual done after ANY weapon/fastener change before full spin (see `PIT-CHECKLIST.md` §5)

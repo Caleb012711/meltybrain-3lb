@@ -46,8 +46,9 @@ export function Engineering() {
   const [accR, setAccR] = useState(20);
 
   // tip speed + KE (thin-ring model, teeth-pair mass)
+  // mph = π·D(in)·RPM·60 / 63360 = π·D·RPM / 1056 (sanity: 8″ @ 4000 RPM ≈ 95 mph)
   const wMass = ti ? 0.2464 : 0.4367;
-  const mph = (Math.PI * diaIn * rpm) / 336;
+  const mph = (Math.PI * diaIn * rpm) / 1056;
   const ms = mph * 0.44704;
   const ke = 0.5 * wMass * ms * ms;
   // bite (2 teeth)
@@ -92,7 +93,7 @@ export function Engineering() {
             </tbody>
           </table>
         </div>
-        <p className="meta">v = π × D × RPM / 336. Measure YOUR spin Ø in CAD — the 331 mm bbox axis is reach, not diameter.</p>
+        <p className="meta">v = π × D × RPM / 1056. Measure YOUR spin Ø in CAD — the 331 mm bbox axis is reach, not diameter.</p>
       </div>
 
       <div className="step">
@@ -147,7 +148,7 @@ export function Engineering() {
         </div>
         <p className="meta">
           Steel is legal but tight — Ti is comfortable. CAD stages both weapon configs: flying both
-          adds ~351 g steel (~198 g Ti) of phantom mass for the staged second config. Electro-green keepouts are placeholders, replaced by
+          adds ~356 g steel (~201 g Ti) of phantom mass for the staged second config. Electro-green keepouts are placeholders, replaced by
           the fixed-electronics line above.
         </p>
       </div>

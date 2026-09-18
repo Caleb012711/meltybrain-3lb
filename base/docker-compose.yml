@@ -1,0 +1,120 @@
+# Eyeliner pit base station (T3) — Compose v2, all images pinned.
+#
+# Services:
+#   tracker      USB overhead camera -> opponent/self pose @ ~5 Hz (YOLOv8, replay fallback)
+#   dashboard    pit display: RPM / G / batt / temp + 4-corner calibrate UI
+#   cloud-bridge batches frames + strategy hints, survives drops (advisory only, TTL-enforced)
+#
+# Ports (all bound to loopback; see README for LAN exposure):
+#   dashboard    127.0.0.1:8080 -> 8080
+#   tracker      127.0.0.1:5001 -> 5001
+#   cloud-bridge 127.0.0.1:5002 -> 5002
+#
+# Bring-up is ONE command:  ./setup.sh        (checks only)
+#                            ./setup.sh --up   (checks, then starts the stack)
+# Validate without hardware: docker compose config > /dev/null
+# NOTE: tracker needs the USB camera passed through. `docker compose config`
+# passes everywhere; `up` needs /dev/video0 on the host (setup.sh gates this).
+# Laptops without Docker: see README "No-Docker manual fallback".
+
+services:
+  tracker:
+    image: python:3.11.9-slim-bookworm
+    container_name: eyeliner-tracker
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./tracker:/app:ro
+      - ./data:/data
+    ports:
+      - "127.0.0.1:5001:5001"
+    devices:
+      - "/dev/video0:/dev/video0"
+    environment:
+      CAMERA_INDEX: "0"
+      POSE_RATE_HZ: "5"
+      CALIBRATE_PATH: /data/calibrate.json
+      PORT: "5001"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - pit
+
+  dashboard:
+    image: node:22.12.0-alpine
+    container_name: eyeliner-dashboard
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./dashboard:/app:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      TRACKER_URL: http://tracker:5001
+      PORT: "8080"
+    command: ["node", "server.js"]
+    depends_on:
+      tracker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - pit
+
+  cloud-bridge:
+    image: python:3.11.9-slim-bookworm
+    container_name: eyeliner-cloud-bridge
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./bridge:/app:ro
+      - ./data:/data
+    ports:
+      - "127.0.0.1:5002:5002"
+    environment:
+      TRACKER_URL: http://tracker:5001
+      HINT_TTL_S: "5"
+      INTENT_TTL_S: "1"
+      PORT: "5002"
+      # No secrets in this file. Pass through from the shell when needed:
+      #   OPENAI_API_KEY=... docker compose up -d cloud-bridge
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    command: ["python3", "bridge.py"]
+    depends_on:
+      tracker:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:5002/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - pit
+
+networks:
+  pit:
+    driver: bridge

@@ -43,6 +43,12 @@ services:
       - path: /cad/*.stl
         name: Cache-Control
         value: public, max-age=86400
+      - path: /fight-night.mp4
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /fight-poster.jpg
+        name: Cache-Control
+        value: public, max-age=86400
       - path: /index.html
         name: Cache-Control
         value: no-cache
@@ -52,11 +58,6 @@ services:
       paths:
         - web/**
         - render.yaml
-        - tools/cad_convert.py
-        - Main CAD.step
-        - Wheel Pod.step
-        - Standard Weapon Teeth.step
-        - Undercutter Config.step
         - tools/cad_convert.py
         - Main CAD.step
         - Wheel Pod.step

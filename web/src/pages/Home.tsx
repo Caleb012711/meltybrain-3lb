@@ -105,10 +105,11 @@ export function Home() {
     <div className="page">
       {/* 01 hero */}
       <section id="hero">
-        <p className="spec-plate">
-          <span>EYELINER-3LB / REV9 / SHEET 01</span>
-          <span>Hero — live CAD</span>
-        </p>
+        <div className="hero-badges" aria-label="Build status">
+          <span className="pill"><span className="dot" aria-hidden="true" />Live CAD</span>
+          <span className="pill">Eyeliner-3LB / Rev9</span>
+          <span className="pill hot">≤1361 g fight-ready</span>
+        </div>
         <Suspense
           fallback={
             <div className="hero-static">
@@ -135,18 +136,19 @@ export function Home() {
           </div>
           <div className="btn-row">
             <Link className="btn primary" to="/build">Start build</Link>
+            <Link className="btn" to="/studio">Drive it + fight reel</Link>
             <Link className="btn" to="/explorer">3D explorer</Link>
             <Link className="btn" to="/onshape">Open in Onshape</Link>
             <Link className="btn" to="/pcbway">Get PCBWay files</Link>
           </div>
           <p className="meta">
-            Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids, 96 meshed — thread specks stats-only). Viewer loads
+            Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids, 89 meshed — thread specks stats-only). Viewer loads
             converted GLB meshes; STEP downloads are linked per model.
           </p>
           <ProofStrip />
           <p className="meta">
             Cap 1360.8 g — build target ≤1310 g (50 g margin for wires, Loctite, scale error).
-            Tip-speed math: v(mph) = π × D(in) × RPM / 336, but you must measure YOUR spin
+            Tip-speed math: v(mph) = π × D(in) × RPM / 1056, but you must measure YOUR spin
             diameter first. An 8 in ring at 4000 RPM is about 95 mph — not 200+.
           </p>
         </div>

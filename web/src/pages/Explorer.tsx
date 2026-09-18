@@ -5,7 +5,7 @@ import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, FocusRig, GlErrorBoundary, useModelParts, type ColorMode } from '../components/CadViewer';
+import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, useModelParts, type ColorMode } from '../components/CadViewer';
 import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel, type PartInfo } from '../components/materials';
 import { Reveal } from '../components/Layout';
 
@@ -152,26 +152,27 @@ export function Explorer() {
                   role="img"
                   aria-label={`3D explorer, ${model.label}, ${count} parts`}
                 >
-                  <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
-                  <directionalLight position={[5, 8, 4]} intensity={2.2} />
-                  <directionalLight position={[-6, 3, -6]} intensity={1.0} color="#dfe8ff" />
-                  <gridHelper args={[12, 24, '#c9c6b8', '#e2e0d8']} position={[0, -2.2, 0]} />
+                  <ViewerLights />
+                  <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
                   <Suspense fallback={null}>
-                    <ExplodingModel
-                      url={model.glb}
-                      parts={parts}
-                      explode={explode}
-                      wireframe={wireframe}
-                      xray={xray}
-                      spin={spin && !reduced}
-                      colorMode={colorMode}
-                      selected={selected}
-                      hovered={hovered}
-                      hidden={hidden}
-                      isolated={isolated}
-                      onSelect={setSelected}
-                      onHover={setHovered}
-                    />
+                    {/* CAD is Z-up: level the ring flat. */}
+                    <group rotation={[-Math.PI / 2, 0, 0]}>
+                      <ExplodingModel
+                        url={model.glb}
+                        parts={parts}
+                        explode={explode}
+                        wireframe={wireframe}
+                        xray={xray}
+                        spin={spin && !reduced}
+                        colorMode={colorMode}
+                        selected={selected}
+                        hovered={hovered}
+                        hidden={hidden}
+                        isolated={isolated}
+                        onSelect={setSelected}
+                        onHover={setHovered}
+                      />
+                    </group>
                   </Suspense>
                   <FocusRig idx={focusIdx} homeKey={homeKey} reduced={reduced} />
                   <OrbitControls
@@ -229,7 +230,7 @@ export function Explorer() {
                   aria-label="Color mode"
                   value={colorMode}
                   onChange={(e) => setColorMode(e.target.value as ColorMode)}
-                  style={{ minHeight: 36 }}
+                  style={{ minHeight: 44 }}
                 >
                   <option value="role">By heuristic role</option>
                   <option value="index">By part #</option>
@@ -336,7 +337,7 @@ export function Explorer() {
                 aria-label="Filter by material role"
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                style={{ minHeight: 40, flex: 1 }}
+                style={{ minHeight: 44, flex: 1 }}
               >
                 <option value="all">All roles ({parts.length > 0 ? count : '…'})</option>
                 {rolesPresent.map((r) => (

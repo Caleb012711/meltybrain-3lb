@@ -6,7 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import { cadModels } from '../data/content';
 import { BUILD_GUIDE, STEP_ROLES, type BuildStepKey } from '../data/buildGuide';
 import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, FocusRig, GlErrorBoundary, useModelParts, EMPTY_SET } from '../components/CadViewer';
+import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, useModelParts, EMPTY_SET } from '../components/CadViewer';
 import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel } from '../components/materials';
 
 // ---------- drive physics (arcade melty: no spin = no move) ----------
@@ -22,6 +22,8 @@ const GRIP_HI = 3100;
 const GRIP_EXP = 2.8;
 const HALF = 15;
 const BOT_R = 2.0;
+// Rest height: model normalizes to ~4 units long, ~1.1 thick → half-thickness.
+const REST_Y = 0.56;
 const BOUNCE = 0.45;
 const TRAIL_N = 120;
 
@@ -110,14 +112,14 @@ function DriveBot({
   useFrame((_, delta) => {
     const st = stateRef.current;
     stepDrive(st, inputRef.current, delta);
-    if (group.current) group.current.position.set(st.pos.x, 2.05, st.pos.y);
+    if (group.current) group.current.position.set(st.pos.x, REST_Y, st.pos.y);
     if (spinner.current && !reduced) spinner.current.rotation.z = st.spinAngle;
   });
   return (
     // CAD is Z-up with the weapon axis along Z; level it flat (rotation.x)
     // so the ring lies horizontal on the arena floor, then spin the inner
     // group about its own Z — which is world-vertical after leveling.
-    <group ref={group} position={[0, 2.05, 0]}>
+    <group ref={group} position={[0, REST_Y, 0]}>
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <group ref={spinner}>
           <ExplodingModel
@@ -135,9 +137,10 @@ function DriveBot({
             onSelect={() => undefined}
             onHover={() => undefined}
           />
-          {/* heading LED on the rim — rotates with the bot, the steering cue */}
-          <mesh position={[2.4, 0, 0]}>
-            <sphereGeometry args={[0.22, 12, 12]} />
+          {/* heading LED on the rim — rotates with the bot, the steering cue.
+              Local CAD frame: x = width (±1.2 rim), z = up (shell top ≈0.56). */}
+          <mesh position={[1.1, 0, 0.6]}>
+            <sphereGeometry args={[0.13, 16, 16]} />
             <meshBasicMaterial color="#12b76a" toneMapped={false} />
           </mesh>
         </group>
@@ -207,11 +210,11 @@ function RivalBot({
         s.rpm *= 0.75;
       }
     }
-    if (group.current) group.current.position.set(me.pos.x, 2.05, me.pos.y);
+    if (group.current) group.current.position.set(me.pos.x, REST_Y, me.pos.y);
     if (spinner.current && !reduced) spinner.current.rotation.z = me.spinAngle;
   });
   return (
-    <group ref={group} position={[8, 2.05, 8]}>
+    <group ref={group} position={[8, REST_Y, 8]}>
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <group ref={spinner}>
           <ExplodingModel
@@ -221,7 +224,7 @@ function RivalBot({
             wireframe={false}
             xray={false}
             spin={false}
-            colorMode="index"
+            colorMode="role"
             selected={null}
             hovered={null}
             hidden={EMPTY_SET}
@@ -231,8 +234,8 @@ function RivalBot({
           />
         </group>
       </group>
-      {/* red ring marker: this one is the rival */}
-      <mesh position={[0, -1.9, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* red ring marker: this one is the rival (flat on the floor, not the bot) */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.2, 2.6, 32]} />
         <meshBasicMaterial color="#c81e1e" transparent opacity={0.8} side={THREE.DoubleSide} />
       </mesh>
@@ -377,9 +380,9 @@ function DriveArena() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2 * HALF + 1, 2 * HALF + 1]} />
-        <meshStandardMaterial color="#f4f2ec" roughness={0.95} />
+        <meshStandardMaterial color="#f7f8fa" roughness={0.95} />
       </mesh>
-      <gridHelper args={[2 * HALF, 2 * HALF, '#c9c6b8', '#e2e0d8']} position={[0, 0.01, 0]} />
+      <gridHelper args={[2 * HALF, 2 * HALF, '#c3c8d0', '#e5e7eb']} position={[0, 0.01, 0]} />
       <lineSegments geometry={ARENA_EDGE} position={[0, 0.02, 0]}>
         <lineBasicMaterial color="#1a1d21" />
       </lineSegments>
@@ -438,25 +441,27 @@ function BuildCanvas({
           if (sel !== null) onFocus(sel);
         }}
       >
-        <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
-        <directionalLight position={[5, 8, 4]} intensity={2.0} />
-        <gridHelper args={[12, 24, '#c9c6b8', '#e2e0d8']} position={[0, -2.2, 0]} />
+        <ViewerLights />
+        <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
         <Suspense fallback={null}>
-          <ExplodingModel
-            url={model.glb}
-            parts={bp}
-            explode={explode}
-            wireframe={false}
-            xray={false}
-            spin={false}
-            colorMode="role"
-            selected={sel}
-            hovered={null}
-            hidden={hid}
-            isolated={iso}
-            onSelect={onSelect}
-            onHover={() => undefined}
-          />
+          {/* CAD is Z-up: level the ring flat. */}
+          <group rotation={[-Math.PI / 2, 0, 0]}>
+            <ExplodingModel
+              url={model.glb}
+              parts={bp}
+              explode={explode}
+              wireframe={false}
+              xray={false}
+              spin={false}
+              colorMode="role"
+              selected={sel}
+              hovered={null}
+              hidden={hid}
+              isolated={iso}
+              onSelect={onSelect}
+              onHover={() => undefined}
+            />
+          </group>
         </Suspense>
         <FocusRig idx={focus} homeKey={homeKey} reduced={reduced} />
         <OrbitControls
@@ -997,8 +1002,7 @@ export function Studio() {
                       role="img"
                       aria-label="Top-down arena with the drivable Eyeliner robot"
                     >
-                      <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
-                      <directionalLight position={[5, 8, 4]} intensity={2.0} />
+                      <ViewerLights />
                       <Suspense fallback={null}>
                         <DriveArena />
                         <DriveBot
@@ -1236,19 +1240,32 @@ export function Studio() {
                   />
                 </label>
               </div>
-              <BuildCanvas
-                modelId={modelId}
-                bparts={bparts}
-                selected={selected}
-                focus={bFocus}
-                homeKey={bHome}
-                reduced={reduced}
-                hidden={hidden}
-                isolated={isolated}
-                explode={bExplode}
-                onSelect={setSelected}
-                onFocus={setBFocus}
-              />
+              {glFailed ? (
+                <div className="viewer-fallback">
+                  <img
+                    src="eyeliner_summer_2025_render.webp"
+                    alt="Overhead render of the Eyeliner 3lb meltybrain (3D unavailable)"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              ) : (
+              <GlErrorBoundary onFail={() => setGlFailed(true)}>
+                <BuildCanvas
+                  modelId={modelId}
+                  bparts={bparts}
+                  selected={selected}
+                  focus={bFocus}
+                  homeKey={bHome}
+                  reduced={reduced}
+                  hidden={hidden}
+                  isolated={isolated}
+                  explode={bExplode}
+                  onSelect={setSelected}
+                  onFocus={setBFocus}
+                />
+              </GlErrorBoundary>
+              )}
               <p className="status" role="status">
                 {bmodel.label} · {bparts.length} parts ·{' '}
                 {isolated !== null
@@ -1288,7 +1305,7 @@ export function Studio() {
                   aria-label="Filter by material role"
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  style={{ minHeight: 40, flex: 1 }}
+                  style={{ minHeight: 44, flex: 1 }}
                 >
                   <option value="all">All roles</option>
                   {rolesPresent.map((r) => (
@@ -1301,7 +1318,7 @@ export function Studio() {
                   aria-label="Filter by build step"
                   value={stepFilter}
                   onChange={(e) => setStepFilter(e.target.value as 'all' | BuildStepKey)}
-                  style={{ minHeight: 40, flex: 1 }}
+                  style={{ minHeight: 44, flex: 1 }}
                 >
                   <option value="all">All steps</option>
                   <option value="3">Step 3 print</option>
@@ -1473,6 +1490,30 @@ export function Studio() {
           <button className="mini" onClick={() => setTour({ idx: 0, done: [false, false, false, false, false] })}>Replay tour</button>
         </p>
       )}
+      <div className="viewer" style={{ marginTop: 12 }}>
+        <div className="viewer-bar" style={{ borderTop: 'none' }}>
+          <h2 style={{ margin: 0, fontSize: 15 }}>Fight reel</h2>
+          <span className="meta">scripted 22 s bout — same spin-up/grip constants, staged finish</span>
+        </div>
+        <video
+          controls
+          playsInline
+          preload="metadata"
+          poster="fight-poster.jpg"
+          src="fight-night.mp4"
+          aria-label="Rendered fight: Eyeliner versus rival bot, Eyeliner wins by knockout"
+          style={{ width: '100%', maxWidth: 560, aspectRatio: '1 / 1', display: 'block', background: '#000' }}
+        >
+          <a href="fight-night.mp4" download>Download the fight reel (MP4, 22 s)</a>
+        </video>
+        <p className="status">
+          Rendered offline by <code>tools/fight_render.py</code> (deterministic seed 7):
+          Eyeliner seeks with velocity lead, the rival runs the repo's wobble policy,
+          hits cost both bots 0.75× RPM — same spin-up taus and grip curve as this page's
+          sim. The late-fight KO is staged (rival throttle cut) to show the full arc.
+          Re-render any time — no browser needed.
+        </p>
+      </div>
       {help && (
         <>
           <div className="backdrop" aria-hidden="true" onClick={() => { setHelp(false); helpBtnRef.current?.focus(); }} />

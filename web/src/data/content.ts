@@ -9,7 +9,6 @@ export const nav: NavEntry[] = [
   { to: '/onshape', label: 'Onshape' },
   { to: '/pcbway', label: 'PCBWay files' },
   { to: '/printing', label: '3D printing' },
-  { to: '/parts', label: 'Parts' },
   { to: '/bom', label: 'BOM + cost' },
   { to: '/engineering', label: 'Engineering' },
   { to: '/firmware', label: 'Firmware + AI' },
@@ -113,7 +112,7 @@ export const sparesRows: CostRow[] = [  { item: 'Spare motor', spec: 'PROPDRIVE 
   { item: 'Spare ESC', spec: 'AM32 55 A', qty: '1', unitUsd: 45, lineUsd: 45, vendor: 'Same as fight', verified: true },
   { item: 'Spare RX + accel', spec: 'EP1 + H3LIS331 breakout', qty: '1+1', unitUsd: 44, lineUsd: 44, vendor: '—', verified: true },
   { item: 'Spare LiPos', spec: '4S 550 mAh', qty: '2', unitUsd: 15, lineUsd: 30, vendor: '—', verified: true },
-  { item: 'Hardware + wire', spec: 'Bullets, XT30, silicone wire', qty: '1 set', unitUsd: 20, lineUsd: 20, vendor: '—', verified: true },
+  { item: 'Hardware + wire', spec: 'Bullets, XT30 + XT60, silicone wire', qty: '1 set', unitUsd: 20, lineUsd: 20, vendor: '—', verified: true },
 ];
 
 export type StackGroup =
@@ -138,7 +137,7 @@ export const stackCards: StackCard[] = [
   { id: 'rx', group: 'Link', part: 'ELRS EP1/RP1 receiver', spec: '2.4 GHz, CRSF to Teensy UART, failsafe throttle-cut', role: 'Telemetry back to the handset. Failsafe must be verified on video.', stamp: 'Locked' },
   { id: 'tx', group: 'Link', part: 'RadioMaster Pocket ELRS', spec: 'One-time buy — bind, confirm sticks in configurator', role: 'Driver input. Cloud and pit software never drive.', stamp: 'Locked' },
   { id: 'batt', group: 'Power', part: '2× 4S 550 mAh in parallel', spec: '95C XT30 — 4 packs makes 2 flight sets', role: 'Liftoff Rev5+ spec. Must fit the TPU cradle and make weight.', stamp: 'Locked' },
-  { id: 'link', group: 'Power', part: 'Removable link + harness + BEC', spec: 'Combat link, XT30, 16–20 AWG + 5 V / 3 A UBEC', role: 'Legal arming plus isolated 5 V, so a Pi brown-out cannot fail the failsafe.', stamp: 'Locked' },
+  { id: 'link', group: 'Power', part: 'Removable link + harness + BEC', spec: 'Combat link, XT60 mains, 16–20 AWG + 5 V / 3 A UBEC', role: 'Legal arming plus isolated 5 V, so a Pi brown-out cannot fail the failsafe.', stamp: 'Locked' },
   { id: 'ring', group: 'Weapon', part: 'Teeth pair — steel default, Ti relief', spec: '55.63 cm³ measured: 437 g steel / 246 g Ti — no rim holes, taper to tune', role: 'Steel carries 1.77× the energy of Ti at equal volume, steel at 437 g still flies (~1245 g all-in, ~65 g margin) but Ti at 246 g (~1055 g all-in) is comfortable. Weigh yours.', stamp: 'Estimate' },
   { id: 'teeth', group: 'Weapon', part: 'Standard teeth + 12.9 hardware', spec: '55.63 cm³ pair, ~218 g ea steel — 12.9 + Loctite 243', role: 'Symmetric 2-tooth. Balance on a point jig or it hops at 3000 RPM. Fallback: order DXF waterjet teeth via SendCutSend while CNC exports are pending.', stamp: 'TODO-export' },
   { id: 'plates', group: 'Weapon', part: '6061-T6 plates + TPU cradle', spec: '6061 0.063–0.080 in + poly LED window + TPU 95A shell', role: 'Branch E formula: aluminum structure, TPU shock, never full-steel. Weigh yours.', stamp: 'Estimate' },

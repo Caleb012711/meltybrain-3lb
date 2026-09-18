@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import heroThumb from '../assets/hero.png';
 import { nav } from '../data/content';
-import { useScrollProgress } from '../hooks/hooks';
 import { HamburgerButton, Sidebar } from './Sidebar';
 import type { ReactNode } from 'react';
 
@@ -37,11 +36,6 @@ export function Reveal({ children, as: Tag = 'div', className = '' }: { children
   );
 }
 
-function ScrollProgressBar() {
-  const progress = useScrollProgress();
-  return <div id="progress-bar" style={{ transform: `scaleX(${progress})` }} aria-hidden="true" />;
-}
-
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -56,23 +50,24 @@ export function Layout() {
   return (
     <>
       <ScrollToTop />
-      <ScrollProgressBar />
       <header className="nav">
-        <div className="nav-left">
-          <HamburgerButton open={open} onToggle={() => setOpen((v) => !v)} buttonRef={triggerRef} />
-          <Link className="brand" to="/">
-            <span className="brand-mark" aria-hidden="true" />
-            <img src={heroThumb} alt="" aria-hidden="true" width={34} height={22} decoding="async" />
-            EYELINER · 3LB MELTY
-          </Link>
+        <div className="nav-pill">
+          <div className="nav-left">
+            <HamburgerButton open={open} onToggle={() => setOpen((v) => !v)} buttonRef={triggerRef} />
+            <Link className="brand" to="/">
+              <span className="brand-mark" aria-hidden="true" />
+              <img src={heroThumb} alt="" aria-hidden="true" width={34} height={22} decoding="async" />
+              EYELINER · 3LB MELTY
+            </Link>
+          </div>
+          <nav aria-label="Site sections">
+            {nav.map((n) => (
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
+                {n.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
-        <nav aria-label="Site sections">
-          {nav.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
-              {n.label}
-            </NavLink>
-          ))}
-        </nav>
       </header>
       <Sidebar open={open} onClose={() => setOpen(false)} nav={nav} triggerRef={triggerRef} />
       <Outlet />

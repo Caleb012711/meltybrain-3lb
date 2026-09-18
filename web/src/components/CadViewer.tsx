@@ -1,7 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, useGLTF, useProgress } from '@react-three/drei';
+import { Environment, Lightformer, OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import { cadHref, cadModels } from '../data/content';
 import { usePrefersReducedMotion } from '../hooks/hooks';
 import { indexColor, roleMaterial, type PartInfo } from './materials';
@@ -27,6 +27,28 @@ export class GlErrorBoundary extends Component<
   }
 }
 const EMISSIVE_ORANGE = new THREE.Color('#e8490f');
+
+// Shared studio lighting for every 3D canvas on the site. Metals need an
+// environment map or they render near-black: this builds one procedurally
+// (Lightformers only — no network fetch, safe on static hosts and offline).
+export function ViewerLights() {
+  return (
+    <>
+      <hemisphereLight args={['#ffffff', '#d8dce2', 0.9]} />
+      <directionalLight position={[5, 8, 4]} intensity={2.0} />
+      <directionalLight position={[-6, 3, -6]} intensity={0.9} color="#dfe8ff" />
+      <directionalLight position={[-2, 2, 6]} intensity={0.4} color="#ffffff" />
+      <Environment resolution={256}>
+        <group rotation={[-Math.PI / 3, 0, 0]}>
+          <Lightformer form="circle" intensity={4} position={[0, 5, -9]} scale={2} />
+          <Lightformer form="rect" intensity={2} position={[-5, 1, -1]} scale={[3, 2]} />
+          <Lightformer form="rect" intensity={2} position={[5, 1, 0]} scale={[3, 2]} />
+          <Lightformer form="rect" intensity={1} position={[0, 5, 5]} scale={[6, 2]} color="#fff4e8" />
+        </group>
+      </Environment>
+    </>
+  );
+}
 
 const partsCache = new Map<string, Promise<PartInfo[]>>();
 
@@ -253,7 +275,7 @@ export function ExplodingModel({
   }, [scene, parts]);
 
   // Position + visibility only (cheap per slider tick — no material allocs).
-  // Spread 2.6: full assembly needs room for 96 nodes to read as separate parts.
+  // Spread 2.6: full assembly needs room for ~89 meshed nodes to read as separate parts.
   useEffect(() => {
     scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
@@ -274,7 +296,7 @@ export function ExplodingModel({
         | undefined;
       if (!clones) return;
       if (xray) {
-        o.material = xrayMat;
+        o.material = selected === idx ? xraySelMat : xrayMat;
         return;
       }
       const mat =
@@ -290,7 +312,9 @@ export function ExplodingModel({
   }, [scene, colorMode, wireframe, xray, xrayMat, selected, hovered, parts]);
 
   useFrame((_, delta) => {
-    if (spin && group.current) group.current.rotation.y += delta * 0.5;
+    // Spin about local Z: callers level Z-up CAD flat, which maps local Z to
+    // world-vertical — the weapon axis. (Y would tumble end-over-end.)
+    if (spin && group.current) group.current.rotation.z += delta * 0.5;
   });
 
   const pick = (obj: THREE.Object3D): number | null => {
@@ -450,7 +474,7 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
         left: 12,
         right: 12,
         background: '#fff',
-        border: '1px solid #c9c6b8',
+        border: '1px solid #d4d7dd',
         borderTop: '3px solid #1a1d21',
         borderRadius: 6,
         padding: '6px 10px',
@@ -552,26 +576,27 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
           role="img"
           aria-label={`3D model of Eyeliner combat robot, ${model.label}`}
         >
-          <hemisphereLight args={['#ffffff', '#d0d5db', 1.1]} />
-          <directionalLight position={[5, 8, 4]} intensity={2.2} />
-          <directionalLight position={[-6, 3, -6]} intensity={1.0} color="#dfe8ff" />
-          <gridHelper args={[12, 24, '#c9c6b8', '#e2e0d8']} position={[0, -2.2, 0]} />
+          <ViewerLights />
+          <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
           <Suspense fallback={null}>
-            <ExplodingModel
-              url={model.glb}
-              parts={parts}
-              explode={explode}
-              wireframe={wireframe}
-              xray={xray}
-              spin={spin && !reduced}
-              colorMode={colorMode}
-              selected={null}
-              hovered={null}
-              hidden={EMPTY_SET}
-              isolated={null}
-              onSelect={() => undefined}
-              onHover={() => undefined}
-            />
+            {/* CAD is Z-up: level the ring flat. */}
+            <group rotation={[-Math.PI / 2, 0, 0]}>
+              <ExplodingModel
+                url={model.glb}
+                parts={parts}
+                explode={explode}
+                wireframe={wireframe}
+                xray={xray}
+                spin={spin && !reduced}
+                colorMode={colorMode}
+                selected={null}
+                hovered={null}
+                hidden={EMPTY_SET}
+                isolated={null}
+                onSelect={() => undefined}
+                onHover={() => undefined}
+              />
+            </group>
             <StlOverlay geometry={stlGeo} />
           </Suspense>
           <OrbitControls

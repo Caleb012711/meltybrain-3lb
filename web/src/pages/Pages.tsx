@@ -45,7 +45,7 @@ export function Build() {
       </details>
       <div className="btn-row">
         <Link className="btn primary" to="/onshape">Next: open CAD in Onshape</Link>
-        <Link className="btn" to="/parts">Parts list</Link>
+        <Link className="btn" to="/bom">Locked spec + costs</Link>
       </div>
     </div>
   );
@@ -138,7 +138,7 @@ export function Pcbway() {
           <tbody>
             <tr><td>Standard pair, AR500</td><td className="mono">55.63 cm³ ≈ 437 g</td><td>Energy king; flies at ~1245 g all-in with ~65 g margin</td></tr>
             <tr><td>Standard pair, Grade 5 Ti</td><td className="mono">≈ 246 g</td><td>Comfortable (~1055 g all-in); relief valve, saves ~190 g</td></tr>
-            <tr><td>Undercutter pair</td><td className="mono">44.67 cm³ ≈ 351 g / 198 g Ti</td><td>Pick ONE config — CAD stages both, never order both</td></tr>
+            <tr><td>Undercutter pair</td><td className="mono">45.4 cm³ ≈ 356 g / 201 g Ti</td><td>Pick ONE config — CAD stages both, never order both</td></tr>
           </tbody>
         </table>
       </div>
@@ -225,7 +225,7 @@ export function Parts() {
     ['MCU', 'Teensy 4.0 lockable without pins. Cortex-M7 at 600 MHz, soldered direct.', '1 + 1 spare'],
     ['Accelerometers', 'H3LIS331DLTR at ±400 g. Two Adafruit 4627 breakouts to learn, two bare chips opposed at 45° on the final PCB.', '2 + 2'],
     ['Radio', 'ELRS receiver plus handset over CRSF into Teensy UART. FHSS link, failsafe throttle-cut, filmed.', '1'],
-    ['Battery', 'Two 4S 550 mAh in parallel, XT30, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.', '2+ sets'],
+    ['Battery', 'Two 4S 550 mAh in parallel (XT30 packs) → XT60 mains harness, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.', '2+ sets'],
     ['Weapon', '0.25 in AR500 teeth, symmetric 2-tooth, no holes. Liftoff tapered precedent 241–326 g; Eyeliner as-drawn 55.63 cm³ ≈ 437 g steel / 246 g Ti — taper mid-span toward precedent or Ti-swap.', '1 + spares'],
     ['Wheels', 'Rubber set to learn, 1.55 in titanium cleats to fight.', '2 + spares'],
     ['AI kit', 'Onboard Pi Zero 2W plus wide camera on an isolated BEC (about 40 g). Pit overhead camera plus laptop YOLO and cloud hints.', '1 set'],
@@ -297,7 +297,9 @@ export function Firmware() {
           <tbody>
             <tr><td>MCU</td><td>Arduino Micro</td><td>Teensy 4.0 at 600 MHz</td></tr>
             <tr><td>Sensing</td><td>Single H3LIS331, 3.9 cm radius default</td><td>Dual H3LIS331DLTR, opposed at 45°, SPI</td></tr>
-            <tr><td>Drive</td><td>Binary or 490 Hz PWM, SimonK</td><td>DShot600 bidirectional at 8 kHz, AM32</td></tr>
+            <tr><td>Drive</td><td>Binary or 490 Hz PWM, SimonK</td><td>DShot600 bidirectional at 8 kHz, AM32 55 A</td></tr>
+            <tr><td>Motors</td><td>Brushed / stock</td><td>PROPDRIVE v2 2836 1200KV hubmotors (82 g each)</td></tr>
+            <tr><td>Pack</td><td>Small 3S</td><td>2× 4S 550 mAh in parallel</td></tr>
             <tr><td>Spin</td><td>To about 3200 RPM, drifts after hits</td><td>2000–4000 RPM, survives center shifts</td></tr>
           </tbody>
         </table>
@@ -316,12 +318,13 @@ export function Firmware() {
           <li>Battery → link (<b>XT60</b> mains, <b>16 AWG</b> — XT30 is 30 A continuous, inadequate per 48 A pack path) → AM32 boards → PROPDRIVEs (18 AWG minimum on short motor leads)</li>
           <li>ELRS CRSF → Teensy UART · Pi link UART <b>115200</b> · never power the MCU from Pi USB in-bot</li>
           <li>Dual accels on short stiff SPI <b>within ~20 mm of spin center</b> (±400 g saturates past ~2800 RPM at 45 mm, ~3450 RPM at 30 mm) · 4700µF on 5 V + 10:1 divider for battery sense</li>
+          <li>Pi power: BEC <b>5 V / 3 A</b> → Pi Zero 2W on TPU standoffs (~40 g with camera) · never power the MCU from Pi USB in-bot</li>
           <li>Green LED = front, raised/inset a few mm for shallow arena angles · learn defaults: radius 3.9 cm, LED offset 7%</li>
         </ul>
       </div>
       <div className="step">
         <h3>Tune: bench, slide, 2k, 3k, 4k</h3>
-        <p>Bench with no weapon energy. Low-RPM slide to check the LED matches the stick. Trim straight for the floor. Ramp 2000, heat-check, 3000, heat-check, 4000. Blip-test hit recovery — it must re-hold RPM, not toilet-bowl. One gain at a time, log RPM, g, battery, and temperature on the Pi.</p>
+        <p>Bench with no weapon energy. Cap 1500–2000 RPM with soft start plus the ESC current limit until trim is straight. Low-RPM slide to check the LED matches the stick. Trim straight for the floor. Ramp 2000, heat-check, 3000, heat-check, 4000. Blip-test hit recovery — it must re-hold RPM, not toilet-bowl. One gain at a time, log RPM, g, battery, and temperature on the Pi.</p>
       </div>
       <div className="step">
         <h3>Failsafe — film this</h3>

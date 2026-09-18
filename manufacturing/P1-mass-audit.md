@@ -40,8 +40,9 @@ Largest solids in Main CAD (mm³): 80,134 / 32,668 / 27,815×2 / 25,651 / 18,700
 
 ```bash
 sudo apt-get install -y libgl1
-pip install cadquery-ocp
-python3 /tmp/opencode/step_audit.py "Main CAD.step"
+pip install cadquery-ocp trimesh numpy
+python3 tools/cad_convert.py --in "Main CAD.step" --name main-cad --out /tmp/cad-audit --manifest
+python3 -c "import json; p=json.load(open('/tmp/cad-audit/main-cad.parts.json')); v=sum(x['vol_cm3'] for x in p); print(f'{v:.1f} cm3 -> steel {v*7.85:.0f}g / Ti {v*4.43:.0f}g / alu {v*2.7:.0f}g')"
 ```
 
-Tip-speed check for later: v_mph = π × D_in × RPM / 336. 8" @4000 RPM ≈ 95 mph, NOT 200+.
+Tip-speed check for later: v_mph = π × D_in × RPM / 1056. 8" @4000 RPM ≈ 95 mph, NOT 200+.

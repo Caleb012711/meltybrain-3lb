@@ -17,7 +17,7 @@ A 3lb meltybrain (translational drift / melty) combat robot. This repo contains 
 - [ ] 6. Electronics install (build-guide/02-electronics-setup.md)
 - [ ] 7. Flash + configure firmware (firmware/README.md)
 - [ ] 8. Spin test + trim (build-guide/03-testing-and-driving.md)
-- [ ] 9. Weigh-in (must be <= 1360g) + combat ready
+- [ ] 9. Weigh-in (must be <= 1361g — 3 lb = 1360.8 g) + combat ready
 ```
 
 ## Repo Map

@@ -1,0 +1,19 @@
+{
+  "_comment": "4-corner arena calibration. Click the 4 arena corners in the dashboard (order: top-left, top-right, bottom-right, bottom-left as seen by the overhead cam), then measure your real arena. Copy this file to calibrate.json via the dashboard Save button — never hand-edit the live file.",
+  "image_points": [
+    [120, 90],
+    [520, 90],
+    [520, 390],
+    [120, 390]
+  ],
+  "arena_mm": {
+    "width": 2400,
+    "height": 2400
+  },
+  "arena_corners_mm": [
+    [0, 0],
+    [2400, 0],
+    [2400, 2400],
+    [0, 2400]
+  ]
+}

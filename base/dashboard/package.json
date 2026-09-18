@@ -1,0 +1,13 @@
+{
+  "name": "eyeliner-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Eyeliner pit dashboard (stdlib-only, no dependencies)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "22.12.0"
+  }
+}

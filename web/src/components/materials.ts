@@ -19,18 +19,16 @@ export const ROLE_LABELS: Record<PartRole, string> = {
 
 export const ROLE_CSS: Record<PartRole, string> = {
   'weapon-steel': '#3b4046',
-  'chassis-alu': '#8a94a0',
+  'chassis-alu': '#c9ced4',
   'pod-metal': '#a49d92',
-  'fastener-dark': '#33373c',
+  'fastener-dark': '#2e3237',
   'shell-tpu': '#33404e',
   'electro-green': '#0f6a3a',
 };
 
-// MeshStandardMaterial params tuned for flat lighting with no env map:
-// metalness capped below 1.0 (full metal goes black without IBL).
-// MeshStandardMaterial params tuned for flat lighting with no env map:
-// metalness capped (full metal goes black without IBL), DoubleSide so
-// thin sheet solids never cull to paper-thin slivers.
+// MeshStandardMaterial params: metalness restrained so roles read correctly
+// with AND without the procedural studio env map (full metal goes black
+// without image-based lighting). DoubleSide so thin sheet solids never cull.
 const ROLE_PARAMS: Record<PartRole, THREE.MeshStandardMaterialParameters> = {
   'weapon-steel': { color: 0x3b4046, metalness: 0.75, roughness: 0.5, side: THREE.DoubleSide },
   'chassis-alu': { color: 0xc9ced4, metalness: 0.7, roughness: 0.42, side: THREE.DoubleSide },

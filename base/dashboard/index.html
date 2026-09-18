@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Eyeliner Pit Dashboard (T3)</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1rem auto; max-width: 900px; padding: 0 1rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
+  .card { border: 1px solid #999; border-radius: 8px; padding: 0.75rem; }
+  .card b { display: block; font-size: 1.4rem; }
+  .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; }
+  .live { background: #d6f5d6; } .sim { background: #ffe9b0; } .bad { background: #ffc9c9; }
+  canvas { border: 1px solid #999; border-radius: 8px; width: 100%; max-width: 640px; }
+  button { padding: 0.5rem 1rem; margin: 0.25rem 0.25rem 0.25rem 0; }
+  small { color: #555; }
+</style>
+</head>
+<body>
+<h1>Eyeliner pit dashboard <span id="src" class="badge sim">SIM</span></h1>
+<p><small>T3 advisory display. Poses expire after 1&nbsp;s (ttl_s). Cloud hints are human-gated.
+Kill switch on the Pocket always wins — this page never drives the bot.</small></p>
+
+<div class="cards">
+  <div class="card">RPM<b id="rpm">—</b><small id="rpm-src">manual entry until Pi link</small></div>
+  <div class="card">G<b id="g">—</b><small>accel magnitude</small></div>
+  <div class="card">Batt (V)<b id="batt">—</b><small>4S full ≈ 16.8</small></div>
+  <div class="card">Temp (°C)<b id="temp">—</b><small>ESC/motor max</small></div>
+</div>
+
+<h2>Arena track (~5 Hz)</h2>
+<canvas id="arena" width="640" height="480"></canvas>
+<p><small>Click 4 arena corners on the canvas (TL → TR → BR → BL), then Save.
+Re-do once per event after the tripod is fixed.</small></p>
+<p>
+  <button id="save">Save 4-corner calibration</button>
+  <button id="clear">Clear clicks</button>
+  <span id="cal-status"><small>calibration: unknown</small></span>
+</p>
+
+<h2>Manual telemetry (until T2 Pi link)</h2>
+<p><small>Type what the Pocket / bench meter says between matches. One-tap gain push
+arrives with the Pi link; until then copy gains by hand.</small></p>
+<p>
+  <label>RPM <input id="in-rpm" inputmode="numeric" size="6" placeholder="3200" /></label>
+  <label>G <input id="in-g" inputmode="decimal" size="5" placeholder="12" /></label>
+  <label>Batt <input id="in-batt" inputmode="decimal" size="5" placeholder="15.2" /></label>
+  <label>Temp <input id="in-temp" inputmode="numeric" size="5" placeholder="48" /></label>
+  <button id="apply">Apply</button>
+</p>
+
+<script>
+const clicks = [];
+const canvas = document.getElementById('arena');
+const ctx = canvas.getContext('2d');
+let lastPose = null;
+
+document.getElementById('apply').onclick = () => {
+  const v = (id) => document.getElementById(id).value || '—';
+  document.getElementById('rpm').textContent = v('in-rpm');
+  document.getElementById('g').textContent = v('in-g');
+  document.getElementById('batt').textContent = v('in-batt');
+  document.getElementById('temp').textContent = v('in-temp');
+};
+canvas.onclick = (e) => {
+  if (clicks.length >= 4) return;
+  const r = canvas.getBoundingClientRect();
+  clicks.push([Math.round((e.clientX - r.left) * canvas.width / r.width),
+               Math.round((e.clientY - r.top) * canvas.height / r.height)]);
+  draw();
+};
+document.getElementById('clear').onclick = () => { clicks.length = 0; draw(); };
+document.getElementById('save').onclick = async () => {
+  if (clicks.length !== 4) { alert('Click exactly 4 corners first.'); return; }
+  const r = await fetch('/api/calibrate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_points: clicks }),
+  });
+  const j = await r.json();
+  document.getElementById('cal-status').textContent =
+    r.ok ? `calibration: saved (${j.saved})` : `calibration FAILED: ${j.error}`;
+};
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#333'; ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+  const dot = (x, y, c, label) => {
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.fillText(label, x + 12, y + 4);
+  };
+  if (lastPose) {
+    // poses are arena-mm; scale into canvas for display only
+    const sx = (canvas.width - 32) / 2400, sy = (canvas.height - 32) / 2400;
+    dot(16 + lastPose.self.x_mm * sx, 16 + lastPose.self.y_mm * sy, 'green', 'self');
+    dot(16 + lastPose.opponent.x_mm * sx, 16 + lastPose.opponent.y_mm * sy, 'red', 'opp');
+  }
+  clicks.forEach((p, i) => dot(p[0], p[1], 'blue', `C${i + 1}`));
+}
+
+async function poll() {
+  try {
+    const r = await fetch('/api/pose');
+    const j = await r.json();
+    lastPose = j;
+    const age = Date.now() / 1000 - j.t;
+    const badge = document.getElementById('src');
+    if (age > (j.ttl_s ?? 1)) {
+      badge.textContent = 'STALE'; badge.className = 'badge bad';
+    } else if (j.source === 'yolo') {
+      badge.textContent = 'LIVE'; badge.className = 'badge live';
+    } else {
+      badge.textContent = 'SIM'; badge.className = 'badge sim';
+    }
+    draw();
+  } catch { /* tracker down: keep last frame, badge stays as-is */ }
+}
+setInterval(poll, 1000);
+fetch('/api/health').then(r => r.json()).then(j => {
+  document.getElementById('cal-status').textContent =
+    'calibration: ' + (j?.calibrated ? 'OK' : 'needed (click 4 corners)');
+}).catch(() => {});
+poll();
+</script>
+</body>
+</html>

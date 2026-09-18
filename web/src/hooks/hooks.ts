@@ -63,35 +63,6 @@ export function useCountUp(target: number, active: boolean, duration = 1200): nu
   return val;
 }
 
-export function useScrollProgress(): number {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    let queued = false;
-    const update = () => {
-      queued = false;
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      setProgress(max > 0 ? Math.min(1, h.scrollTop / max) : 0);
-    };
-    const onScroll = () => {
-      if (!queued) {
-        queued = true;
-        raf = requestAnimationFrame(update);
-      }
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-  return progress;
-}
-
 export function useIsMobile(breakpoint = 900): boolean {
   const [mobile, setMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint}px)`).matches

@@ -2,10 +2,10 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { ExplodingModel, GlErrorBoundary, useModelParts, EMPTY_SET } from './CadViewer';
+import { ExplodingModel, GlErrorBoundary, ViewerLights, useModelParts, EMPTY_SET } from './CadViewer';
 import { useIsMobile, usePrefersReducedMotion } from '../hooks/hooks';
 
-const ROLL_R = 1.5;
+const ROLL_R = 1.2;
 const parked = { x0: -7.2, x1: 7.2, ground: -0.7 };
 const mobileCfg = { x0: -3.4, x1: 3.4, ground: -0.55 };
 const DRIVE_START = 0.15;
@@ -18,9 +18,10 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>; mobile: boolean }) {
   const group = useRef<THREE.Group>(null);
+  const roll = useRef(0);
   const parts = useModelParts('full');
   const cfg = mobile ? mobileCfg : parked;
-  const prev = useRef(0);
+  const prev = useRef(cfg.x0);
 
   useFrame((_, delta) => {
     const g = group.current;
@@ -43,27 +44,32 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
     const rolling = clamp01(Math.abs(dx) * 30);
     const hop = (0.5 - 0.5 * Math.cos((2 * x) / ROLL_R)) * 0.05 * rolling * eFade;
     g.position.set(x, cfg.ground + hop, Math.sin(drive * Math.PI) * 0.6);
-    g.rotation.set(0, 0.35 + drive * 0.25, 0);
-    g.rotation.z -= dx / ROLL_R;
+    // Euler XYZ: yaw then screen-plane roll, applied OUTSIDE the Z-up leveler
+    // so the bot rolls forward instead of spinning around its weapon axis.
+    roll.current -= dx / ROLL_R;
+    g.rotation.set(0, 0.35 + drive * 0.25, roll.current);
   });
 
   return (
     <group ref={group}>
-      <ExplodingModel
-        url="cad/main-cad.glb"
-        parts={parts}
-        explode={0}
-        wireframe={false}
-        xray={false}
-        spin={false}
-        colorMode="role"
-        selected={null}
-        hovered={null}
-        hidden={EMPTY_SET}
-        isolated={null}
-        onSelect={() => undefined}
-        onHover={() => undefined}
-      />
+      {/* CAD is Z-up: level the ring flat (world-horizontal), then roll it. */}
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <ExplodingModel
+          url="cad/main-cad.glb"
+          parts={parts}
+          explode={0}
+          wireframe={false}
+          xray={false}
+          spin={false}
+          colorMode="role"
+          selected={null}
+          hovered={null}
+          hidden={EMPTY_SET}
+          isolated={null}
+          onSelect={() => undefined}
+          onHover={() => undefined}
+        />
+      </group>
     </group>
   );
 }
@@ -72,21 +78,23 @@ function ParkedBot() {
   const parts = useModelParts('full');
   return (
     <group position={[-2.2, parked.ground, 0]} rotation={[0, 0.4, 0]}>
-      <ExplodingModel
-        url="cad/main-cad.glb"
-        parts={parts}
-        explode={0}
-        wireframe={false}
-        xray={false}
-        spin={false}
-        colorMode="role"
-        selected={null}
-        hovered={null}
-        hidden={EMPTY_SET}
-        isolated={null}
-        onSelect={() => undefined}
-        onHover={() => undefined}
-      />
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <ExplodingModel
+          url="cad/main-cad.glb"
+          parts={parts}
+          explode={0}
+          wireframe={false}
+          xray={false}
+          spin={false}
+          colorMode="role"
+          selected={null}
+          hovered={null}
+          hidden={EMPTY_SET}
+          isolated={null}
+          onSelect={() => undefined}
+          onHover={() => undefined}
+        />
+      </group>
     </group>
   );
 }
@@ -134,7 +142,7 @@ function SplitLine({ text, register }: { text: string; register: (el: HTMLSpanEl
               {ch}
             </span>
           ))}
-          {wi < words.length - 1 ? <span aria-hidden="true">&nbsp;</span> : null}
+          {wi < words.length - 1 ? <span aria-hidden="true"> </span> : null}
         </span>
       ))}
     </>
@@ -177,16 +185,13 @@ function HeroScene({
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       aria-hidden="true"
     >
-      <hemisphereLight args={['#ffffff', '#d8dce2', 1.0]} />
-      <directionalLight position={[4, 7, 3]} intensity={2.2} />
-      <directionalLight position={[-6, 3, -6]} intensity={0.9} color="#dfe8ff" />
-      <directionalLight position={[-2, 2, 6]} intensity={0.35} color="#ffffff" />
+      <ViewerLights />
       <Suspense fallback={null}>
         <RollingBot shared={shared} mobile={mobile} />
         <HeroReady onReady={onReady} />
       </Suspense>
       <ContactShadows
-        position={[0, mobile ? -0.68 : -0.83, 0]}
+        position={[0, mobile ? -1.12 : -1.27, 0]}
         scale={10}
         far={2.2}
         resolution={256}
@@ -297,11 +302,22 @@ export function HeroStage() {
         if (hud.textContent !== txt) hud.textContent = txt;
       }
       if (!cam || !stageEl) return;
-      if (Math.abs(shared.current.x - lastX) < 0.03) return;
-      lastX = shared.current.x;
       const w = stageEl.clientWidth;
       proj.set(shared.current.x, mobile ? -0.55 : -0.7, 0).project(cam);
       const botPx = (proj.x * 0.5 + 0.5) * w;
+      // blob tracks the end-fade so it never pops in detached — updated every
+      // visible frame (even when the bot barely moves) so it can't go stale.
+      {
+        const e = shared.current.smooth;
+        const fade = Math.min(clamp01((e - 0.1) / 0.08), 1 - clamp01((e - 0.72) / 0.1));
+        const blob = blobRef.current;
+        if (blob) {
+          blob.style.left = `${botPx}px`;
+          blob.style.opacity = (0.85 * fade).toFixed(2);
+        }
+      }
+      if (Math.abs(shared.current.x - lastX) < 0.03) return;
+      lastX = shared.current.x;
       const sigma = mobile ? 110 : 90;
       const tiltOn = !mobile;
       const styling = shared.current.p > 0.05 && shared.current.p < 0.95;
@@ -331,14 +347,6 @@ export function HeroStage() {
         if (el.style.background !== bg) el.style.background = bg;
         const fg = styling && hi > 0.65 ? '#9a2f00' : '';
         if (el.style.color !== fg) el.style.color = fg;
-      }
-      // blob tracks the end-fade so it never pops in detached
-      const e = shared.current.smooth;
-      const fade = Math.min(clamp01((e - 0.1) / 0.08), 1 - clamp01((e - 0.72) / 0.1));
-      const blob = blobRef.current;
-      if (blob) {
-        blob.style.left = `${botPx}px`;
-        blob.style.opacity = (0.85 * fade).toFixed(2);
       }
     };
     raf = requestAnimationFrame(tick);
@@ -387,14 +395,11 @@ export function HeroStage() {
             role="img"
             aria-label="3D model of the Eyeliner meltybrain robot"
           >
-            <hemisphereLight args={['#ffffff', '#d8dce2', 1.0]} />
-            <directionalLight position={[4, 7, 3]} intensity={2.2} />
-            <directionalLight position={[-6, 3, -6]} intensity={0.9} color="#dfe8ff" />
-            <directionalLight position={[-2, 2, 6]} intensity={0.35} color="#ffffff" />
+            <ViewerLights />
             <Suspense fallback={null}>
               <ParkedBot />
             </Suspense>
-            <ContactShadows position={[0, -0.83, 0]} scale={14} far={3.2} resolution={256} blur={2.6} opacity={0.42} color="#1a1e23" frames={1} />
+            <ContactShadows position={[0, -1.27, 0]} scale={14} far={3.2} resolution={256} blur={2.6} opacity={0.42} color="#1a1e23" frames={1} />
           </Canvas>
           </GlErrorBoundary>
           )}

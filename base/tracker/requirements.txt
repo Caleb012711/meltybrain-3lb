@@ -1,0 +1,5 @@
+# Tracker pins match ../requirements-manual.txt (verified on PyPI 2026-09-18).
+# The container image already pins Python itself (python:3.11.9-slim-bookworm).
+numpy==1.26.4
+opencv-python==4.10.0.84
+ultralytics==8.2.103

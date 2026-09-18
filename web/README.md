@@ -30,7 +30,7 @@ Outputs per assembly (`web/public/cad/`):
 
 | Assembly | Solids | GLB (viewer) | STL (reference) | STEP (download only) |
 |---|---|---|---|---|
-| Main CAD | 145 (96 meshed) | main-cad.glb 4.0 MB | 13 MB | Main CAD.step 17.7 MB |
+| Main CAD | 145 (89 meshed) | main-cad.glb 4.0 MB | 13 MB | Main CAD.step 17.7 MB |
 | Wheel Pod | 25 (16 meshed) | wheel-pod.glb 2.2 MB | 6.3 MB | Wheel Pod.step 4.1 MB |
 | Standard Weapon Teeth | 2 | 105→439 KB | 1.2 MB | 295 KB |
 | Undercutter Config | 10 | 226→553 KB | 1.9 MB | 458 KB |
@@ -53,8 +53,8 @@ systems-stack showcase · `/explorer` part-level 3D with isolate/hide/downloads 
 unsliced guide · `/parts` locked BOM · `/bom` costed BOM + weights ·
 `/firmware` Teensy plus advisory AI cameras.
 
-Design: light mode only, pit-sheet aesthetic, IntersectionObserver reveals,
-count-up spec strip, scroll progress bar, `prefers-reduced-motion` respected.
+Design: light mode only, white, IntersectionObserver reveals,
+count-up spec strip, `prefers-reduced-motion` respected.
 The old static prototype in `site/` is superseded by this app.
 
 ## Deploy (Render)

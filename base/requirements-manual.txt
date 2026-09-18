@@ -1,0 +1,9 @@
+# Manual (no-Docker) fallback pins — verified on PyPI 2026-09-18.
+# Install:  pip install -r requirements-manual.txt
+# Then run each service from its own terminal (see base/README.md):
+#   python3 tracker/tracker.py     (from base/tracker/)
+#   node ../dashboard/server.js    (from base/dashboard/, needs Node 22 per .nvmrc)
+#   python3 bridge/bridge.py       (from base/bridge/)
+numpy==1.26.4
+opencv-python==4.10.0.84
+ultralytics==8.2.103

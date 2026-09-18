@@ -112,9 +112,31 @@ export function Bom() {
           </tbody>
         </table>
       </div>
+      <h2>Locked spec — LiftOff Rev9, don't freestyle</h2>
+      <p className="lede">
+        One bot, one spec. Every row below is the locked part — the costed tables
+        above are what it costs. Merged here from the old Parts page so the whole
+        buy lives in one place.
+      </p>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Item</th><th scope="col">Spec</th><th scope="col">Qty</th></tr></thead>
+          <tbody>
+            <tr><td><b>Motors</b></td><td>PROPDRIVE v2 2836 1200KV, 82 g, 48 A max, 3–4S. Hubmotor build: 6 mm dead axle, two 626 bearings, aluminum hubs.</td><td className="mono">2 + 1 spare</td></tr>
+            <tr><td><b>ESCs</b></td><td>AM32 55 A board, DShot600 bidirectional with eRPM telemetry. Not SimonK.</td><td className="mono">1 + spare</td></tr>
+            <tr><td><b>MCU</b></td><td>Teensy 4.0 lockable without pins. Cortex-M7 at 600 MHz, soldered direct.</td><td className="mono">1 + 1 spare</td></tr>
+            <tr><td><b>Accelerometers</b></td><td>H3LIS331DLTR at ±400 g. Two Adafruit 4627 breakouts to learn, two bare chips opposed at 45° on the final PCB.</td><td className="mono">2 + 2</td></tr>
+            <tr><td><b>Radio</b></td><td>ELRS receiver plus handset over CRSF into Teensy UART. FHSS link, failsafe throttle-cut, filmed.</td><td className="mono">1</td></tr>
+            <tr><td><b>Battery</b></td><td>Two 4S 550 mAh in parallel (XT30 packs) → XT60 mains harness, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.</td><td className="mono">2+ sets</td></tr>
+            <tr><td><b>Weapon</b></td><td>0.25 in AR500 teeth, symmetric 2-tooth, no holes. Liftoff tapered precedent 241–326 g; Eyeliner as-drawn 55.63 cm³ ≈ 437 g steel / 246 g Ti — taper mid-span toward precedent or Ti-swap.</td><td className="mono">1 + spares</td></tr>
+            <tr><td><b>Wheels</b></td><td>Rubber set to learn, 1.55 in titanium cleats to fight.</td><td className="mono">2 + spares</td></tr>
+            <tr><td><b>AI kit</b></td><td>Onboard Pi Zero 2W plus wide camera on an isolated BEC (about 40 g). Pit overhead camera plus laptop YOLO and cloud hints.</td><td className="mono">1 set</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div className="btn-row">
         <Link className="btn primary" to="/explorer">Inspect parts in 3D</Link>
-        <Link className="btn" to="/parts">Parts specs</Link>
+        <Link className="btn" to="/build">Build guide</Link>
       </div>
     </div>
   );
