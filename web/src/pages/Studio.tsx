@@ -55,8 +55,8 @@ type DriveInput = {
 
 function stepDrive(st: DriveState, inp: DriveInput, dt: number) {
   const d = Math.min(dt, 1 / 30);
-  const target = inp.throttle ? RPM_MAX : 0;
-  const tau = inp.throttle ? TAU_UP : TAU_DOWN;
+  const target = inp.brake ? 0 : inp.throttle ? RPM_MAX : 0;
+  const tau = inp.brake ? 0.5 : inp.throttle ? TAU_UP : TAU_DOWN;
   st.rpm += (target - st.rpm) * (1 - Math.exp(-d / tau));
   if (Math.abs(target - st.rpm) < 1) st.rpm = target;
   const grip = Math.pow(
@@ -73,30 +73,36 @@ function stepDrive(st: DriveState, inp: DriveInput, dt: number) {
   st.pos.y += st.vel.y * d;
   const lim = HALF - BOT_R;
   // Per-axis resolve with min rebound so slow rolls still kick off the wall.
-  // Cooldown stops machine-gun re-trigger while grinding.
-  if (st.hitT > 0) { st.hitT -= d; return grip; }
-  if (st.pos.x > lim || st.pos.x < -lim) {
-    const sgn = st.pos.x > 0 ? 1 : -1;
-    st.pos.x = sgn * lim;
-    st.vel.x *= -BOUNCE;
-    st.vel.y *= 0.85; // wall scrub bleeds tangent speed
-    if (Math.abs(st.vel.x) < 2.5) st.vel.x = -sgn * 2.5;
-    st.hitT = 0.12; // bounce cooldown
+  // Cooldown stops machine-gun re-trigger while grinding without freezing visual spin.
+  if (st.hitT > 0) {
+    st.hitT -= d;
+  } else {
+    let hit = false;
+    if (st.pos.x > lim || st.pos.x < -lim) {
+      const sgn = st.pos.x > 0 ? 1 : -1;
+      st.pos.x = sgn * lim;
+      st.vel.x *= -BOUNCE;
+      st.vel.y *= 0.85; // wall scrub bleeds tangent speed
+      if (Math.abs(st.vel.x) < 2.5) st.vel.x = -sgn * 2.5;
+      st.rpm *= 0.82; // wall impact drops weapon rotational kinetic energy
+      hit = true;
+    }
+    if (st.pos.y > lim || st.pos.y < -lim) {
+      const sgn = st.pos.y > 0 ? 1 : -1;
+      st.pos.y = sgn * lim;
+      st.vel.y *= -BOUNCE;
+      st.vel.x *= 0.85;
+      if (Math.abs(st.vel.y) < 2.5) st.vel.y = -sgn * 2.5;
+      st.rpm *= 0.82; // wall impact drops weapon rotational kinetic energy
+      hit = true;
+    }
+    if (hit) st.hitT = 0.12;
   }
-  if (st.pos.y > lim || st.pos.y < -lim) {
-    const sgn = st.pos.y > 0 ? 1 : -1;
-    st.pos.y = sgn * lim;
-    st.vel.y *= -BOUNCE;
-    st.vel.x *= 0.85;
-    if (Math.abs(st.vel.y) < 2.5) st.vel.y = -sgn * 2.5;
-    st.hitT = 0.12;
-  }
-  if (st.hitT > 0) st.hitT -= d;
   const omegaTrue = ((st.rpm * 2 * Math.PI) / 60) * 0.05;
   const omegaWant = Math.min(omegaTrue, 8);
   st.visOmega += (omegaWant - st.visOmega) * (1 - Math.exp(-d / 0.3));
   st.spinAngle += st.visOmega * d;
-  st.throttleSm += ((inp.throttle ? 1 : 0) - st.throttleSm) * (1 - Math.exp(-8 * d));
+  st.throttleSm += (((inp.throttle && !inp.brake) ? 1 : 0) - st.throttleSm) * (1 - Math.exp(-8 * d));
   return grip;
 }
 
@@ -778,6 +784,7 @@ export function Studio() {
       st.visOmega = 0;
       st.hitT = 0;
     }
+    setSrText('Drive reset to arena center at 0 RPM.');
   };
 
   useEffect(() => {
@@ -1134,6 +1141,22 @@ export function Studio() {
                 )}
               </div>
               <div className="viewer-bar" role="toolbar" aria-label="Drive controls">
+                <button
+                  className={`mini drive-btn ${armed ? 'hot' : ''}`}
+                  aria-pressed={armed}
+                  onClick={() => {
+                    if (armed) {
+                      disarm();
+                    } else {
+                      setArmed(true);
+                      rootRef.current?.focus();
+                      setSrText('Armed. Hold Shift to spin up, WASD to translate.');
+                    }
+                  }}
+                  title={armed ? 'Disarm weapon & drive' : 'Arm weapon & drive'}
+                >
+                  {armed ? 'Disarm' : 'Arm'}
+                </button>
                 <button className="mini drive-btn" onClick={resetDrive}>
                   Reset (R)
                 </button>
