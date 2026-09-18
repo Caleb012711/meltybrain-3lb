@@ -1,9 +1,10 @@
+/* oxlint-disable react/immutability */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { ExplodingModel, GlErrorBoundary, ViewerLights, useModelParts, EMPTY_SET } from './CadViewer';
-import { useIsMobile, usePrefersReducedMotion } from '../hooks/hooks';
+import { ExplodingModel, GlErrorBoundary, ViewerLights, EMPTY_SET } from './CadViewer';
+import { useIsMobile, useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
 
 const ROLL_R = 1.2;
 const parked = { x0: -7.2, x1: 7.2, ground: -0.7 };
@@ -62,6 +63,8 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
           xray={false}
           spin={false}
           colorMode="role"
+          circularShell={true}
+          shellMaterial="titanium"
           selected={null}
           hovered={null}
           hidden={EMPTY_SET}
@@ -87,6 +90,8 @@ function ParkedBot() {
           xray={false}
           spin={false}
           colorMode="role"
+          circularShell={true}
+          shellMaterial="titanium"
           selected={null}
           hovered={null}
           hidden={EMPTY_SET}

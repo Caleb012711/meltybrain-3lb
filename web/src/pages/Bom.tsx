@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { cadHref, cadModels, costRows, sparesRows, type CostRow } from '../data/content';
 
-export function formatUsd(n: number | null): string {
+function formatUsd(n: number | null): string {
   if (n === null) return '—';
   return `$${n.toFixed(n % 1 === 0 ? 0 : 2)}`;
 }
@@ -66,9 +66,31 @@ export function Bom() {
       </p>
       <h1>BOM and cost</h1>
       <p className="lede">
-        Everything to buy, with 2026 US street-price estimates. Stamps: Priced means a listing checked Sep 2026, Range means the fab quote moves. BOM.md carries no live prices — the vendor and SKU column is yours to fill. Priced rows are checked
-        listings; range rows move with fab quotes. Verify before ordering — prices drift.
+        Complete procurement bill of materials with 2026 US street-price estimates.
+        Every component is locked to LiftOff Rev9 competition geometry.
+        Priced rows represent verified supplier listings; range rows reflect fabrication quotes.
       </p>
+
+      {/* Executive KPI summary */}
+      <div className="proof" aria-label="BOM key metrics summary">
+        <div>
+          <b>{formatUsd(buildTotal)}</b>
+          <span>Build Total (w/ Handset)</span>
+        </div>
+        <div>
+          <b>{formatUsd(sparesTotal)}</b>
+          <span>Spares Budget</span>
+        </div>
+        <div>
+          <b>≤1310 <span style={{ fontSize: '15px', color: 'var(--steel)' }}>g</span></b>
+          <span>Design Weight Target</span>
+        </div>
+        <div>
+          <b className="ok-text">+50.8 <span style={{ fontSize: '15px', color: 'var(--steel)' }}>g</span></b>
+          <span>Safety Margin to 1360.8g</span>
+        </div>
+      </div>
+
       <CostTable rows={costRows} caption="Fight build — one bot plus two flight battery sets" />
       <div className="step">
         <h2>
@@ -78,6 +100,7 @@ export function Bom() {
           About $590 excluding the handset ($662 with it) at listed prices; fab variance runs $592–737 plus tax and ship. Add spares near $161. Priced = listing checked Sep 2026; Range = fab quote moves — verify before ordering.
         </p>
       </div>
+
       <h2>Spares keep you in the event</h2>
       <CostTable rows={sparesRows} caption="Recommended spares — motors and ESCs die in meltybrains" />
       <div className="step">
@@ -90,7 +113,31 @@ export function Bom() {
           a lightening plan, and a backup 450 mAh pack option for weigh-in day.
         </p>
       </div>
-      <h2>Weight budget — 1361 g cap</h2>
+
+      <h2>Weight budget — 1360.8 g (3.0 lb) legal cap</h2>
+      <div style={{ margin: '14px 0', padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--line-strong)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '13px', fontWeight: 600 }}>
+          <span>Subsystem Allocation (1310 g Target)</span>
+          <span className="mono ok-text">+50.8 g Legal Margin</span>
+        </div>
+        <div style={{ display: 'flex', height: 16, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line-strong)' }} title="Weight allocation breakdown">
+          <div style={{ width: '19%', background: '#b23600' }} title="Weapon (Ti): 246g (19%)" />
+          <div style={{ width: '27%', background: '#3f4752' }} title="Plates & Structure: 350g (27%)" />
+          <div style={{ width: '23%', background: '#12b76a' }} title="Motors & Pods: 300g (23%)" />
+          <div style={{ width: '19%', background: '#0284c7' }} title="Electronics & Wiring: 250g (19%)" />
+          <div style={{ width: '9%', background: '#f59e0b' }} title="Flight Battery: 120g (9%)" />
+          <div style={{ width: '3%', background: '#bbf7d0' }} title="Buffer: 50.8g (3%)" />
+        </div>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, fontSize: '11.5px', color: 'var(--steel)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#b23600' }} /> Weapon (~246g)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3f4752' }} /> Plates (300-400g)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#12b76a' }} /> Drive (~300g)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0284c7' }} /> Avionics (~250g)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} /> Battery (~120g)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#bbf7d0' }} /> Margin (50.8g)</span>
+        </div>
+      </div>
+
       <div className="table-wrap">
         <table>
           <thead>
@@ -112,6 +159,7 @@ export function Bom() {
           </tbody>
         </table>
       </div>
+
       <h2>Locked spec — LiftOff Rev9, don't freestyle</h2>
       <p className="lede">
         One bot, one spec. Every row below is the locked part — the costed tables

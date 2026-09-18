@@ -105,6 +105,7 @@ export function Home() {
     <div className="page">
       {/* 01 hero */}
       <section id="hero">
+        <p className="eyebrow">01 — Overview</p>
         <div className="hero-badges" aria-label="Build status">
           <span className="pill"><span className="dot" aria-hidden="true" />Live CAD</span>
           <span className="pill">Eyeliner-3LB / Rev9</span>
@@ -135,11 +136,12 @@ export function Home() {
             rules and safety first. Budget about $660 plus spares, 4–8 weeks with metal lead time.
           </div>
           <div className="btn-row">
-            <Link className="btn primary" to="/build">Start build</Link>
+            <Link className="btn primary" to="/build">Start build (Step 0)</Link>
             <Link className="btn" to="/studio">Drive it + fight reel</Link>
             <Link className="btn" to="/explorer">3D explorer</Link>
-            <Link className="btn" to="/onshape">Open in Onshape</Link>
-            <Link className="btn" to="/pcbway">Get PCBWay files</Link>
+            <Link className="btn" to="/bom">BOM + cost</Link>
+            <Link className="btn" to="/engineering">Engineering math</Link>
+            <Link className="btn" to="/pcbway">PCBWay files</Link>
           </div>
           <p className="meta">
             Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids, 89 meshed — thread specks stats-only). Viewer loads

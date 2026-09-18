@@ -4,9 +4,19 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { cadHref, cadModels } from '../data/content';
-import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, useModelParts, type ColorMode } from '../components/CadViewer';
-import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel, type PartInfo } from '../components/materials';
+import { useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
+import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, type ColorMode } from '../components/CadViewer';
+import {
+  ROLE_CSS,
+  ROLE_LABELS,
+  SHELL_MATERIAL_LABELS,
+  SHELL_PROFILE_LABELS,
+  massLabel,
+  partLabel,
+  type PartInfo,
+  type ShellMaterialPreset,
+  type ShellProfilePreset,
+} from '../components/materials';
 import { Reveal } from '../components/Layout';
 
 function roleOf(parts: PartInfo[], i: number): string {
@@ -30,11 +40,15 @@ export function Explorer() {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [failed, setFailed] = useState(false);
+  const [circularShell, setCircularShell] = useState(true);
+  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('titanium');
+  const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
   const listRef = useRef<HTMLUListElement | null>(null);
   const parts = useModelParts(modelId);
   const model = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
 
-  useEffect(() => {
+  const selectModel = (id: string) => {
+    setModelId(id);
     setSelected(null);
     setFocusIdx(null);
     setHomeKey((k) => k + 1);
@@ -43,11 +57,7 @@ export function Explorer() {
     setQuery('');
     setRoleFilter('all');
     setFailed(false);
-  }, [modelId]);
-
-  useEffect(() => {
-    if (reduced) setSpin(false);
-  }, [reduced]);
+  };
 
   useEffect(() => {
     if (selected === null) return;
@@ -62,8 +72,9 @@ export function Explorer() {
   );
 
   const entries = useMemo(() => {
+    const total = parts.length > 0 ? parts.length : model.solids;
     const list: { i: number; p: PartInfo | null }[] = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < total; i++) {
       const p = parts[i] ?? null;
       if (roleFilter !== 'all' && roleOf(parts, i) !== roleFilter) continue;
       if (query) {
@@ -73,13 +84,14 @@ export function Explorer() {
       list.push({ i, p });
     }
     return list;
-  }, [count, parts, query, roleFilter]);
+  }, [parts, model.solids, query, roleFilter]);
 
   const rolesPresent = useMemo(() => {
+    const total = parts.length > 0 ? parts.length : model.solids;
     const s = new Set<string>();
-    for (let i = 0; i < count; i++) s.add(roleOf(parts, i));
+    for (let i = 0; i < total; i++) s.add(roleOf(parts, i));
     return Array.from(s);
-  }, [count, parts]);
+  }, [parts, model.solids]);
 
   const toggleHide = (i: number) => {
     if (parts[i]?.dropped_from_glb) return;
@@ -169,6 +181,9 @@ export function Explorer() {
                         hovered={hovered}
                         hidden={hidden}
                         isolated={isolated}
+                        circularShell={circularShell}
+                        shellMaterial={shellMaterial}
+                        shellProfile={shellProfile}
                         onSelect={setSelected}
                         onHover={setHovered}
                       />
@@ -206,7 +221,7 @@ export function Explorer() {
                     role="radio"
                     aria-checked={modelId === m.id}
                     aria-pressed={modelId === m.id}
-                    onClick={() => setModelId(m.id)}
+                    onClick={() => selectModel(m.id)}
                   >
                     {m.label}
                   </button>
@@ -237,6 +252,46 @@ export function Explorer() {
                   <option value="plain">Plain</option>
                 </select>
               </label>
+              {modelId === 'full' && (
+                <>
+                  <button
+                    className="mini"
+                    aria-pressed={circularShell}
+                    onClick={() => setCircularShell((v) => !v)}
+                    title="Toggle circularized outer shell vs stock CAD squarish solid_080"
+                  >
+                    Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+                  </button>
+                  {circularShell && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Shell material"
+                      value={shellMaterial}
+                      onChange={(e) => setShellMaterial(e.target.value as ShellMaterialPreset)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="titanium">Ti-6Al-4V</option>
+                      <option value="aluminum">7075-Al</option>
+                      <option value="carbon">Carbon Fiber</option>
+                      <option value="tpu-orange">TPU Orange</option>
+                      <option value="tpu-stealth">TPU Stealth</option>
+                    </select>
+                  )}
+                  {circularShell && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Shell profile"
+                      value={shellProfile}
+                      onChange={(e) => setShellProfile(e.target.value as ShellProfilePreset)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="body">Body (R 1.25)</option>
+                      <option value="perimeter">Armor Ring (R 2.05)</option>
+                      <option value="hybrid">Dual Hybrid</option>
+                    </select>
+                  )}
+                </>
+              )}
               <button
                 className="mini"
                 aria-pressed={xray}
@@ -450,6 +505,26 @@ export function Explorer() {
                   <dt>Node</dt>
                   <dd>{sel.node}</dd>
                 </dl>
+                {selected === 80 && (
+                  <div
+                    style={{
+                      margin: '10px 0',
+                      padding: '10px 12px',
+                      background: 'var(--accent-wash)',
+                      border: '1px solid var(--line-strong)',
+                      borderLeft: '3px solid var(--accent-graphic)',
+                      borderRadius: 'var(--radius)',
+                      fontSize: '12.5px',
+                    }}
+                  >
+                    <b>◯ Circular Outer Shell ({circularShell ? 'Active' : 'Stock CAD'})</b>
+                    <p style={{ margin: '4px 0 0', color: 'var(--steel)' }}>
+                      {circularShell
+                        ? `Rendering circularized perimeter armor (${SHELL_MATERIAL_LABELS[shellMaterial]} · ${SHELL_PROFILE_LABELS[shellProfile]}) with chamfered edge rings, perimeter fasteners, and recessed dual emerald optical beacon. Replaces squarish solid_080 for dynamic rotational symmetry at 4,000 RPM.`
+                        : 'Currently showing original squarish solid_080 (~137.7 × 131.5 mm). Click "Shell ◯ Circular" in the viewer bar to render the balanced circular perimeter armor.'}
+                    </p>
+                  </div>
+                )}
                 <div className="btn-row" style={{ margin: '8px 0 0' }}>
                   <button className="mini" onClick={() => selected !== null && isolatePart(selected)} disabled={selected !== null && !!parts[selected]?.dropped_from_glb} title={selected !== null && parts[selected]?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}>
                     Isolate
@@ -477,6 +552,6 @@ export function Explorer() {
   );
 }
 
-export function preloadExplorer() {
-  for (const m of cadModels) useGLTF.preload(m.glb);
+for (const m of cadModels) {
+  useGLTF.preload(m.glb);
 }

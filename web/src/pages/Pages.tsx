@@ -1,7 +1,74 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { buildSteps, trackerText } from '../data/content';
 import { Reveal } from '../components/Layout';
 import { DownloadCards } from './Bom';
+
+function CheckItem({ label, id }: { label: string; id?: string }) {
+  const storageKey = 'eyeliner_chk_' + (id || label.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 48));
+  const [done, setDone] = useState(() => {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(storageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggle = () => {
+    const next = !done;
+    setDone(next);
+    try {
+      if (next) localStorage.setItem(storageKey, '1');
+      else localStorage.removeItem(storageKey);
+    } catch {
+      // Ignore quota or disabled storage
+    }
+  };
+
+  return (
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '8px 12px',
+        margin: '5px 0',
+        borderRadius: 'var(--radius)',
+        background: done ? 'rgba(26, 107, 50, 0.05)' : 'var(--inset)',
+        border: `1px solid ${done ? '#bbf7d0' : 'rgba(212, 215, 221, 0.6)'}`,
+        cursor: 'pointer',
+        userSelect: 'none',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={done}
+        onChange={toggle}
+        style={{
+          width: 18,
+          height: 18,
+          margin: 0,
+          accentColor: 'var(--ok)',
+          cursor: 'pointer',
+          flex: 'none',
+        }}
+      />
+      <span
+        style={{
+          fontSize: '13.5px',
+          lineHeight: 1.45,
+          color: done ? 'var(--faint)' : 'var(--ink)',
+          textDecoration: done ? 'line-through' : 'none',
+          transition: 'all 0.15s ease',
+          fontWeight: done ? 450 : 550,
+        }}
+      >
+        {label}
+      </span>
+    </label>
+  );
+}
 
 export function Build() {
   return (
@@ -26,22 +93,53 @@ export function Build() {
       </div>
       <details className="step">
         <summary><b>Step 0 checklist — rules + safety</b></summary>
-        <p className="mono">[ ] SPARC + TRC beetle rules read · [ ] DIY-radio pre-clear sent · [ ] removable link &lt;60s · [ ] LiPo bag + never charge unattended · [ ] wheel locks on · [ ] cloud/pit never drives</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="SPARC + TRC beetle rules read and understood" />
+          <CheckItem label="DIY-radio pre-clear sent to event organizer" />
+          <CheckItem label="Removable link verified accessible under 60 s" />
+          <CheckItem label="LiPo bag ready + never charge unattended" />
+          <CheckItem label="Bench wheel locks installed for safe testing" />
+          <CheckItem label="Cloud/pit software confirmed purely advisory (never drives)" />
+        </div>
       </details>
       <details className="step">
         <summary><b>Step 4 tools + bench numbers</b></summary>
         <p>Tools: M2/M2.5/M3 hex, 0.1 g scale, calipers, Loctite 243, insert iron, vise + sockets for bearing press.</p>
-        <p className="mono">Hand-thread every bolt first, never force · bearings: outer race only, freeze bearing + warm housing · pod endplay &lt;1 mm · ring bolts star-pattern snug · 243 cures 24 h · balance on point jig level in 4+ orientations (3–5 g off = hop at 3000 RPM, fix with 2–3 g trim screws — never drill the ring)</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="Hand-thread every bolt first, never force into threads" />
+          <CheckItem label="Bearings: press outer race only, freeze bearing + warm housing" />
+          <CheckItem label="Pod endplay shimmed under 1 mm" />
+          <CheckItem label="Ring bolts tightened in star-pattern snug" />
+          <CheckItem label="Loctite 243 blue threadlocker cures full 24 h" />
+          <CheckItem label="Balance on point jig level in 4+ orientations (3–5 g off = hop at 3000 RPM, fix with 2–3 g trim screws — never drill ring)" />
+        </div>
       </details>
       <details className="step">
         <summary><b>Step 5 wiring checklist</b></summary>
-        <p className="mono">XT60 mains + 16 AWG (XT30 is 30 A cont — inadequate) · 18 AWG min short motor leads · twist + separate power/signal · 4700µF on 5 V + 10:1 divider · battery strapped in TPU (a shift = unbalance) · link pull kills everything</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="XT60 mains + 16 AWG silicone harness (XT30 is 30 A cont — inadequate)" />
+          <CheckItem label="18 AWG minimum on short motor leads" />
+          <CheckItem label="Twist power and signal leads, keep high current away from SPI" />
+          <CheckItem label="4700µF capacitor on 5 V rail + 10:1 voltage divider for telemetry" />
+          <CheckItem label="Batteries strapped securely in TPU cradle (any shift causes violent unbalance)" />
+          <CheckItem label="Removable link pull kills all power instantly" />
+        </div>
       </details>
       <details className="step">
         <summary><b>Steps 6–7 tune + failsafe sequence</b></summary>
-        <p className="mono">Bench with no weapon energy → cap 1500–2000 RPM, soft start, current limit → slide 500–1000 RPM (flip heading 180° if orbit is wrong) → trim straight: wood bites, steel skates → 2000 → heat-check → 3000 → heat-check → 4000 → blip hit-recovery (must re-hold RPM, not toilet-bowl) → one gain at a time, log RPM/g/batt/temp on the Pi</p>
-        <p className="mono">Failsafe, filmed to firmware/failsafe-test.mp4: TX-off stops/brakes &lt;1 s · re-arm deliberate · yank-Pi brown-out still failsafes · never boots armed with throttle high · freeze firmware version · back up config + logs · show TRC at check-in</p>
-        <p className="mono">Weigh-in: scale ≤1361 g (1360.8 g cap), target ≤1310 g · log every subassembly · spares: teeth, cleats, ESC, 2nd pack · calibrated scale</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="Bench spin with no weapon energy (rubber wheels / no teeth)" />
+          <CheckItem label="Cap 1500–2000 RPM, soft start, ESC current limit set" />
+          <CheckItem label="Low-RPM slide 500–1000 RPM: verify LED matches stick heading" />
+          <CheckItem label="Trim straight on floor: wood bites, steel skates" />
+          <CheckItem label="Ramp to 2000 RPM → thermal check on ESCs and motors" />
+          <CheckItem label="Ramp to 3000 RPM → thermal check + balance check" />
+          <CheckItem label="Ramp to 4000 RPM → blip hit-recovery test (must re-hold RPM, not toilet-bowl)" />
+          <CheckItem label="Failsafe test (filmed to firmware/failsafe-test.mp4): TX-off stops/brakes <1 s" />
+          <CheckItem label="Re-arm requires deliberate neutral throttle sequence" />
+          <CheckItem label="Yank Pi power: MCU failsafes reliably without brown-out lockup" />
+          <CheckItem label="Weigh-in on calibrated scale: ≤1361 g (1360.8 g cap), target ≤1310 g" />
+        </div>
       </details>
       <div className="btn-row">
         <Link className="btn primary" to="/onshape">Next: open CAD in Onshape</Link>
@@ -148,7 +246,15 @@ export function Pcbway() {
       </div>
       <details className="step">
         <summary><b>Per-file upload checklist</b></summary>
-        <p className="mono">[ ] uploaded · [ ] preview shows the right body · [ ] 1 solid per file · [ ] NN-name-material name matches · [ ] thickness set (DXF) · [ ] teeth spares 2+ · [ ] H7/h6 noted in order comments</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="Uploaded to PCBWay CNC / sheet metal quote" />
+          <CheckItem label="Preview shows the correct physical body and 1:1 scale (M3 = 3.2 mm)" />
+          <CheckItem label="Strictly 1 solid per file (no multi-body assemblies)" />
+          <CheckItem label="NN-name-material filename pattern matches exactly" />
+          <CheckItem label="Sheet thickness specified for DXF flat parts" />
+          <CheckItem label="Teeth spares added (2+ pairs recommended)" />
+          <CheckItem label="H7/h6 bearing fit tolerances noted in order comments" />
+        </div>
       </details>
       <p className="meta">US alternate for flat AR500: SendCutSend or OSH Cut waterjet from the same DXF. CNC teeth stay on PCBWay.</p>
       <h2>Source assemblies (not order-ready — export first)</h2>
@@ -192,7 +298,13 @@ export function Printing() {
       </div>
       <details className="step">
         <summary><b>Pre-print checklist</b></summary>
-        <p className="mono">[ ] STLs in 3d-printing/stl/ as NN-part-name · [ ] flow + temp tower per spool · [ ] PLA/PETG fit-check, then TPU final · [ ] weighed at 1.21 g/cc into BOM (shell budget 80–120 g)</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="STLs exported to 3d-printing/stl/ as NN-part-name.stl" />
+          <CheckItem label="Flow rate + temperature tower calibrated per TPU spool" />
+          <CheckItem label="PLA/PETG quick fit-check completed before final TPU print" />
+          <CheckItem label="Weighed printed parts at 1.21 g/cc density into BOM (shell budget 80–120 g)" />
+          <CheckItem label="TPU dried at 65 °C for 4–6 hours prior to printing" />
+        </div>
       </details>
       <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>      <div className="table-wrap">
         <table>
@@ -310,7 +422,13 @@ export function Firmware() {
       </details>
       <details className="step">
         <summary><b>Flash checklist</b></summary>
-        <p className="mono">[ ] Teensyduino / Arduino / PlatformIO installed · [ ] baseline flash, no custom gains · [ ] USB enumerates + config UI loads · [ ] stock config backed up · [ ] match-day version frozen after tune</p>
+        <div style={{ marginTop: 8 }}>
+          <CheckItem label="Teensyduino / Arduino / PlatformIO installed with Teensy 4.0 support" />
+          <CheckItem label="Baseline firmware flashed with zero custom gains" />
+          <CheckItem label="USB enumerates properly and configuration interface loads" />
+          <CheckItem label="Stock EEPROM configuration backed up to repository" />
+          <CheckItem label="Match-day firmware version frozen after tuning and committed" />
+        </div>
       </details>
       <div className="step">
         <h3>Wiring, locked</h3>

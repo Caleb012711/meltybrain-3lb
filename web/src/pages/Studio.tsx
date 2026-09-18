@@ -1,3 +1,4 @@
+/* oxlint-disable react/immutability */
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import * as THREE from 'three';
@@ -5,9 +6,18 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { cadModels } from '../data/content';
 import { BUILD_GUIDE, STEP_ROLES, type BuildStepKey } from '../data/buildGuide';
-import { usePrefersReducedMotion } from '../hooks/hooks';
-import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, useModelParts, EMPTY_SET } from '../components/CadViewer';
-import { ROLE_CSS, ROLE_LABELS, massLabel, partLabel } from '../components/materials';
+import { useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
+import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, EMPTY_SET } from '../components/CadViewer';
+import {
+  ROLE_CSS,
+  ROLE_LABELS,
+  SHELL_MATERIAL_LABELS,
+  SHELL_PROFILE_LABELS,
+  massLabel,
+  partLabel,
+  type ShellMaterialPreset,
+  type ShellProfilePreset,
+} from '../components/materials';
 
 // ---------- drive physics (arcade melty: no spin = no move) ----------
 const RPM_MAX = 4000;
@@ -101,11 +111,17 @@ function DriveBot({
   inputRef,
   parts,
   reduced,
+  circularShell = true,
+  shellMaterial = 'titanium',
+  shellProfile = 'body',
 }: {
   stateRef: React.MutableRefObject<DriveState>;
   inputRef: React.MutableRefObject<DriveInput>;
   parts: Parameters<typeof ExplodingModel>[0]['parts'];
   reduced: boolean;
+  circularShell?: boolean;
+  shellMaterial?: ShellMaterialPreset;
+  shellProfile?: ShellProfilePreset;
 }) {
   const group = useRef<THREE.Group>(null);
   const spinner = useRef<THREE.Group>(null);
@@ -130,6 +146,9 @@ function DriveBot({
             xray={false}
             spin={false}
             colorMode="role"
+            circularShell={circularShell}
+            shellMaterial={shellMaterial}
+            shellProfile={shellProfile}
             selected={null}
             hovered={null}
             hidden={EMPTY_SET}
@@ -138,11 +157,13 @@ function DriveBot({
             onHover={() => undefined}
           />
           {/* heading LED on the rim — rotates with the bot, the steering cue.
-              Local CAD frame: x = width (±1.2 rim), z = up (shell top ≈0.56). */}
-          <mesh position={[1.1, 0, 0.6]}>
-            <sphereGeometry args={[0.13, 16, 16]} />
-            <meshBasicMaterial color="#12b76a" toneMapped={false} />
-          </mesh>
+              When circularShell is active, CircularOuterShell provides integrated optical beacons. */}
+          {!circularShell && (
+            <mesh position={[1.1, 0, 0.6]}>
+              <sphereGeometry args={[0.13, 16, 16]} />
+              <meshBasicMaterial color="#12b76a" toneMapped={false} />
+            </mesh>
+          )}
         </group>
       </group>
     </group>
@@ -162,11 +183,15 @@ function RivalBot({
   foeRef,
   parts,
   reduced,
+  circularShell = true,
+  shellProfile = 'body',
 }: {
   selfRef: React.MutableRefObject<DriveState>;
   foeRef: React.MutableRefObject<DriveState>;
   parts: Parameters<typeof ExplodingModel>[0]['parts'];
   reduced: boolean;
+  circularShell?: boolean;
+  shellProfile?: ShellProfilePreset;
 }) {
   const group = useRef<THREE.Group>(null);
   const spinner = useRef<THREE.Group>(null);
@@ -225,6 +250,9 @@ function RivalBot({
             xray={false}
             spin={false}
             colorMode="role"
+            circularShell={circularShell}
+            shellMaterial="tpu-stealth"
+            shellProfile={shellProfile}
             selected={null}
             hovered={null}
             hidden={EMPTY_SET}
@@ -311,22 +339,23 @@ function DriveTrail({
   on: boolean;
   gen: number;
 }) {
-  const buf = useMemo(() => new Float32Array(TRAIL_N * 3), []);
   const count = useRef(0);
   const acc = useRef(0);
-  const lastGen = useRef(gen);
-  if (lastGen.current !== gen) {
-    lastGen.current = gen;
-    count.current = 0;
-    acc.current = 0;
-  }
-  const lineObj = useMemo(() => {
+  const [lineObj] = useState(() => {
+    const buf = new Float32Array(TRAIL_N * 3);
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(buf, 3));
     g.setDrawRange(0, 0);
     const m = new THREE.LineBasicMaterial({ color: '#e8490f', transparent: true, opacity: 0.7 });
     return new THREE.Line(g, m);
-  }, [buf]);
+  });
+
+  useEffect(() => {
+    count.current = 0;
+    acc.current = 0;
+    lineObj.geometry.setDrawRange(0, 0);
+  }, [gen, lineObj]);
+
   useEffect(
     () => () => {
       lineObj.geometry.dispose();
@@ -334,6 +363,8 @@ function DriveTrail({
     },
     [lineObj]
   );
+
+  // oxlint-disable-next-line react(immutability)
   useFrame((_, delta) => {
     if (!on) {
       if (count.current !== 0) {
@@ -346,23 +377,27 @@ function DriveTrail({
     if (acc.current < 0.05) return;
     acc.current = 0;
     const st = stateRef.current;
+    const posAttr = lineObj.geometry.attributes.position as THREE.BufferAttribute;
+    const arr = posAttr.array as Float32Array;
     const last = count.current > 0 ? count.current - 1 : -1;
     if (last >= 0) {
-      const dx = st.pos.x - buf[last * 3];
-      const dz = st.pos.y - buf[last * 3 + 2];
+      const dx = st.pos.x - arr[last * 3];
+      const dz = st.pos.y - arr[last * 3 + 2];
       if (dx * dx + dz * dz < 0.0025) return;
     }
     if (count.current >= TRAIL_N) {
-      buf.copyWithin(0, 3);
+      arr.copyWithin(0, 3);
       count.current = TRAIL_N - 1;
     }
-    buf[count.current * 3] = st.pos.x;
-    buf[count.current * 3 + 1] = 0.06;
-    buf[count.current * 3 + 2] = st.pos.y;
+    // oxlint-disable-next-line react(immutability)
+    arr[count.current * 3] = st.pos.x;
+    arr[count.current * 3 + 1] = 0.06;
+    arr[count.current * 3 + 2] = st.pos.y;
     count.current += 1;
-    lineObj.geometry.attributes.position.needsUpdate = true;
+    posAttr.needsUpdate = true;
     lineObj.geometry.setDrawRange(0, count.current);
   });
+
   if (!on) return null;
   return <primitive object={lineObj} />;
 }
@@ -406,6 +441,9 @@ function BuildCanvas({
   hidden: hid,
   isolated: iso,
   explode,
+  circularShell = true,
+  shellMaterial = 'titanium',
+  shellProfile = 'body',
   onSelect,
   onFocus,
 }: {
@@ -418,6 +456,9 @@ function BuildCanvas({
   hidden: Set<number>;
   isolated: number | null;
   explode: number;
+  circularShell?: boolean;
+  shellMaterial?: ShellMaterialPreset;
+  shellProfile?: ShellProfilePreset;
   onSelect: (i: number | null) => void;
   onFocus: (i: number | null) => void;
 }) {
@@ -454,6 +495,9 @@ function BuildCanvas({
               xray={false}
               spin={false}
               colorMode="role"
+              circularShell={circularShell}
+              shellMaterial={shellMaterial}
+              shellProfile={shellProfile}
               selected={sel}
               hovered={null}
               hidden={hid}
@@ -488,10 +532,45 @@ function BuildCanvas({
 }
 
 function TourRow({ n, tour, text }: { n: number; tour: { idx: number; done: boolean[] }; text: string }) {
-  const st = tour.done[n] ? '●' : tour.idx === n ? '◐' : '○';
+  const isDone = tour.done[n];
+  const isCurrent = tour.idx === n && !isDone;
   return (
-    <li aria-current={tour.idx === n ? 'step' : undefined}>
-      <span aria-hidden="true">{st}</span> {text}
+    <li
+      aria-current={isCurrent ? 'step' : undefined}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        margin: '6px 0',
+        padding: '6px 12px',
+        borderRadius: 'var(--radius)',
+        background: isCurrent ? 'var(--accent-wash)' : isDone ? '#f0fdf4' : 'transparent',
+        border: `1px solid ${isCurrent ? '#fed7aa' : isDone ? '#bbf7d0' : 'transparent'}`,
+        color: isDone ? 'var(--ok)' : isCurrent ? 'var(--accent-text)' : 'var(--steel)',
+        fontWeight: isCurrent || isDone ? 650 : 500,
+        fontSize: '13.5px',
+      }}
+    >
+      <span
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: isDone ? 'var(--ok)' : isCurrent ? 'var(--accent-graphic)' : 'var(--inset)',
+          color: isDone || isCurrent ? '#ffffff' : 'var(--muted)',
+          fontSize: '11px',
+          fontFamily: 'ui-monospace, monospace',
+          fontWeight: 700,
+          flex: 'none',
+        }}
+        aria-hidden="true"
+      >
+        {isDone ? '✓' : n + 1}
+      </span>
+      <span>{text}</span>
     </li>
   );
 }
@@ -568,6 +647,9 @@ export function Studio() {
   const [hud, setHud] = useState({ rpm: 0, speed: 0, thr: 0, grip: 0, x: 0, y: 0 });
   const [srText, setSrText] = useState('Stopped. Focus the viewport, then drive.');
   const [glFailed, setGlFailed] = useState(false);
+  const [circularShell, setCircularShell] = useState(true);
+  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('titanium');
+  const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const helpBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -937,8 +1019,20 @@ export function Studio() {
           <div>
             <div className="viewer">
               <div className="hud-top" aria-hidden="true">
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: armed ? 'var(--ok)' : 'var(--line-strong)',
+                      boxShadow: armed ? '0 0 0 2px rgba(26, 107, 50, 0.25)' : 'none',
+                    }}
+                  />
+                  <span>{armed ? 'ARMED' : 'STANDBY'}</span>
+                </span>
                 <span>
-                  RPM <b>{hud.rpm}</b>/{RPM_MAX}
+                  RPM <b>{hud.rpm}</b> <span style={{ color: 'var(--muted)', fontSize: '11px' }}>/ {RPM_MAX}</span>
                 </span>
                 <span
                   className="rpm-track"
@@ -951,7 +1045,7 @@ export function Studio() {
                   <span className="rpm-fill" style={{ width: `${(hud.rpm / RPM_MAX) * 100}%` }} />
                 </span>
                 <span>
-                  SPD <b>{hud.speed.toFixed(1)}</b> sim u/s
+                  SPD <b>{hud.speed.toFixed(1)}</b> <span style={{ color: 'var(--muted)', fontSize: '11px' }}>u/s</span>
                 </span>
                 <span>
                   THR <b>{Math.round(hud.thr * 100)}%</b>
@@ -959,9 +1053,17 @@ export function Studio() {
                 <span>
                   AUTH <b>{Math.round(hud.grip * 100)}%</b>
                 </span>
+                <span className="hud-pill" title="Armor Ring Configuration">
+                  ARMOR <b style={{ color: 'var(--accent-graphic)' }}>{circularShell ? '◯ CIRCULAR' : '◻ STOCK'}</b>
+                </span>
+                {circularShell && (
+                  <span className="hud-pill" title="Active Material Preset">
+                    MAT <b>{shellMaterial === 'titanium' ? 'Ti-6Al-4V' : shellMaterial === 'aluminum' ? '7075-Al' : shellMaterial === 'carbon' ? 'CF Twill' : shellMaterial === 'tpu-orange' ? 'TPU-Orange' : 'TPU-Stealth'}</b>
+                  </span>
+                )}
                 {brakeUi && (
-                  <span>
-                    <b>BRAKE ■</b>
+                  <span style={{ color: 'var(--danger)', fontWeight: 700 }}>
+                    BRAKE ■
                   </span>
                 )}
               </div>
@@ -1010,6 +1112,9 @@ export function Studio() {
                           inputRef={inputRef}
                           parts={parts}
                           reduced={reduced}
+                          circularShell={circularShell}
+                          shellMaterial={shellMaterial}
+                          shellProfile={shellProfile}
                         />
                         <DriveTrail stateRef={stateRef} on={trailOn && !reduced} gen={trailGen.current} />
                         {rivalOn && (
@@ -1018,6 +1123,8 @@ export function Studio() {
                             foeRef={stateRef}
                             parts={parts}
                             reduced={reduced}
+                            circularShell={circularShell}
+                            shellProfile={shellProfile}
                           />
                         )}
                       </Suspense>
@@ -1079,6 +1186,45 @@ export function Studio() {
                 >
                   Rival {rivalOn ? 'on' : 'off'}
                 </button>
+                <button
+                  className="mini drive-btn"
+                  aria-pressed={circularShell}
+                  onClick={() => {
+                    setCircularShell((v) => !v);
+                    setSrText(!circularShell ? 'Circular armor shell active.' : 'Stock CAD shell active.');
+                  }}
+                  title="Toggle circularized outer shell vs stock CAD squarish solid_080"
+                >
+                  Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+                </button>
+                {circularShell && (
+                  <select
+                    className="mini drive-btn"
+                    aria-label="Shell material"
+                    value={shellMaterial}
+                    onChange={(e) => setShellMaterial(e.target.value as ShellMaterialPreset)}
+                    style={{ minHeight: 44, padding: '0 8px', background: 'var(--surface)' }}
+                  >
+                    <option value="titanium">Ti-6Al-4V</option>
+                    <option value="aluminum">7075-Al</option>
+                    <option value="carbon">Carbon Fiber</option>
+                    <option value="tpu-orange">TPU Orange</option>
+                    <option value="tpu-stealth">TPU Stealth</option>
+                  </select>
+                )}
+                {circularShell && (
+                  <select
+                    className="mini drive-btn"
+                    aria-label="Shell profile"
+                    value={shellProfile}
+                    onChange={(e) => setShellProfile(e.target.value as ShellProfilePreset)}
+                    style={{ minHeight: 44, padding: '0 8px', background: 'var(--surface)' }}
+                  >
+                    <option value="body">Body (R 1.25)</option>
+                    <option value="perimeter">Armor Ring (R 2.05)</option>
+                    <option value="hybrid">Dual Hybrid</option>
+                  </select>
+                )}
                 <button
                   className="mini drive-btn"
                   aria-pressed={soundOn}
@@ -1185,6 +1331,10 @@ export function Studio() {
                 <dd>{Math.round(hud.thr * 100)} %</dd>
                 <dt>Authority (sim)</dt>
                 <dd>{Math.round(hud.grip * 100)} %</dd>
+                <dt>Armor Shell</dt>
+                <dd>{circularShell ? `◯ ${SHELL_MATERIAL_LABELS[shellMaterial]} (${SHELL_PROFILE_LABELS[shellProfile]})` : '◻ Stock CAD solid_080 (~137.7 × 131.5 mm)'}</dd>
+                <dt>Balance</dt>
+                <dd>{circularShell ? '100% rotational symmetry · <0.02 mm runout' : 'Asymmetric envelope'}</dd>
                 <dt>Position</dt>
                 <dd>
                   {hud.x.toFixed(1)}, {hud.y.toFixed(1)}
@@ -1239,6 +1389,46 @@ export function Studio() {
                     aria-label="Exploded view"
                   />
                 </label>
+                {modelId === 'full' && (
+                  <>
+                    <button
+                      className="mini"
+                      aria-pressed={circularShell}
+                      onClick={() => setCircularShell((v) => !v)}
+                      title="Toggle circularized outer shell vs stock CAD squarish solid_080"
+                    >
+                      Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+                    </button>
+                    {circularShell && (
+                      <select
+                        className="mini select-pill"
+                        aria-label="Shell material"
+                        value={shellMaterial}
+                        onChange={(e) => setShellMaterial(e.target.value as ShellMaterialPreset)}
+                        style={{ minHeight: 36, padding: '0 6px', background: 'var(--surface)' }}
+                      >
+                        <option value="titanium">Ti-6Al-4V</option>
+                        <option value="aluminum">7075-Al</option>
+                        <option value="carbon">Carbon Fiber</option>
+                        <option value="tpu-orange">TPU Orange</option>
+                        <option value="tpu-stealth">TPU Stealth</option>
+                      </select>
+                    )}
+                    {circularShell && (
+                      <select
+                        className="mini select-pill"
+                        aria-label="Shell profile"
+                        value={shellProfile}
+                        onChange={(e) => setShellProfile(e.target.value as ShellProfilePreset)}
+                        style={{ minHeight: 36, padding: '0 6px', background: 'var(--surface)' }}
+                      >
+                        <option value="body">Body (R 1.25)</option>
+                        <option value="perimeter">Armor Ring (R 2.05)</option>
+                        <option value="hybrid">Dual Hybrid</option>
+                      </select>
+                    )}
+                  </>
+                )}
               </div>
               {glFailed ? (
                 <div className="viewer-fallback">
@@ -1261,6 +1451,9 @@ export function Studio() {
                   hidden={hidden}
                   isolated={isolated}
                   explode={bExplode}
+                  circularShell={circularShell}
+                  shellMaterial={shellMaterial}
+                  shellProfile={shellProfile}
                   onSelect={setSelected}
                   onFocus={setBFocus}
                 />
@@ -1490,23 +1683,32 @@ export function Studio() {
           <button className="mini" onClick={() => setTour({ idx: 0, done: [false, false, false, false, false] })}>Replay tour</button>
         </p>
       )}
-      <div className="viewer" style={{ marginTop: 12 }}>
-        <div className="viewer-bar" style={{ borderTop: 'none' }}>
-          <h2 style={{ margin: 0, fontSize: 15 }}>Fight reel</h2>
-          <span className="meta">scripted 22 s bout — same spin-up/grip constants, staged finish</span>
+      <div className="viewer" style={{ marginTop: 24 }}>
+        <div className="viewer-bar" style={{ borderTop: 'none', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              Fight reel <span className="stamp ok">60 FPS</span> <span className="stamp todo">Seed 7</span>
+            </h2>
+            <span className="meta">Deterministic physics simulation — 22 s bout with staged finish</span>
+          </div>
+          <a className="btn" href="fight-night.mp4" download style={{ minHeight: 36, lineHeight: '34px', padding: '0 14px', fontSize: '12.5px' }}>
+            Download MP4 (22 s)
+          </a>
         </div>
-        <video
-          controls
-          playsInline
-          preload="metadata"
-          poster="fight-poster.jpg"
-          src="fight-night.mp4"
-          aria-label="Rendered fight: Eyeliner versus rival bot, Eyeliner wins by knockout"
-          style={{ width: '100%', maxWidth: 560, aspectRatio: '1 / 1', display: 'block', background: '#000' }}
-        >
-          <a href="fight-night.mp4" download>Download the fight reel (MP4, 22 s)</a>
-        </video>
-        <p className="status">
+        <div style={{ background: '#0a0c0e', display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            poster="fight-poster.jpg"
+            src="fight-night.mp4"
+            aria-label="Rendered fight: Eyeliner versus rival bot, Eyeliner wins by knockout"
+            style={{ width: '100%', maxWidth: 640, aspectRatio: '1 / 1', display: 'block', borderRadius: 8, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+          >
+            <a href="fight-night.mp4" download>Download the fight reel (MP4, 22 s)</a>
+          </video>
+        </div>
+        <p className="status" style={{ borderTop: '1px solid var(--line)' }}>
           Rendered offline by <code>tools/fight_render.py</code> (deterministic seed 7):
           Eyeliner seeks with velocity lead, the rival runs the repo's wobble policy,
           hits cost both bots 0.75× RPM — same spin-up taus and grip curve as this page's

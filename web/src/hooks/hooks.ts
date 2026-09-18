@@ -1,29 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { cadModels } from '../data/content';
+import type { PartInfo } from '../components/materials';
 
 export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  return useSyncExternalStore(
+    (callback) => {
+      if (typeof window === 'undefined') return () => {};
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      mq.addEventListener('change', callback);
+      return () => mq.removeEventListener('change', callback);
+    },
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false
   );
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(mq.matches);
-    const fn = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
-  }, []);
-  return reduced;
 }
 
 export function useReveal<T extends HTMLElement>(threshold = 0.15) {
+  const reduced = usePrefersReducedMotion();
   const ref = useRef<T | null>(null);
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
+    if (reduced) return;
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
-      return;
-    }
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -37,18 +37,17 @@ export function useReveal<T extends HTMLElement>(threshold = 0.15) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [threshold]);
-  return { ref, visible };
+  }, [threshold, reduced]);
+
+  return { ref, visible: reduced || visible };
 }
 
 export function useCountUp(target: number, active: boolean, duration = 1200): number {
+  const reduced = usePrefersReducedMotion();
   const [val, setVal] = useState(0);
+
   useEffect(() => {
-    if (!active) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVal(target);
-      return;
-    }
+    if (!active || reduced) return;
     let raf = 0;
     const t0 = performance.now();
     const tick = (t: number) => {
@@ -59,20 +58,54 @@ export function useCountUp(target: number, active: boolean, duration = 1200): nu
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, target, duration]);
-  return val;
+  }, [active, target, duration, reduced]);
+
+  return reduced ? target : val;
 }
 
 export function useIsMobile(breakpoint = 900): boolean {
-  const [mobile, setMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint}px)`).matches
+  return useSyncExternalStore(
+    (callback) => {
+      if (typeof window === 'undefined') return () => {};
+      const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+      mq.addEventListener('change', callback);
+      return () => mq.removeEventListener('change', callback);
+    },
+    () => typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint}px)`).matches,
+    () => false
   );
+}
+
+const partsCache = new Map<string, Promise<PartInfo[]>>();
+
+async function loadParts(modelId: string): Promise<PartInfo[]> {
+  const hit = partsCache.get(modelId);
+  if (hit) return hit;
+  const p = (async () => {
+    const base = cadModels.find((m) => m.id === modelId)?.glb ?? '';
+    const url = base.replace(/\.glb$/, '.parts.json');
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      return (await res.json()) as PartInfo[];
+    } catch {
+      return [];
+    }
+  })();
+  partsCache.set(modelId, p);
+  return p;
+}
+
+export function useModelParts(modelId: string): PartInfo[] {
+  const [parts, setParts] = useState<PartInfo[]>([]);
   useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
-    setMobile(mq.matches);
-    const fn = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
-  }, [breakpoint]);
-  return mobile;
+    let alive = true;
+    loadParts(modelId).then((ps) => {
+      if (alive) setParts(ps);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [modelId]);
+  return parts;
 }

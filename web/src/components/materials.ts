@@ -26,6 +26,29 @@ export const ROLE_CSS: Record<PartRole, string> = {
   'electro-green': '#0f6a3a',
 };
 
+export type ShellMaterialPreset =
+  | 'titanium'
+  | 'aluminum'
+  | 'carbon'
+  | 'tpu-orange'
+  | 'tpu-stealth';
+
+export type ShellProfilePreset = 'body' | 'perimeter' | 'hybrid';
+
+export const SHELL_MATERIAL_LABELS: Record<ShellMaterialPreset, string> = {
+  titanium: 'Titanium Ti-6Al-4V',
+  aluminum: '7075-T6 Aluminum',
+  carbon: 'Carbon Fiber Twill',
+  'tpu-orange': 'TPU 95A (Safety Orange)',
+  'tpu-stealth': 'TPU 95A (Tactical Stealth)',
+};
+
+export const SHELL_PROFILE_LABELS: Record<ShellProfilePreset, string> = {
+  body: 'Body Shell (R 1.25)',
+  perimeter: 'Perimeter Armor Ring (R 2.05)',
+  hybrid: 'Dual Armor (Body + Perimeter)',
+};
+
 // MeshStandardMaterial params: metalness restrained so roles read correctly
 // with AND without the procedural studio env map (full metal goes black
 // without image-based lighting). DoubleSide so thin sheet solids never cull.

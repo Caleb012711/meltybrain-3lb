@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls, useGLTF, useProgress } from '@react-three/drei';
 import { cadHref, cadModels } from '../data/content';
-import { usePrefersReducedMotion } from '../hooks/hooks';
+import { useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
 import { indexColor, roleMaterial, type PartInfo } from './materials';
 
 export type ColorMode = 'role' | 'index' | 'plain';
@@ -28,60 +28,33 @@ export class GlErrorBoundary extends Component<
 }
 const EMISSIVE_ORANGE = new THREE.Color('#e8490f');
 
+import { CircularOuterShell } from './CircularShell';
+import {
+  type ShellMaterialPreset,
+  type ShellProfilePreset,
+} from './materials';
+
 // Shared studio lighting for every 3D canvas on the site. Metals need an
 // environment map or they render near-black: this builds one procedurally
 // (Lightformers only — no network fetch, safe on static hosts and offline).
 export function ViewerLights() {
   return (
     <>
-      <hemisphereLight args={['#ffffff', '#d8dce2', 0.9]} />
-      <directionalLight position={[5, 8, 4]} intensity={2.0} />
-      <directionalLight position={[-6, 3, -6]} intensity={0.9} color="#dfe8ff" />
-      <directionalLight position={[-2, 2, 6]} intensity={0.4} color="#ffffff" />
+      <hemisphereLight args={['#ffffff', '#d8dce2', 0.95]} />
+      <directionalLight position={[5, 8, 4]} intensity={2.2} />
+      <directionalLight position={[-6, 3, -6]} intensity={1.0} color="#dfe8ff" />
+      <directionalLight position={[-2, 2, 6]} intensity={0.5} color="#ffffff" />
       <Environment resolution={256}>
         <group rotation={[-Math.PI / 3, 0, 0]}>
-          <Lightformer form="circle" intensity={4} position={[0, 5, -9]} scale={2} />
-          <Lightformer form="rect" intensity={2} position={[-5, 1, -1]} scale={[3, 2]} />
-          <Lightformer form="rect" intensity={2} position={[5, 1, 0]} scale={[3, 2]} />
-          <Lightformer form="rect" intensity={1} position={[0, 5, 5]} scale={[6, 2]} color="#fff4e8" />
+          <Lightformer form="circle" intensity={4.5} position={[0, 5, -9]} scale={2} />
+          <Lightformer form="rect" intensity={2.5} position={[-5, 1, -1]} scale={[3, 2]} />
+          <Lightformer form="rect" intensity={2.5} position={[5, 1, 0]} scale={[3, 2]} />
+          <Lightformer form="rect" intensity={1.5} position={[0, 5, 5]} scale={[6, 2]} color="#fff4e8" />
+          <Lightformer form="ring" intensity={2} position={[0, -2, 0]} scale={4} color="#e0e8ff" />
         </group>
       </Environment>
     </>
   );
-}
-
-const partsCache = new Map<string, Promise<PartInfo[]>>();
-
-async function loadParts(modelId: string): Promise<PartInfo[]> {
-  const hit = partsCache.get(modelId);
-  if (hit) return hit;
-  const p = (async () => {
-    const base = cadModels.find((m) => m.id === modelId)?.glb ?? '';
-    const url = base.replace(/\.glb$/, '.parts.json');
-    try {
-      const r = await fetch(encodeURI(url));
-      if (!r.ok) return [];
-      return (await r.json()) as PartInfo[];
-    } catch {
-      return [];
-    }
-  })();
-  partsCache.set(modelId, p);
-  return p;
-}
-
-export function useModelParts(modelId: string) {
-  const [parts, setParts] = useState<PartInfo[]>([]);
-  useEffect(() => {
-    let live = true;
-    void loadParts(modelId).then((p) => {
-      if (live) setParts(p);
-    });
-    return () => {
-      live = false;
-    };
-  }, [modelId]);
-  return parts;
 }
 
 export function ExplodingModel({
@@ -96,6 +69,9 @@ export function ExplodingModel({
   hovered,
   hidden,
   isolated,
+  circularShell = true,
+  shellMaterial = 'titanium',
+  shellProfile = 'body',
   onSelect,
   onHover,
 }: {
@@ -110,6 +86,9 @@ export function ExplodingModel({
   hovered: number | null;
   hidden: Set<number>;
   isolated: number | null;
+  circularShell?: boolean;
+  shellMaterial?: ShellMaterialPreset;
+  shellProfile?: ShellProfilePreset;
   onSelect: (i: number | null) => void;
   onHover: (i: number | null) => void;
 }) {
@@ -172,13 +151,14 @@ export function ExplodingModel({
   }, [scene]);
 
   useEffect(() => {
-    indexMats.current.forEach((m) => m.dispose());
-    indexMats.current.clear();
+    const mats = indexMats.current;
+    mats.forEach((m) => m.dispose());
+    mats.clear();
     // Sized lazily per original idx on first use (see material effect) —
     // meshCount is smaller than max original idx once degenerates drop.
     return () => {
-      indexMats.current.forEach((m) => m.dispose());
-      indexMats.current.clear();
+      mats.forEach((m) => m.dispose());
+      mats.clear();
     };
   }, [meshCount]);
 
@@ -276,15 +256,22 @@ export function ExplodingModel({
 
   // Position + visibility only (cheap per slider tick — no material allocs).
   // Spread 2.6: full assembly needs room for ~89 meshed nodes to read as separate parts.
+  const isMainCad = url.includes('main-cad');
+  const showCircularShell = circularShell && isMainCad;
+
   useEffect(() => {
     scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       const idx = (o.userData.partIndex as number) ?? 0;
       const rec = base.current.get(o.uuid);
       if (rec) o.position.copy(rec.pos).addScaledVector(rec.dir, explode * 2.6);
-      o.visible = !hidden.has(idx) && (isolated === null || isolated === idx);
+      if (idx === 80 && showCircularShell) {
+        o.visible = false;
+      } else {
+        o.visible = !hidden.has(idx) && (isolated === null || isolated === idx);
+      }
     });
-  }, [scene, explode, hidden, isolated]);
+  }, [scene, explode, hidden, isolated, showCircularShell]);
 
   // Material mode only (runs on mode/selection toggles, not on explode).
   useEffect(() => {
@@ -309,7 +296,7 @@ export function ExplodingModel({
       mat.wireframe = wireframe;
       mat.emissiveIntensity = selected === idx ? 0.45 : hovered === idx ? 0.22 : 0;
     });
-  }, [scene, colorMode, wireframe, xray, xrayMat, selected, hovered, parts]);
+  }, [scene, colorMode, wireframe, xray, xrayMat, xraySelMat, meshCount, selected, hovered, parts]);
 
   useFrame((_, delta) => {
     // Spin about local Z: callers level Z-up CAD flat, which maps local Z to
@@ -338,6 +325,20 @@ export function ExplodingModel({
           onHover(null);
         }}
       />
+      {showCircularShell && (
+        <CircularOuterShell
+          material={shellMaterial}
+          profile={shellProfile}
+          wireframe={wireframe}
+          xray={xray}
+          selected={selected === 80}
+          hovered={hovered === 80}
+          visible={!hidden.has(80) && (isolated === null || isolated === 80)}
+          explode={explode}
+          onSelect={() => onSelect(80)}
+          onHover={(h) => onHover(h ? 80 : null)}
+        />
+      )}
     </group>
   );
 }
@@ -494,7 +495,11 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
   const [wireframe, setWireframe] = useState(false);
   const [xray, setXray] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('role');
-  const [spin, setSpin] = useState(!reduced);
+  const [circularShell, setCircularShell] = useState(true);
+  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('titanium');
+  const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
+  const [spinOverride, setSpinOverride] = useState<boolean | null>(null);
+  const spin = spinOverride ?? !reduced;
   const [stlGeo, setStlGeo] = useState<THREE.BufferGeometry | null>(null);
   const [stlName, setStlName] = useState('');
   const [stlErr, setStlErr] = useState('');
@@ -503,14 +508,11 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
   const parts = useModelParts(modelId);
   const stlInput = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
+  const selectModel = (id: string) => {
+    setModelId(id);
     setReady(false);
     setFailed(false);
-  }, [modelId]);
-
-  useEffect(() => {
-    if (reduced) setSpin(false);
-  }, [reduced]);
+  };
 
   const model = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
 
@@ -593,6 +595,9 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
                 hovered={null}
                 hidden={EMPTY_SET}
                 isolated={null}
+                circularShell={circularShell}
+                shellMaterial={shellMaterial}
+                shellProfile={shellProfile}
                 onSelect={() => undefined}
                 onHover={() => undefined}
               />
@@ -630,7 +635,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
               role="radio"
               aria-checked={modelId === m.id}
               aria-pressed={modelId === m.id}
-              onClick={() => setModelId(m.id)}
+              onClick={() => selectModel(m.id)}
             >
               {m.label}
             </button>
@@ -655,13 +660,53 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
               aria-label="Color mode"
               value={colorMode}
               onChange={(e) => setColorMode(e.target.value as ColorMode)}
-              style={{ minHeight: 36 }}
+              style={{ minHeight: 44 }}
             >
               <option value="role">By heuristic role</option>
               <option value="index">By part #</option>
               <option value="plain">Plain</option>
             </select>
           </label>
+        )}
+        {modelId === 'full' && (
+          <>
+            <button
+              className="mini"
+              aria-pressed={circularShell}
+              onClick={() => setCircularShell((v) => !v)}
+              title="Toggle circularized outer shell vs stock CAD squarish solid_080"
+            >
+              Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+            </button>
+            {circularShell && (
+              <select
+                className="mini select-pill"
+                aria-label="Shell material"
+                value={shellMaterial}
+                onChange={(e) => setShellMaterial(e.target.value as ShellMaterialPreset)}
+                style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+              >
+                <option value="titanium">Ti-6Al-4V</option>
+                <option value="aluminum">7075-Al</option>
+                <option value="carbon">Carbon Fiber</option>
+                <option value="tpu-orange">TPU Orange</option>
+                <option value="tpu-stealth">TPU Stealth</option>
+              </select>
+            )}
+            {circularShell && (
+              <select
+                className="mini select-pill"
+                aria-label="Shell profile"
+                value={shellProfile}
+                onChange={(e) => setShellProfile(e.target.value as ShellProfilePreset)}
+                style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+              >
+                <option value="body">Body (R 1.25)</option>
+                <option value="perimeter">Armor Ring (R 2.05)</option>
+                <option value="hybrid">Dual Hybrid</option>
+              </select>
+            )}
+          </>
         )}
         <button
           className="mini"
@@ -688,7 +733,7 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
           aria-pressed={spin}
           disabled={reduced}
           title={reduced ? 'Disabled: reduced motion' : undefined}
-          onClick={() => setSpin((v) => !v)}
+          onClick={() => setSpinOverride((prev) => !(prev ?? !reduced))}
         >
           {spin ? 'Pause spin' : 'Spin'}
         </button>
@@ -744,8 +789,4 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
       </p>
     </div>
   );
-}
-
-export function preloadAll() {
-  for (const m of cadModels) useGLTF.preload(m.glb);
 }
