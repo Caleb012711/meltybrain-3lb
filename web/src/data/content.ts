@@ -11,6 +11,7 @@ export const nav: NavEntry[] = [
   { to: '/printing', label: '3D printing' },
   { to: '/bom', label: 'BOM + cost' },
   { to: '/engineering', label: 'Engineering' },
+  { to: '/liftoff', label: 'Why LiftOff' },
   { to: '/firmware', label: 'Firmware + AI' },
 ];
 
@@ -133,7 +134,7 @@ export const stackCards: StackCard[] = [
   { id: 'acc-fight', group: 'Sensing', part: 'Accels (fight) — H3LIS331DLTR ×2', spec: 'Opposed at 45°, short SPI near CG, 4700 uF on 5 V', role: 'Deterministic heading that survives hits shifting the spin center.', stamp: 'Locked' },
   { id: 'motors', group: 'Drive', part: 'PROPDRIVE v2 2836 1200KV ×2', spec: '82 g ea, 48 A max, 3–4S, 12-pole — hubmotor build', role: 'Hubmotor: 6 mm dead axle, two 626 bearings, aluminum hubs.', stamp: 'Locked' },
   { id: 'esc', group: 'Drive', part: 'AM32 55 A 4-in-1', spec: 'DShot600 + bidirectional eRPM — not SimonK / 490 Hz', role: 'The 8 kHz loop that makes translation at spin possible.', stamp: 'Locked' },
-  { id: 'wheels', group: 'Drive', part: 'Ti cleat wheels (Phase 2)', spec: '1.55 in Ti cleats — Phase 1 runs rubber to learn', role: 'Bite on wood and steel. Foam shreds on contact. Phase 1 fallback: rubber wheels to learn — do not wait on cleats.', stamp: 'TODO-export' },
+  { id: 'wheels', group: 'Drive', part: 'Ti cleat wheels — 3-set plan', spec: 'Learn 2× rubber/BaneBots + TPU locks; fight 2× 0.040 in Gr5 Ti 1.55 in OD + silicone hybrid (May2026); spares Ti pair pre-mounted + hardware + rubber fallback. Rev7 saves ~5–6 g/pair', role: 'SendCutSend Ti-6Al-4V annealed: 0.040 in fight/spare, 0.060 in learn, 6 discs symmetric, deburr only do NOT round tips, match ≤1 g, jig balance, 243, endplay <1 mm. Foam 23 rejected — shreds, zero bite. Wood μ>1.5 dig, steel μ0.2–0.4 skate — re-trim per floor, tooth spec unchanged. Cleats last, sharp.', stamp: 'TODO-export' },
   { id: 'rx', group: 'Link', part: 'ELRS EP1/RP1 receiver', spec: '2.4 GHz, CRSF to Teensy UART, failsafe throttle-cut', role: 'Telemetry back to the handset. Failsafe must be verified on video.', stamp: 'Locked' },
   { id: 'tx', group: 'Link', part: 'RadioMaster Pocket ELRS', spec: 'One-time buy — bind, confirm sticks in configurator', role: 'Driver input. Cloud and pit software never drive.', stamp: 'Locked' },
   { id: 'batt', group: 'Power', part: '2× 4S 550 mAh in parallel', spec: '95C XT30 — 4 packs makes 2 flight sets', role: 'Liftoff Rev5+ spec. Must fit the TPU cradle and make weight.', stamp: 'Locked' },

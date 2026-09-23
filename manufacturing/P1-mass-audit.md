@@ -18,6 +18,15 @@ Largest solids in Main CAD (mm³): 80,134 / 32,668 / 27,815×2 / 25,651 / 18,700
 - 27,815 mm³ ×2 = the standard teeth (matches teeth file exactly) → 218g steel each.
 - BBox Main CAD: 138 × 331 × 168 mm. 331mm = long axis (likely undercutter reach or staged configs, not spin diameter — verify spin diameter in CAD before tip-speed math).
 
+> **Double-count warning (verified via `main-cad.parts.json` roles):** `weapon-steel`
+> totals **100.3 cm³** in Main CAD because it stages BOTH configs at once —
+> 55.63 cm³ standard teeth pair (27.815×2) + 44.67 cm³ undercutter teeth
+> (11.858×2 + 10.479×2). **Fly ONE weapon — never both staged.** Flying both
+> adds **~356g phantom steel** (the full undercutter assy) to any rollup.
+> `electro-green` totals **39.2 cm³** (18.70 + 5.76×2 + 4.474×2) of electronics
+> keepout placeholders — **exclude from metal mass**, replaced by the fixed
+> electronics + pack + wiring line in the build rollup.
+
 ## Branch table (metal only, before electronics)
 
 | Branch | Assumption | Metal mass | + electronics/battery (~350–450g) | Verdict |
@@ -26,14 +35,14 @@ Largest solids in Main CAD (mm³): 80,134 / 32,668 / 27,815×2 / 25,651 / 18,700
 | B — steel teeth + alu rest | teeth 437g steel + (319.9−55.6)=264cm³ alu 713g | ~1150g | ~1500–1600g | ❌ Over — this is why full-steel Eyeliner can't fly as-drawn |
 | C — Ti teeth + alu rest | teeth 246g Ti + 713g alu | ~959g | ~1310–1410g | ⚠️ Borderline — needs TPU substitution + lightening |
 | D — steel teeth + alu + TPU shell credit | teeth 437g + ~150cm³ alu 405g + ~100cm³ TPU 121g (shell/cradle as printed, not milled) | ~963g + fasteners ~60g = ~1020g | ~1370–1470g | ⚠️ Still over unless large 80cm³ body is pocketed/lightened |
-| E — Ti ring/teeth + alu plates + TPU cradle (Liftoff formula) | Ti weapon ~200–250g + alu plates/structure ~300–400g + TPU ~80–120g + pods Ti/alu ~50g | ~650–800g | ~1000–1250g | ✅ Flies — leaves margin for Pi + BEC (~50g) + bigger battery |
+| E — Liftoff formula: steel ring/teeth default (Ti = relief valve only) + alu plates + TPU cradle | Steel weapon tapered to 241–326g band + alu plates/structure ~300–400g + TPU ~80–120g + pods Ti/alu ~50g | ~650–800g | ~1000–1250g | ✅ Flies — leaves margin for Pi + BEC (~50g) + bigger battery |
 
 ## Decision (locks materials-guide.md)
 
 1. **Do NOT order steel everything.** Branch B/D prove Eyeliner as-drawn is overweight with a steel ring + solid alu chassis.
-2. **Default: Liftoff formula (Branch E)** — AR500 steel ONLY for the thin weapon ring/teeth band (~0.25", tapered, no holes, target 240–330g like Liftoff), 6061-T6 for plates, TPU for shell/cradle, Ti for cleat wheels.
+2. **Default: Liftoff formula (Branch E)** — AR500 steel ONLY for the thin weapon ring/teeth band (~0.25", tapered, no holes, target 240–330g like Liftoff), 6061-T6 for plates, TPU for shell/cradle, Ti for cleat wheels. **Steel is the default; Ti is the relief valve only — do not read Branch E as Ti-default.**
 3. **If the 80cm³ body is currently solid in CAD: pocket/lighten it or convert to TPU + alu sandwich.** 629g steel / 355g Ti for one part is unaffordable; 216g alu is the max; TPU+plate sandwich is lighter still.
-4. **Ti relief valve:** if after lightening the weapon band still pushes total over 1310g target, swap weapon band steel→Ti (saves ~190g on teeth pair: 437→246g) before touching battery/motor size.
+4. **Ti relief valve:** if after lightening the weapon band still pushes total over 1310g target, swap weapon band steel→Ti (do not pre-order Ti — audit first, then order): **A saves 190g (437→246g on the 55.63 cm³ teeth pair), B saves 155g (356→201g on the 45.41 cm³ undercutter assy), tapered band 35.7 cm³ saves 122g (280→158g)** — swap steel→Ti BEFORE touching battery/motor size. **Ring target first:** Standard Teeth as-drawn 55.63 cm³ = 437g steel MUST taper mid-span to the Liftoff 241–326g band (30.7–41.5 cm³, e.g. 35.7 cm³ = 280g), saving 110–195g steel; taper only, no lightening/bolt holes in the band.
 5. **Next action:** in CAD, isolate the weapon ring band vs chassis tub, get their individual volumes, re-run this table with those two numbers + real electronics weights. Then order.
 
 ## How to re-run

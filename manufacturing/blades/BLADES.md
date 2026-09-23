@@ -26,14 +26,18 @@ hub with the same tool, it doesn't ship.**
   ring — any config clocks on at 0° or 60° and stays balanced. 4-hole would also
   work; 5- or 3-hole does NOT (breaks 180° symmetry options). Do NOT use a
   different PCD per config.
-  - Action before ordering: open `Main CAD.step` + each weapon STEP in
-    Fusion/Onshape, overlay hub faces, confirm all three carriers share the hub
-    PCD as-drawn. If B's 10-solid assembly currently has its own hole spacing,
-    re-export its carrier to the hub PCD in the next CAD pass (docs-only this
-    round — no metal ordered until they match).
-  - Recommended envelope for that CAD pass (not a verified dimension): 6× M4
-    clearance (Ø4.5 mm) on Ø40–50 mm PCD on the hub flange. Pick the largest PCD
-    the hub flange allows — larger PCD = lower bolt shear per hit.
+  - **Hub PCD overlay checklist (do this before ordering metal):**
+    - [ ] ONE shared **6× M4 Ø40–50 PCD** (M4 clearance Ø4.5 mm on the hub
+      flange — pick the largest PCD the flange allows; larger PCD = lower bolt
+      shear per hit) + female taper **7–10° included, 2–3 mm engagement,
+      <0.05 mm TIR**, turned/reamed finish.
+    - [ ] Open **`Main CAD.step` + each weapon STEP** in Fusion/Onshape, overlay
+      hub faces, confirm all carriers share the hub PCD as-drawn.
+    - [ ] If B's 10-solid assembly currently has its own hole spacing,
+      **re-export its carrier to the hub PCD** in the next CAD pass (docs-only
+      this round — no metal ordered until they match).
+    - [ ] Witness-mark slip detector (hub→carrier paint lines), **24 h cure**,
+      **3-pass star 1 → 2 → 3.0–3.5 N·m** (§3 ritual).
 - **Tapered register for concentricity (the important part).**
   Bolt holes alone NEVER center a spinner — clearance holes slip 0.1–0.3 mm and
   that is a fatal eccentricity at 3000–4000 RPM. Each carrier gets a female
@@ -54,8 +58,11 @@ From `01-frame-assembly.md` steps 4–5 + `materials-guide.md` §3.1:
 1. **Symmetric 2-tooth ring, NO extra holes.** Holes in a 4000-RPM impact ring
    are crack starters (stress concentration × centrifugal preload × shock).
    Liftoff precedent: holes → cracks; single-tooth + counterweight → chassis
-   yeet on tooth-stop. Taper mid-span to tune mass (326 g → 241 g precedent),
-   never drill to lighten.
+   yeet on tooth-stop. **Ring target: Standard Teeth as-drawn 55.63 cm³ = 437 g
+   steel MUST taper mid-span to the Liftoff 241–326 g band (30.7–41.5 cm³,
+   e.g. 35.7 cm³ = 280 g) — an explicit save of 110–195 g steel. No
+   lightening holes, no bolt holes in the band (crack starters) — taper only,
+   never drill to lighten.**
 2. **Never drill the ring to balance.** Even 3–5 g of asymmetry = violent hop
    at 3000 RPM (01 §5). Balance ONLY with symmetric trim screws / small
    counterweights in pre-planned symmetric locations (see §6). Drilling adds a
@@ -105,8 +112,8 @@ exactly). Densities: steel 7.85 / Ti-6Al-4V 4.43 / 6061 2.70 g/cm³.
 
 | Config | Measured volume | Steel (AR500 @7.85) | Ti Gr5 (@4.43) | 6061 (@2.70) | Note |
 |---|---|---|---|---|---|
-| **A standard teeth pair** (`Standard Weapon Teeth.step`, 2 solids) | **55.63 cm³** (27.81 each) | **436.7 g pair / 218.3 g each** | **246.4 g pair / 123.2 g each** | 150.2 g pair | Audit prints 437/246 — agrees to 0.3 g |
-| **B undercutter assy** (`Undercutter Config.step`, 10 solids) | **45.41 cm³** | **356.5 g** | **201.2 g** | 122.6 g | Audit prints 356/201 — agrees. 10 solids = teeth + carrier; isolate carrier vs teeth in next CAD pass and re-card separately |
+| **A standard teeth pair** (`Standard Weapon Teeth.step`, 2 solids) | **55.63 cm³** (27.81 each) | **436.7 g pair / 218.3 g each** | **246.4 g pair / 123.2 g each** | 150.2 g pair | Audit prints 437/246 — agrees to 0.3 g. **AS-DRAWN — MUST taper mid-span to Liftoff 241–326 g band (30.7–41.5 cm³, e.g. 35.7 cm³ = 280 g steel), saving 110–195 g steel. Taper only; no lightening/bolt holes in the band.** |
+| **B undercutter assy** (`Undercutter Config.step`, 10 solids) | **45.41 cm³** | **356.5 g** | **201.2 g** | 122.6 g | Audit prints 356/201 — agrees. 10 solids = teeth + carrier; **isolate carrier vs teeth volumes next CAD pass** and re-card separately (carrier on 6× M4 hub PCD + taper; teeth band tapered like A) |
 | **C wedge** (NO STEP — estimate) | **~35 cm³ assumed** (measure in CAD next round) | **~274.8 g** | **~155.1 g** | ~94.5 g | Formula: `mass = volume_cm³ × density`. VERIFY before ordering — do not quote this row |
 
 **Branch logic (locks to `P1-mass-audit.md` + `materials-guide.md` §4):**

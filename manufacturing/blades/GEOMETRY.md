@@ -22,7 +22,7 @@ Rule: effective cutting protrusion ≈ **1.0–1.5× your slow-engagement bite (
 - Leading (cutting) edge: **0.5–1.0 mm × 45° chamfer** (or 0.5–0.8 mm flat land + light hone). Never ship a zero-radius knife edge — AR500 foil edges fold on first hard contact, then tear and drag.
 - Trailing edges: break **0.3–0.5 mm** (handling + crack resistance).
 - All faces deburred; no grinding burns (straw/blue temper colors = re-dress).
-- **Never drill or notch the rim/band to lighten** — holes are crack starters. Tune mass by tapering mid-span (Liftoff 326→241 g precedent), never by perforation. Balance corrections are trim screws opposite the heavy side (moment `m·r`), leveled in 4+ orientations on the point jig — never drilled pockets.
+- **Never drill or notch the rim/band to lighten** — holes are crack starters. Tune mass by tapering mid-span to the Liftoff 241–326 g band (30.7–41.5 cm³, e.g. 35.7 cm³ = 280 g steel): Standard Teeth as-drawn 55.63 cm³ = 437 g steel MUST taper mid-span to that band, saving an explicit 110–195 g steel. No lightening holes, no bolt holes in the band — taper only. Balance corrections are trim screws opposite the heavy side (moment `m·r`), leveled in 4+ orientations on the point jig — never drilled pockets.
 
 ## C. Wear behavior (Ti cleat lessons from Liftoff, applied to teeth)
 
@@ -32,8 +32,8 @@ Rule: effective cutting protrusion ≈ **1.0–1.5× your slow-engagement bite (
 
 ## D. Per-config tooth guidance
 
-- **A — Standard mid-cutter (fight default, 55.63 cm³ pair):** symmetric 2-tooth, 10–14 mm protrusion, chamfer per §B. Mass tune by mid-span taper toward ~300 g before any Ti swap. Spin Ø: measure tip circle in CAD; do not reuse the undercutter number.
-- **B — Undercutter (45.4 cm³ → 356 g steel / 201 g Ti):** lower, longer-reach teeth, **8–12 mm** protrusion + leading-bottom chamfer (it eats floors). Floor-clearance check on wood AND steel before spin-up; verify spin Ø separately (reach ≠ diameter). Mass advantage (~81 g steel saved vs standard) is real — spend it on spares/battery, not taller teeth.
+- **A — Standard mid-cutter (fight default, 55.63 cm³ / 437 g steel as-drawn):** symmetric 2-tooth, 10–14 mm protrusion, chamfer per §B. **MUST taper mid-span to Liftoff 241–326 g band (30.7–41.5 cm³, e.g. 35.7 cm³ = 280 g), saving 110–195 g steel — taper only, no lightening/bolt holes** — before any Ti swap. Spin Ø: measure tip circle in CAD; do not reuse the undercutter number.
+- **B — Undercutter (45.41 cm³ → 356 g steel / 201 g Ti as-drawn, 10 solids):** lower, longer-reach teeth, **8–12 mm** protrusion + leading-bottom chamfer (it eats floors). Floor-clearance check on wood AND steel before spin-up; verify spin Ø separately (reach ≠ diameter). **Next CAD pass: isolate carrier vs teeth volumes and re-card separately** (carrier carries the shared 6× M4 hub PCD + taper; teeth band tapers like A). Mass advantage (~81 g steel saved vs standard as-drawn) is real — spend it on spares/battery, not taller teeth.
 - **C — Wedge (control config):** no teeth; radius all leading edges **≥1.5 mm**; mass saved funds the second pack + Pi/BEC headroom. Re-balance from scratch — wedge mass distribution is not a teeth distribution.
 
 ## E. Interface + swap ritual (geometry touchpoints)

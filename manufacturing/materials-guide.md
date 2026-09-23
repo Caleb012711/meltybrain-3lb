@@ -4,7 +4,7 @@
 
 - **Ring / teeth (the weapon): AR500 steel, default.** Grade 5 Ti only as a weight relief valve.
 - **Top/bottom plates: 6061-T6 aluminum** (+ small polycarbonate LED window, not full poly plates).
-- **Wheels: titanium cleats** for wood/steel floors, NOT foam. Start rubber to learn, switch to cleats.
+- **Wheels: 3-set plan — titanium cleats** for wood/steel floors, NOT foam. Learn on rubber, fight thin Ti, carry a pre-mounted Ti spare + rubber fallback.
 - **Interior cradle: printed TPU.** Legal at 3lb, no fiberglass needed.
 
 Your pasted scorecard is accurate — this doc locks it into the repo with receipts.
@@ -44,7 +44,12 @@ Key ratios:
 2. **Ti as relief valve only.** Pi + BEC + mount ≈ 35–50g. If P1 audit (see `../P1-mass-audit.md`) lands over ~1310g target, thin Ti ring first, plates second. Don't pre-order Ti.
 3. **Plates: 6061-T6 0.063–0.080"** + narrow polycarbonate window strip for heading LEDs. Full-poly plates pierce under verts.
 4. **Cradle: TPU 95A printed shell** (no fiberglass, no carbon layup). UHMW/HDPE sheet as backup if printer down — cuts with wood tools.
-5. **Wheels: skip foam-pour.** Phase 1: rubber (BaneBots / molded) to learn translation. Phase 2: SendCutSend Ti cleats for TRC wood/steel. Cleats dig on wood, skate on polished steel — know your floor.
+5. **Wheels: 3-set plan — skip foam-pour. Reject Flex Foam 23 (flame-rated prop foam: shreds on contact, zero bite).**
+   - Learn: 2× rubber/BaneBots + printed TPU locks/covers.
+   - Fight: 2× thin Ti cleats 0.040–0.060" Gr5 1.55" OD + silicone hybrid infill (May2026 spec).
+   - Spares: 1× full Ti pair pre-mounted + hardware + 1× rubber fallback. Cleats last — sharp. Thinner Rev7 saves ~5–6 g/pair.
+   - SendCutSend spec: Ti-6Al-4V annealed; fight/spares 0.040" thin, one learn set 0.060" thick; 1.55" OD symmetric, no asymmetric lightening; as-cut deburr only — do NOT round tips; qty 6 discs (2 fight + 2 spare + 2 thick-learn); weigh-match ≤1 g; balance on point/bearing jig; Loctite 243; hub endplay <1 mm.
+   - Floor note: cleats dig on wood (μ>1.5), skate on polished steel (μ0.2–0.4) — re-trim per floor, tooth spec unchanged.
 6. **Fasteners: 12.9 + Loctite 243**, symmetric layout, balance on a point/bearing jig. Budget 2–3g trim screws for final balance.
 
 ## 4. Order of operations (P1 gate)

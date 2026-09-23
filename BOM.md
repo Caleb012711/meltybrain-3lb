@@ -43,7 +43,7 @@ Liftoff Rev9 runs: Teensy 4.0 + 2x H3LIS331DL ±400g + PropDrive 2836 1200kv hub
 | M3 / M4 button + socket heads (12.9) | lengths per CAD — TODO measure | 1 assortment + spares | | [ ] |
 | M3 / M4 locknuts (nyloc / titanium) | | 20+ | | [ ] |
 | Washers, threadlocker (blue), CA glue | | 1 set | | [ ] |
-| Bearings (sizes from CAD) | e.g. ___ — TODO | + spares | | [ ] |
+| Bearings — hubmotor pods | 626-2Z/C3 deep-groove 6×19×6 mm, ABEC-3/C3 clearance, ZZ metal shield for speed (use 626-2RS rubber-sealed if dusty venue). 2 per pod = 4 installed + 4 spares = 8 total. Bore 6 mm H7 shaft fit, OD 19 mm H7 housing fit | 8 total (4 + 4 spares) | McMaster 5972K116 (626-ZZ) / UXCell 626-2Z 10-pack — record YOUR vendor + lot | [ ] |
 | Standoffs / inserts for printed parts | heat-set M3/M4 | 20+ | | [ ] |
 
 ## 4. Filament (for printed parts)

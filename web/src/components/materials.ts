@@ -49,6 +49,52 @@ export const SHELL_PROFILE_LABELS: Record<ShellProfilePreset, string> = {
   hybrid: 'Dual Armor (Body + Perimeter)',
 };
 
+export type TopShellFinishPreset =
+  | 'titanium'
+  | 'aluminum'
+  | 'carbon'
+  | 'billet'
+  | 'polycarbonate';
+
+export type LighteningPocketPreset = 'solid' | 'radial' | 'isogrid';
+export type BeaconWindowPreset = 'flush-prism' | 'diffuse-dome' | 'recessed-slit';
+
+export const TOP_SHELL_FINISH_LABELS: Record<TopShellFinishPreset, string> = {
+  titanium: 'Grade 5 Titanium (Ti-6Al-4V)',
+  aluminum: '7075-T6 Hardcoat Anodized',
+  carbon: 'High-Modulus Carbon Fiber',
+  billet: 'Raw CNC Machined Billet',
+  polycarbonate: 'Smoked Impact Polycarbonate',
+};
+
+export const LIGHTENING_POCKET_LABELS: Record<LighteningPocketPreset, string> = {
+  solid: 'Solid Billet Armor (Max Penetration Resistance)',
+  radial: 'Radial Pockets (-35% Weight)',
+  isogrid: 'Triangular Isogrid (-45% Weight)',
+};
+
+export const BEACON_WINDOW_LABELS: Record<BeaconWindowPreset, string> = {
+  'flush-prism': 'Flush Optical Prism Lens',
+  'diffuse-dome': 'High-Output Diffuse Dome',
+  'recessed-slit': 'Armored Recessed Slit',
+};
+
+export type WheelTreadType = 'urethane' | 'ti-cleats';
+
+export const WHEEL_TREAD_LABELS: Record<WheelTreadType, string> = {
+  urethane: 'Cast Polyurethane 60A Tread',
+  'ti-cleats': '1.55 in Titanium Aggressive Cleats',
+};
+
+export interface PrecisionDetailsConfig {
+  fasteners?: boolean;
+  standoffs?: boolean;
+  bearings?: boolean;
+  timingDrive?: boolean;
+  wiring?: boolean;
+  accelerometer?: boolean;
+}
+
 // MeshStandardMaterial params: metalness restrained so roles read correctly
 // with AND without the procedural studio env map (full metal goes black
 // without image-based lighting). DoubleSide so thin sheet solids never cull.

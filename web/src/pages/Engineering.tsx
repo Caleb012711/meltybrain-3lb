@@ -121,9 +121,9 @@ export function Engineering() {
   const [accR, setAccR] = useState(20);
 
   // tip speed + KE (thin-ring model, teeth-pair mass)
-  // mph = π·D(in)·RPM·60 / 63360 = π·D·RPM / 1056 (sanity: 8″ @ 4000 RPM ≈ 95 mph)
+  // v_mph = D(in)*RPM/336 (= π*D*RPM/1056, since 1056/336 = π). Sanity: 8″ @ 4000 RPM ≈ 95.2 mph, 8″ @ 2900 RPM ≈ 69.0 mph.
   const wMass = ti ? 0.2464 : 0.4367;
-  const mph = (Math.PI * diaIn * rpm) / 1056;
+  const mph = (diaIn * rpm) / 336;
   const ms = mph * 0.44704;
   const ke = 0.5 * wMass * ms * ms;
 
@@ -154,6 +154,9 @@ export function Engineering() {
         Live physics & mass rollups computed directly from measured CAD volumes
         (teeth pair 55.63 cm³). Adjust sliders to inspect stress thresholds, tip speed, bite depth, and accelerometer load.
       </p>
+      <div className="warn">
+        Want the reasoning? <Link to="/liftoff">Why LiftOff works</Link> explains each equation — mass tip speed (D×RPM/336) bite (attack×30000/RPM) 1.77x steel energy dual-accel sensing — with same CAD numbers these sliders use.
+      </div>
 
       {/* Top Telemetry KPIs */}
       <div className="proof" aria-label="Key live metrics">
@@ -251,7 +254,7 @@ export function Engineering() {
             </tbody>
           </table>
         </div>
-        <p className="meta">Equation: v = π × D × RPM / 1056. Measure YOUR spin Ø in CAD — the 331 mm bbox axis is reach, not diameter.</p>
+        <p className="meta">Equation: v(mph) = D(in) × RPM / 336. Measure YOUR spin Ø in CAD — the 331 mm bbox axis is reach, not diameter.</p>
       </div>
 
       {/* 02 Bite */}

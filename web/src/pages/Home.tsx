@@ -137,6 +137,7 @@ export function Home() {
           </div>
           <div className="btn-row">
             <Link className="btn primary" to="/build">Start build (Step 0)</Link>
+            <Link className="btn primary" to="/liftoff">Why LiftOff works</Link>
             <Link className="btn" to="/studio">Drive it + fight reel</Link>
             <Link className="btn" to="/explorer">3D explorer</Link>
             <Link className="btn" to="/bom">BOM + cost</Link>
@@ -176,6 +177,21 @@ export function Home() {
               3–5 g off means violent hop at 3000 RPM.
             </figcaption>
           </figure>
+        </section>
+      </Reveal>
+
+      {/* 02b liftoff teaser */}
+      <Reveal as="section">
+        <section id="liftoff-teaser" className="section">
+          <p className="eyebrow">02b — Why LiftOff works</p>
+          <h2>Six equations one fight-ready bot</h2>
+          <p className="lede">
+            1361g cap 95mph 1.77x dual accels reasoning page shows every formula with measured CAD masses.
+          </p>
+          <div className="btn-row">
+            <Link className="btn primary" to="/liftoff">Why LiftOff works</Link>
+            <Link className="btn" to="/engineering">Engineering calculators</Link>
+          </div>
         </section>
       </Reveal>
 

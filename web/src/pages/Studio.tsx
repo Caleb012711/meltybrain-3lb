@@ -771,7 +771,9 @@ export function Studio() {
   const [srText, setSrText] = useState('Stopped. Focus the viewport, then drive.');
   const [glFailed, setGlFailed] = useState(false);
   const [circularShell, setCircularShell] = useState(true);
-  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('titanium');
+  // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
+  // (titanium tub overstates mass 3.7x — 4.43 vs 1.21 — and mislabels damping.)
+  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('tpu-orange');
   const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
 
   const rootRef = useRef<HTMLDivElement | null>(null);

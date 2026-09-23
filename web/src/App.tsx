@@ -13,6 +13,7 @@ const Explorer = lazy(() => import('./pages/Explorer').then((m) => ({ default: m
 const Studio = lazy(() => import('./pages/Studio').then((m) => ({ default: m.Studio })));
 const Bom = lazy(() => import('./pages/Bom').then((m) => ({ default: m.Bom })));
 const Engineering = lazy(() => import('./pages/Engineering').then((m) => ({ default: m.Engineering })));
+const Liftoff = lazy(() => import('./pages/Liftoff').then((m) => ({ default: m.Liftoff })));
 
 export function App() {
   return (
@@ -39,6 +40,7 @@ export function App() {
           <Route path="parts" element={<Parts />} />
           <Route path="bom" element={<Bom />} />
           <Route path="engineering" element={<Engineering />} />
+          <Route path="liftoff" element={<Liftoff />} />
           <Route path="firmware" element={<Firmware />} />
           <Route path="*" element={<div className="page"><h1>Not found</h1><p><Link to="/">Back to overview</Link></p></div>} />
         </Route>

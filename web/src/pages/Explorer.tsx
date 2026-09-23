@@ -16,6 +16,10 @@ import {
   type PartInfo,
   type ShellMaterialPreset,
   type ShellProfilePreset,
+  type TopShellFinishPreset,
+  type LighteningPocketPreset,
+  type BeaconWindowPreset,
+  type WheelTreadType,
 } from '../components/materials';
 import { Reveal } from '../components/Layout';
 
@@ -41,8 +45,18 @@ export function Explorer() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [failed, setFailed] = useState(false);
   const [circularShell, setCircularShell] = useState(true);
-  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('titanium');
+  // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
+  // (titanium tub overstates mass 3.7x — 4.43 vs 1.21 — and mislabels damping.)
+  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('tpu-orange');
   const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
+  const [topShell, setTopShell] = useState(true);
+  const [topShellFinish, setTopShellFinish] = useState<TopShellFinishPreset>('titanium');
+  const [topShellPocket, setTopShellPocket] = useState<LighteningPocketPreset>('radial');
+  const [topShellBeacon, setTopShellBeacon] = useState<BeaconWindowPreset>('flush-prism');
+  const [wheelPodEnhanced, setWheelPodEnhanced] = useState(true);
+  const [wheelTread, setWheelTread] = useState<WheelTreadType>('urethane');
+  const [wheelCutaway, setWheelCutaway] = useState(false);
+  const [precisionHardware, setPrecisionHardware] = useState(true);
   const listRef = useRef<HTMLUListElement | null>(null);
   const parts = useModelParts(modelId);
   const model = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
@@ -184,6 +198,14 @@ export function Explorer() {
                         circularShell={circularShell}
                         shellMaterial={shellMaterial}
                         shellProfile={shellProfile}
+                        topShell={topShell}
+                        topShellFinish={topShellFinish}
+                        topShellPocket={topShellPocket}
+                        topShellBeacon={topShellBeacon}
+                        wheelPodEnhanced={wheelPodEnhanced}
+                        wheelTread={wheelTread}
+                        wheelCutaway={wheelCutaway}
+                        precisionHardware={precisionHardware}
                         onSelect={setSelected}
                         onHover={setHovered}
                       />
@@ -289,6 +311,107 @@ export function Explorer() {
                       <option value="perimeter">Armor Ring (R 2.05)</option>
                       <option value="hybrid">Dual Hybrid</option>
                     </select>
+                  )}
+                  <button
+                    className="mini"
+                    aria-pressed={topShell}
+                    onClick={() => setTopShell((v) => !v)}
+                    title="Toggle top armor plate with countersunk holes & optical beacon"
+                  >
+                    Top Armor {topShell ? '◯ Active' : 'Off'}
+                  </button>
+                  {topShell && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Top shell finish"
+                      value={topShellFinish}
+                      onChange={(e) => setTopShellFinish(e.target.value as TopShellFinishPreset)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="titanium">Ti-6Al-4V Finish</option>
+                      <option value="aluminum">7075-Al Anodized</option>
+                      <option value="carbon">Carbon Fiber</option>
+                      <option value="billet">Billet Milled</option>
+                      <option value="polycarbonate">Smoked Polycarb</option>
+                    </select>
+                  )}
+                  {topShell && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Lightening pockets"
+                      value={topShellPocket}
+                      onChange={(e) => setTopShellPocket(e.target.value as LighteningPocketPreset)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="radial">Radial (-35%)</option>
+                      <option value="isogrid">Isogrid (-45%)</option>
+                      <option value="solid">Solid Billet</option>
+                    </select>
+                  )}
+                  {topShell && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Optical beacon window"
+                      value={topShellBeacon}
+                      onChange={(e) => setTopShellBeacon(e.target.value as BeaconWindowPreset)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="flush-prism">Flush Prism</option>
+                      <option value="diffuse-dome">Diffuse Dome</option>
+                      <option value="recessed-slit">Recessed Slit</option>
+                    </select>
+                  )}
+                  <button
+                    className="mini"
+                    aria-pressed={precisionHardware}
+                    onClick={() => setPrecisionHardware((v) => !v)}
+                    title="Toggle precision hardware: standoffs, fasteners, central bearing stack, timing belt, wiring, accelerometer"
+                  >
+                    Hardware {precisionHardware ? '⚙ Full' : 'Off'}
+                  </button>
+                  <select
+                    className="mini select-pill"
+                    aria-label="Wheel pod tread"
+                    value={wheelTread}
+                    onChange={(e) => setWheelTread(e.target.value as WheelTreadType)}
+                    style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                  >
+                    <option value="urethane">60A Urethane Tread</option>
+                    <option value="ti-cleats">Ti Cleats</option>
+                  </select>
+                </>
+              )}
+              {modelId === 'pod' && (
+                <>
+                  <button
+                    className="mini"
+                    aria-pressed={wheelPodEnhanced}
+                    onClick={() => setWheelPodEnhanced((v) => !v)}
+                    title="Toggle precision engineered wheel pod assembly vs raw CAD"
+                  >
+                    Pod {wheelPodEnhanced ? 'Precision 3D' : 'Raw CAD'}
+                  </button>
+                  {wheelPodEnhanced && (
+                    <select
+                      className="mini select-pill"
+                      aria-label="Wheel pod tread"
+                      value={wheelTread}
+                      onChange={(e) => setWheelTread(e.target.value as WheelTreadType)}
+                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
+                    >
+                      <option value="urethane">60A Urethane Tread</option>
+                      <option value="ti-cleats">1.55" Ti Cleats</option>
+                    </select>
+                  )}
+                  {wheelPodEnhanced && (
+                    <button
+                      className="mini"
+                      aria-pressed={wheelCutaway}
+                      onClick={() => setWheelCutaway((v) => !v)}
+                      title="Toggle 626ZZ ball bearing raceway cutaway view"
+                    >
+                      Bearings {wheelCutaway ? 'Cutaway' : 'Sealed'}
+                    </button>
                   )}
                 </>
               )}
