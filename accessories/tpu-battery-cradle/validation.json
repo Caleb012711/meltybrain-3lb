@@ -1,0 +1,21 @@
+{
+  "title": "Dual 4S 550mAh LiPo TPU 95A Battery Cradle",
+  "material": "Bambu TPU 95A HF",
+  "parts": {
+    "battery_cradle": {
+      "triangles": 5900,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 25274.916,
+      "cad_volume_mm3": 25274.888,
+      "volume_deviation_pct": 0.0,
+      "bbox_mm": [
+        82.5,
+        70.0,
+        15.375
+      ],
+      "sha256": "1eb32588ff79de4202838dc589788a45b1f21f50b58ad4106042068d310830a9",
+      "step_verified": true
+    }
+  }
+}

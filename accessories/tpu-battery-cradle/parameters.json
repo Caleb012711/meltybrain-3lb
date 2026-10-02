@@ -1,0 +1,15 @@
+{
+  "pack_length": 60.5,
+  "pack_width": 30.5,
+  "pack_height": 16.5,
+  "pack_separation": 3.0,
+  "wall_thickness": 3.0,
+  "floor_thickness": 3.0,
+  "strap_channel_width": 16.0,
+  "strap_channel_depth": 2.2,
+  "chassis_mount_hole_dia": 3.4,
+  "chassis_counterbore_dia": 7.0,
+  "chassis_counterbore_depth": 3.0,
+  "flange_width": 8.0,
+  "corner_radius": 3.0
+}

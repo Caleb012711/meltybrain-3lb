@@ -1,0 +1,40 @@
+{
+  "title": "Dual Accelerometer Rigid Mount (H3LIS331DL / Adafruit 4627)",
+  "target_materials": [
+    "Bambu PETG HF",
+    "Bambu PETG-CF"
+  ],
+  "parts": {
+    "dual_accel_mount_base": {
+      "triangles": 9044,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 10532.951,
+      "cad_volume_mm3": 10532.605,
+      "volume_deviation_pct": 0.003,
+      "bbox_mm": [
+        46.7,
+        46.6,
+        9.2
+      ],
+      "sha256": "2cb27955f708d6aa39544c5d50bb2726229bbe61906dc94d33dd5f836ce272eb",
+      "step_verified": true
+    },
+    "dual_accel_mount_clamp": {
+      "triangles": 4740,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 3410.852,
+      "cad_volume_mm3": 3410.787,
+      "volume_deviation_pct": 0.002,
+      "bbox_mm": [
+        31.7,
+        46.6,
+        3.0
+      ],
+      "sha256": "16e276896792d4fd5107e62ae48a950abd12f61915577535990e5895a810d339",
+      "step_verified": true
+    }
+  },
+  "assembly_step_round_trip": true
+}

@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -9,19 +9,13 @@ import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, type ColorMode
 import {
   ROLE_CSS,
   ROLE_LABELS,
-  SHELL_MATERIAL_LABELS,
-  SHELL_PROFILE_LABELS,
   massLabel,
   partLabel,
   type PartInfo,
-  type ShellMaterialPreset,
-  type ShellProfilePreset,
-  type TopShellFinishPreset,
-  type LighteningPocketPreset,
-  type BeaconWindowPreset,
-  type WheelTreadType,
 } from '../components/materials';
 import { Reveal } from '../components/Layout';
+import { useTheme } from '../hooks/useTheme';
+import './Explorer.css';
 
 function roleOf(parts: PartInfo[], i: number): string {
   return parts[i]?.role ?? 'fastener-dark';
@@ -29,12 +23,15 @@ function roleOf(parts: PartInfo[], i: number): string {
 
 export function Explorer() {
   const reduced = usePrefersReducedMotion();
-  const [modelId, setModelId] = useState('full');
+  const { theme } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedModel = searchParams.get('model');
+  const modelId = cadModels.some((m) => m.id === requestedModel) ? requestedModel! : 'full';
   const [explode, setExplode] = useState(0);
   const [wireframe, setWireframe] = useState(false);
   const [xray, setXray] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('role');
-  const [spin, setSpin] = useState(!reduced);
+  const [spin, setSpin] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [focusIdx, setFocusIdx] = useState<number | null>(null);
   const [homeKey, setHomeKey] = useState(0);
@@ -44,26 +41,17 @@ export function Explorer() {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [failed, setFailed] = useState(false);
-  const [circularShell, setCircularShell] = useState(true);
-  // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
-  // (titanium tub overstates mass 3.7x — 4.43 vs 1.21 — and mislabels damping.)
-  const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('tpu-orange');
-  const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
-  const [topShell, setTopShell] = useState(true);
-  const [topShellFinish, setTopShellFinish] = useState<TopShellFinishPreset>('titanium');
-  const [topShellPocket, setTopShellPocket] = useState<LighteningPocketPreset>('radial');
-  const [topShellBeacon, setTopShellBeacon] = useState<BeaconWindowPreset>('flush-prism');
-  const [wheelPodEnhanced, setWheelPodEnhanced] = useState(true);
-  const [wheelTread, setWheelTread] = useState<WheelTreadType>('urethane');
-  const [wheelCutaway, setWheelCutaway] = useState(false);
-  const [precisionHardware, setPrecisionHardware] = useState(true);
   const listRef = useRef<HTMLUListElement | null>(null);
   const parts = useModelParts(modelId);
   const model = cadModels.find((m) => m.id === modelId) ?? cadModels[0];
 
   const selectModel = (id: string) => {
-    setModelId(id);
+    setSearchParams({ model: id });
+  };
+
+  useEffect(() => {
     setSelected(null);
+    setHovered(null);
     setFocusIdx(null);
     setHomeKey((k) => k + 1);
     setHidden(new Set());
@@ -71,7 +59,9 @@ export function Explorer() {
     setQuery('');
     setRoleFilter('all');
     setFailed(false);
-  };
+    setExplode(modelId === 'bench-case' ? 0.45 : 0);
+    if (modelId === 'bench-case') setSpin(false);
+  }, [modelId]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -92,7 +82,7 @@ export function Explorer() {
       const p = parts[i] ?? null;
       if (roleFilter !== 'all' && roleOf(parts, i) !== roleFilter) continue;
       if (query) {
-        const hay = `${i} ${p?.role ?? ''} ${p?.bbox_mm.join('x') ?? ''} ${p?.vol_cm3 ?? ''}`.toLowerCase();
+        const hay = `${i} ${p?.name ?? ''} ${p?.role ?? ''} ${p?.bbox_mm.join('x') ?? ''} ${p?.vol_cm3 ?? ''}`.toLowerCase();
         if (!hay.includes(query.toLowerCase())) continue;
       }
       list.push({ i, p });
@@ -124,6 +114,7 @@ export function Explorer() {
 
   const reset = () => {
     setSelected(null);
+    setHovered(null);
     setFocusIdx(null);
     setHomeKey((k) => k + 1);
     setHidden(new Set());
@@ -131,6 +122,7 @@ export function Explorer() {
     setExplode(0);
     setWireframe(false);
     setXray(false);
+    setSpin(false);
     setQuery('');
     setRoleFilter('all');
   };
@@ -140,24 +132,28 @@ export function Explorer() {
   return (
     <div className="page explorer-page">
       <p className="spec-plate">
-        <span>EYELINER-3LB / REV9 / SHEET EX-01</span>
+        <span>EYELINER / MODEL LIBRARY</span>
         <span>Explorer — part level</span>
       </p>
       <h1>3D explorer</h1>
       <p className="lede">
-        Every solid in the real assemblies, auto-colored by material role from measured
-        volume and bounding box. Click a part in the model or the list to inspect it,
-        isolate it, or hide it. Roles are a size heuristic — the ring, teeth, plates,
-        and shell check out; tiny hardware all reads as fasteners.
+        Source geometry, part by part. Explore the original assemblies and accessory
+        prototypes, inspect their dimensions, and see how the pieces fit together.
       </p>
 
       <div className="explorer-grid">
         <div>
           <div className="viewer">
-            <div style={{ position: 'relative' }}>
+            <div className="model-caption">
+              <div><span className="model-eyebrow">{model.accessory ? 'Accessory prototype' : 'Source CAD assembly'}</span><strong>{model.label}</strong></div>
+              <span className="model-provenance">{model.glb.split('/').pop()}</span>
+            </div>
+            <div className="explorer-canvas" style={{ position: 'relative' }}>
               {failed ? (
                 <div className="viewer-fallback">
-                  <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" loading="lazy" decoding="async" />
+                  {(model.id === 'bench-case' || model.id === 'full') && <img src={model.id === 'bench-case' ? 'accessories/xiao-bench-case.png' : 'eyeliner_summer_2025_render.webp'} alt={`${model.label} reference preview`} loading="lazy" decoding="async" />}
+                  <p role="status">Interactive 3D is unavailable. You can still inspect the part list and download the source files.</p>
+                  <button className="mini" onClick={() => setFailed(false)}>Retry 3D</button>
                 </div>
               ) : (
                 <GlErrorBoundary onFail={() => setFailed(true)}>
@@ -173,13 +169,14 @@ export function Explorer() {
                     gl.toneMapping = THREE.NeutralToneMapping;
                     gl.toneMappingExposure = 1.0;
                     gl.outputColorSpace = THREE.SRGBColorSpace;
-                    gl.setClearColor('#ffffff', 1);
+                    gl.setClearColor('#000000', 0);
                   }}
                   role="img"
                   aria-label={`3D explorer, ${model.label}, ${count} parts`}
                 >
+                  <color attach="background" args={[theme === 'dark' ? '#20211f' : '#eeece5']} />
                   <ViewerLights />
-                  <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
+                  <gridHelper args={[12, 24, theme === 'dark' ? '#4a4842' : '#c9c5ba', theme === 'dark' ? '#2b2b28' : '#e2ded4']} position={[0, model.accessory ? -0.9 : -0.62, 0]} />
                   <Suspense fallback={null}>
                     {/* CAD is Z-up: level the ring flat. */}
                     <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -195,17 +192,6 @@ export function Explorer() {
                         hovered={hovered}
                         hidden={hidden}
                         isolated={isolated}
-                        circularShell={circularShell}
-                        shellMaterial={shellMaterial}
-                        shellProfile={shellProfile}
-                        topShell={topShell}
-                        topShellFinish={topShellFinish}
-                        topShellPocket={topShellPocket}
-                        topShellBeacon={topShellBeacon}
-                        wheelPodEnhanced={wheelPodEnhanced}
-                        wheelTread={wheelTread}
-                        wheelCutaway={wheelCutaway}
-                        precisionHardware={precisionHardware}
                         onSelect={setSelected}
                         onHover={setHovered}
                       />
@@ -269,152 +255,11 @@ export function Explorer() {
                   onChange={(e) => setColorMode(e.target.value as ColorMode)}
                   style={{ minHeight: 44 }}
                 >
-                  <option value="role">By heuristic role</option>
+                  <option value="role">{model.accessory ? 'By case part' : 'By heuristic role'}</option>
                   <option value="index">By part #</option>
                   <option value="plain">Plain</option>
                 </select>
               </label>
-              {modelId === 'full' && (
-                <>
-                  <button
-                    className="mini"
-                    aria-pressed={circularShell}
-                    onClick={() => setCircularShell((v) => !v)}
-                    title="Toggle circularized outer shell vs stock CAD squarish solid_080"
-                  >
-                    Shell {circularShell ? '◯ Circular' : '◻ Stock'}
-                  </button>
-                  {circularShell && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Shell material"
-                      value={shellMaterial}
-                      onChange={(e) => setShellMaterial(e.target.value as ShellMaterialPreset)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="titanium">Ti-6Al-4V</option>
-                      <option value="aluminum">7075-Al</option>
-                      <option value="carbon">Carbon Fiber</option>
-                      <option value="tpu-orange">TPU Orange</option>
-                      <option value="tpu-stealth">TPU Stealth</option>
-                    </select>
-                  )}
-                  {circularShell && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Shell profile"
-                      value={shellProfile}
-                      onChange={(e) => setShellProfile(e.target.value as ShellProfilePreset)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="body">Body (R 1.25)</option>
-                      <option value="perimeter">Armor Ring (R 2.05)</option>
-                      <option value="hybrid">Dual Hybrid</option>
-                    </select>
-                  )}
-                  <button
-                    className="mini"
-                    aria-pressed={topShell}
-                    onClick={() => setTopShell((v) => !v)}
-                    title="Toggle top armor plate with countersunk holes & optical beacon"
-                  >
-                    Top Armor {topShell ? '◯ Active' : 'Off'}
-                  </button>
-                  {topShell && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Top shell finish"
-                      value={topShellFinish}
-                      onChange={(e) => setTopShellFinish(e.target.value as TopShellFinishPreset)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="titanium">Ti-6Al-4V Finish</option>
-                      <option value="aluminum">7075-Al Anodized</option>
-                      <option value="carbon">Carbon Fiber</option>
-                      <option value="billet">Billet Milled</option>
-                      <option value="polycarbonate">Smoked Polycarb</option>
-                    </select>
-                  )}
-                  {topShell && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Lightening pockets"
-                      value={topShellPocket}
-                      onChange={(e) => setTopShellPocket(e.target.value as LighteningPocketPreset)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="radial">Radial (-35%)</option>
-                      <option value="isogrid">Isogrid (-45%)</option>
-                      <option value="solid">Solid Billet</option>
-                    </select>
-                  )}
-                  {topShell && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Optical beacon window"
-                      value={topShellBeacon}
-                      onChange={(e) => setTopShellBeacon(e.target.value as BeaconWindowPreset)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="flush-prism">Flush Prism</option>
-                      <option value="diffuse-dome">Diffuse Dome</option>
-                      <option value="recessed-slit">Recessed Slit</option>
-                    </select>
-                  )}
-                  <button
-                    className="mini"
-                    aria-pressed={precisionHardware}
-                    onClick={() => setPrecisionHardware((v) => !v)}
-                    title="Toggle precision hardware: standoffs, fasteners, central bearing stack, timing belt, wiring, accelerometer"
-                  >
-                    Hardware {precisionHardware ? '⚙ Full' : 'Off'}
-                  </button>
-                  <select
-                    className="mini select-pill"
-                    aria-label="Wheel pod tread"
-                    value={wheelTread}
-                    onChange={(e) => setWheelTread(e.target.value as WheelTreadType)}
-                    style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                  >
-                    <option value="urethane">60A Urethane Tread</option>
-                    <option value="ti-cleats">Ti Cleats</option>
-                  </select>
-                </>
-              )}
-              {modelId === 'pod' && (
-                <>
-                  <button
-                    className="mini"
-                    aria-pressed={wheelPodEnhanced}
-                    onClick={() => setWheelPodEnhanced((v) => !v)}
-                    title="Toggle precision engineered wheel pod assembly vs raw CAD"
-                  >
-                    Pod {wheelPodEnhanced ? 'Precision 3D' : 'Raw CAD'}
-                  </button>
-                  {wheelPodEnhanced && (
-                    <select
-                      className="mini select-pill"
-                      aria-label="Wheel pod tread"
-                      value={wheelTread}
-                      onChange={(e) => setWheelTread(e.target.value as WheelTreadType)}
-                      style={{ minHeight: 44, padding: '0 6px', background: 'var(--surface)' }}
-                    >
-                      <option value="urethane">60A Urethane Tread</option>
-                      <option value="ti-cleats">1.55" Ti Cleats</option>
-                    </select>
-                  )}
-                  {wheelPodEnhanced && (
-                    <button
-                      className="mini"
-                      aria-pressed={wheelCutaway}
-                      onClick={() => setWheelCutaway((v) => !v)}
-                      title="Toggle 626ZZ ball bearing raceway cutaway view"
-                    >
-                      Bearings {wheelCutaway ? 'Cutaway' : 'Sealed'}
-                    </button>
-                  )}
-                </>
-              )}
               <button
                 className="mini"
                 aria-pressed={xray}
@@ -448,6 +293,7 @@ export function Explorer() {
                 Reset
               </button>
             </div>
+            <p className="model-interaction-note">Drag to orbit · Scroll to zoom · Select a part to inspect</p>
             <p className="status" role="status">
               {model.label} · {count} parts{parts.length > 0 && <> ({meshed} meshed, {count - meshed} thread specks stats-only)</>} ·{' '}
               {isolated !== null ? `showing isolated #${isolated}` : `${meshed - hidden.size} meshed visible`}
@@ -460,11 +306,11 @@ export function Explorer() {
                 </button>
               </p>
             )}
-            <div className="legend" role="group" aria-label="Heuristic material roles, verify in CAD">
+            <div className="legend" role="group" aria-label={model.accessory ? 'Case parts' : 'Heuristic material roles, verify in CAD'}>
               <span className="meta" style={{ width: '100%' }}>
-                Heuristic roles from size — verify alloy in CAD, not measured:
+                {model.accessory ? 'Prototype body and lid; colors identify parts, not filament certification.' : 'Heuristic roles from size — verify alloy in CAD, not measured:'}
               </span>
-              {(Object.keys(ROLE_LABELS) as (keyof typeof ROLE_LABELS)[]).map((r) => (
+              {(rolesPresent as (keyof typeof ROLE_LABELS)[]).map((r) => (
                 <span key={r}>
                   <span className="role-dot" style={{ background: ROLE_CSS[r] }} aria-hidden="true" />
                   {ROLE_LABELS[r]}
@@ -477,7 +323,7 @@ export function Explorer() {
             <div className="step" style={{ marginTop: 12 }}>
               <h2>Direct downloads — {model.label}</h2>
               <p className="path">
-                <b>cad/</b>
+                <b>{model.accessory ? 'accessories' : 'cad'}</b>
                 <i>/</i>
                 {model.step.split('/').pop()} <i>·</i> {model.stepSize} <i>·</i> {model.solids} solids
               </p>
@@ -491,11 +337,17 @@ export function Explorer() {
                 <a className="btn" href={cadHref(model.glb.replace(/\.glb$/, '.stl'))} download>
                   STL (reference)
                 </a>
+                {model.accessory && (
+                  <a className="btn" href={cadHref(model.glb.replace(/\.glb$/, '.zip'))} download>
+                    Print package (.ZIP)
+                  </a>
+                )}
               </div>
               <p className="meta">
-                STEP is the source — open it in Onshape, export single bodies, then order.
-                STL here is assembly reference only, not print-ready; print STLs come from{' '}
-                <Link to="/printing">your own exports</Link>.
+                {model.accessory
+                  ? 'Prototype geometry for inspection. Physical fit is unverified; review the print guidance before use. The ZIP includes separate STLs, editable CAD, and parameters.'
+                  : 'STEP is the source. Viewer STLs are assembly references, not individual print files.'}{' '}
+                <Link to="/printing">Print guidance</Link>.
               </p>
             </div>
           </Reveal>
@@ -503,6 +355,7 @@ export function Explorer() {
 
         <div className="part-panel">
           <header>
+            <h2 className="parts-heading">Parts <span>{count}</span></h2>
             <input
               type="search"
               aria-label="Search parts"
@@ -574,7 +427,7 @@ export function Explorer() {
                       aria-hidden="true"
                     />
                     <span className="row-main">
-                      <b>#{i} {role}</b>
+                      <b>#{i} {p?.name ?? role}</b>
                       <span>{p ? partLabel(p, i) : `${model.solids} solids (manifest loading…)`}</span>
                     </span>
                   </button>
@@ -613,13 +466,13 @@ export function Explorer() {
           <div className="readout" aria-live="polite">
             {sel !== null && selected !== null ? (
               <>
-                <b>Part #{selected}</b>{' '}
-                <span className="stamp todo">{sel.role} · heuristic</span>{' '}
+                <b>{sel.name ?? `Part #${selected}`}</b>{' '}
+                <span className="stamp todo">{model.accessory ? 'Fit-test prototype' : `${sel.role} · heuristic`}</span>{' '}
                 {sel.dropped_from_glb && <span className="stamp todo">stats only</span>}
                 <dl>
                   <dt>Volume</dt>
                   <dd>{sel.vol_cm3} cm³</dd>
-                  <dt>Mass</dt>
+                  <dt>{model.accessory ? 'Print mass' : 'Estimated mass'}</dt>
                   <dd>{massLabel(sel.role, sel.vol_cm3)}</dd>
                   <dt>BBox</dt>
                   <dd>{sel.bbox_mm.map((d) => d.toFixed(1)).join(' × ')} mm</dd>
@@ -628,27 +481,8 @@ export function Explorer() {
                   <dt>Node</dt>
                   <dd>{sel.node}</dd>
                 </dl>
-                {selected === 80 && (
-                  <div
-                    style={{
-                      margin: '10px 0',
-                      padding: '10px 12px',
-                      background: 'var(--accent-wash)',
-                      border: '1px solid var(--line-strong)',
-                      borderLeft: '3px solid var(--accent-graphic)',
-                      borderRadius: 'var(--radius)',
-                      fontSize: '12.5px',
-                    }}
-                  >
-                    <b>◯ Circular Outer Shell ({circularShell ? 'Active' : 'Stock CAD'})</b>
-                    <p style={{ margin: '4px 0 0', color: 'var(--steel)' }}>
-                      {circularShell
-                        ? `Rendering circularized perimeter armor (${SHELL_MATERIAL_LABELS[shellMaterial]} · ${SHELL_PROFILE_LABELS[shellProfile]}) with chamfered edge rings, perimeter fasteners, and recessed dual emerald optical beacon. Replaces squarish solid_080 for dynamic rotational symmetry at 4,000 RPM.`
-                        : 'Currently showing original squarish solid_080 (~137.7 × 131.5 mm). Click "Shell ◯ Circular" in the viewer bar to render the balanced circular perimeter armor.'}
-                    </p>
-                  </div>
-                )}
                 <div className="btn-row" style={{ margin: '8px 0 0' }}>
+                  <button className="mini" onClick={() => { setFocusIdx(selected); setHomeKey((k) => k + 1); }} disabled={!!sel.dropped_from_glb}>Focus</button>
                   <button className="mini" onClick={() => selected !== null && isolatePart(selected)} disabled={selected !== null && !!parts[selected]?.dropped_from_glb} title={selected !== null && parts[selected]?.dropped_from_glb ? 'Stats-only part has no viewer mesh' : undefined}>
                     Isolate
                   </button>
@@ -671,6 +505,219 @@ export function Explorer() {
           </div>
         </div>
       </div>
+
+      {/* Key Part Inspection Showcase Section */}
+      <section className="key-parts-showcase" style={{ marginTop: '48px', borderTop: '1px solid var(--cyber-border)', paddingTop: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '22px', color: 'var(--neon-cyan)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="cyber-dot" /> CRITICAL COMBAT SUBASSEMBLIES &amp; PART INSPECTION
+            </h2>
+            <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>
+              Detailed engineering analysis for chassis, titanium traction cleats, brushless hubmotors, and AR500 teeth
+            </span>
+          </div>
+          <Link to="/lab" className="cyber-btn primary" style={{ padding: '8px 16px', fontSize: '12px' }}>
+            SPIN TEST IN LAB ↗
+          </Link>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          
+          {/* 1. Main Combat Chassis */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-cyan)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge">CHASSIS CORE</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>Main Combat Chassis Puck</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => { selectModel('full'); setExplode(0.35); }}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              Elastomeric unibody puck housing twin PropDrive motors, dual 4S batteries, and Teensy flight controller.
+              Clamped between 3.5mm top/bottom armor plates via 16× M3 12.9 grade bolts.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Material:</strong> Bambu TPU 95A HF / PA6-CF</div>
+              <div><strong>Mass:</strong> ~180 g (90% Gyroid)</div>
+              <div><strong>Diameter:</strong> Ø140.0 mm OD</div>
+              <div><strong>Hardware:</strong> 16× M3×35mm (Loctite 243)</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <a className="cyber-btn primary" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }} href="stl/eyeliner_combat_v01-chassis.stl" download>
+                DOWNLOAD STL (4.1 MB)
+              </a>
+            </div>
+          </div>
+
+          {/* 2. Titanium Cleat Wheels */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-amber)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge amber">TRACTION SYSTEM</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>Titanium Cleat Wheels</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => selectModel('pod')}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              6-disc symmetric star cleat stack with 1.55 in OD. Waterjet cut from Grade 5 titanium annealed sheet.
+              Delivers &gt;1.5 friction coefficient on wood floors to achieve aggressive translation while spinning at 3,500 RPM.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Material:</strong> Ti-6Al-4V Annealed (0.040")</div>
+              <div><strong>Mass:</strong> 14.2 g / wheel assembly</div>
+              <div><strong>Tire OD:</strong> 1.55 in (39.4 mm)</div>
+              <div><strong>Traction μ:</strong> &gt;1.5 Wood / 0.35 Steel</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <a className="cyber-btn primary" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }} href="stl/titanium_cleat_disc_1.55in.stl" download>
+                DOWNLOAD STL (1.3 MB)
+              </a>
+            </div>
+          </div>
+
+          {/* 3. PropDrive v2 2836 1200KV Motors */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-green)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge green">DRIVE MOTORS</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>PropDrive v2 2836 1200KV</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => selectModel('pod')}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              Dual 12-pole brushless outrunner hubmotors converted with 6mm hardened dead-axles and dual 626 high-speed bearings.
+              Driven by 55A AM32 ESC running bidirectional DShot600 at 8 kHz.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>KV Rating:</strong> 1200 KV (4S LiPo: 16.8V)</div>
+              <div><strong>Mass:</strong> 82 g each (164 g pair)</div>
+              <div><strong>Peak Current:</strong> 48 A / motor</div>
+              <div><strong>Shaft:</strong> 6 mm precision ground axle</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <Link to="/bom" className="cyber-btn" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }}>
+                VIEW IN BOM ($44 PAIR)
+              </Link>
+            </div>
+          </div>
+
+          {/* 4. AR500 Hardened Kinetic Impact Teeth */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-crimson)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge crimson">KINETIC WEAPON</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>AR500 Hardened Weapon Teeth</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => selectModel('teeth')}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              Symmetric 2-tooth strike geometry. Delivers 1,200 Joules of kinetic energy at 3,500 RPM.
+              Optionally swappable for Ti-6Al-4V teeth to save 191 g for heavy top armor configs.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Material:</strong> Hardened AR500 (500 HBW)</div>
+              <div><strong>Mass:</strong> 437 g pair steel / 246 g Ti</div>
+              <div><strong>Kinetic Energy:</strong> ~1.2 kJ @ 3,500 RPM</div>
+              <div><strong>Tip Speed:</strong> 88 MPH @ 3,500 RPM</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <a className="cyber-btn primary" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }} href="cad/standard-weapon-teeth.stl" download>
+                DOWNLOAD STL (2.0 MB)
+              </a>
+            </div>
+          </div>
+
+          {/* 5. Dual H3LIS331DLTR ±400g Sensor Mount */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-cyan)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge">KINEMATICS</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>Dual Accel Rigid Mount</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => selectModel('accel-mount')}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              Two-piece precision clamping bracket holding dual H3LIS331DLTR sensors opposed at 50 mm baseline (25 mm radius).
+              Zero sensor plane flexure under 400g centripetal load.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Material:</strong> Bambu PETG HF / PETG-CF</div>
+              <div><strong>Radius:</strong> R1 = 25 mm, R2 = 25 mm</div>
+              <div><strong>Full Scale:</strong> +/-400g (12-bit SPI)</div>
+              <div><strong>Bandwidth:</strong> 1 kHz ODR (Zero Aliasing)</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <a className="cyber-btn primary" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }} href="accessories/dual-accel-mount.stl" download>
+                DOWNLOAD STL (689 KB)
+              </a>
+            </div>
+          </div>
+
+          {/* 6. TPU Dual 4S LiPo Shock Cradle */}
+          <div className="glass-panel hud-corner" style={{ padding: '20px', borderLeft: '3px solid var(--neon-amber)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span className="cyber-badge amber">ENERGY STORAGE</span>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '17px', color: '#fff' }}>TPU Battery Cradle</h3>
+              </div>
+              <button
+                className="cyber-btn"
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => selectModel('battery-cradle')}
+              >
+                VIEW 3D ↗
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', margin: '8px 0 14px' }}>
+              Viscoelastic energy-absorbing tray containing dual 4S 550mAh 95C Tattu R-Line LiPo packs in parallel.
+              Protects pouch cells against 100g arena rebound shocks.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Material:</strong> Bambu TPU 95A HF</div>
+              <div><strong>Capacity:</strong> 4S 1100mAh Total (95C)</div>
+              <div><strong>Mass:</strong> 26.5 g printed tray</div>
+              <div><strong>Connectors:</strong> XT30 Parallel Harness</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <a className="cyber-btn primary" style={{ flex: 1, padding: '6px', fontSize: '11px', textAlign: 'center' }} href="accessories/tpu-battery-cradle.stl" download>
+                DOWNLOAD STL (295 KB)
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
     </div>
   );
 }

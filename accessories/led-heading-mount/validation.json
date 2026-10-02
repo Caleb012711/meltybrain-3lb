@@ -1,0 +1,40 @@
+{
+  "title": "Meltybrain LED Heading Indicator Mount & Diffuser Lens",
+  "components": {
+    "led_mount_body": "Bambu PETG HF (Black / Opaque)",
+    "led_diffuser_lens": "Bambu PETG Translucent / Natural"
+  },
+  "parts": {
+    "led_mount_body": {
+      "triangles": 5604,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 3229.366,
+      "cad_volume_mm3": 3229.047,
+      "volume_deviation_pct": 0.01,
+      "bbox_mm": [
+        34.3,
+        16.3,
+        11.5
+      ],
+      "sha256": "5c8bd9119dc577c7c71050d0ad9b5d7ea527d4b87d21741080d5d5266f8ac874",
+      "step_verified": true
+    },
+    "led_diffuser_lens": {
+      "triangles": 444,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 860.738,
+      "cad_volume_mm3": 860.744,
+      "volume_deviation_pct": 0.001,
+      "bbox_mm": [
+        18.3,
+        14.3,
+        3.3
+      ],
+      "sha256": "a7fcd9b5295099cf7d560e04e32e1026720166b5602ada5fe45184dd8c598f06",
+      "step_verified": true
+    }
+  },
+  "assembly_step_round_trip": true
+}

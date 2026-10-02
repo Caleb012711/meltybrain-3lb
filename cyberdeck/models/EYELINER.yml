@@ -1,0 +1,148 @@
+semver: 2.9.4
+header:
+  name: "EYELINER"
+  image: "eyeliner.png"
+  labels: "Combat,Melty"
+
+modelData:
+  timerData:
+    - mode: 1 # Starts on throttle/arm
+      start: 0
+      value: 180 # 3:00 combat match countdown
+      countdownBeep: 2 # Beeps at 10s and 0s
+      minuteBeep: true
+      name: "MATCH"
+    - mode: 0
+      start: 0
+      value: 0
+      name: "ARM_TIME"
+
+  inputData:
+    - name: "Ail" # Vector X
+      subInputs:
+        - weight: 100
+          expo: 0
+          src: "Ail"
+    - name: "Ele" # Vector Y
+      subInputs:
+        - weight: 100
+          expo: 0
+          src: "Ele"
+    - name: "Thr" # Spin RPM Setpoint
+      subInputs:
+        - weight: 100
+          expo: 0
+          src: "Thr"
+    - name: "Rud" # Heading Trim
+      subInputs:
+        - weight: 50 # Attenuated 50% for fine angle adjustment
+          expo: 15
+          src: "Rud"
+
+  mixData:
+    - channel: 0 # CH1: Translation X
+      name: "Trans_X"
+      src: "I0"
+      weight: 100
+    - channel: 1 # CH2: Translation Y
+      name: "Trans_Y"
+      src: "I1"
+      weight: 100
+    - channel: 2 # CH3: Spin Throttle (Interlocked via SF)
+      name: "Spin_RPM"
+      src: "I2"
+      weight: 100
+    - channel: 3 # CH4: Heading Offset
+      name: "Head_Trim"
+      src: "I3"
+      weight: 100
+    - channel: 4 # CH5: Arming (SA)
+      name: "ARM"
+      src: "SA"
+      weight: 100
+    - channel: 5 # CH6: Drive Mode (SB)
+      name: "MODE"
+      src: "SB"
+      weight: 100
+    - channel: 6 # CH7: Beacon (SC)
+      name: "BEACON"
+      src: "SC"
+      weight: 100
+    - channel: 7 # CH8: Weapon Kill (SD)
+      name: "KILL_SW"
+      src: "SD"
+      weight: 100
+
+  logicalSwitches:
+    # L01: Armed Interlock (SA is DOWN AND Throttle is at bottom)
+    - func: 2 # AND
+      val1: 1 # SA_DOWN
+      val2: 26 # Thr < -95
+      delay: 0
+      duration: 0
+    # L02: Weapon Cut Active (SD is UP OR Failsafe)
+    - func: 1 # OR
+      val1: 2 # SD_UP
+      val2: 0
+      delay: 0
+      duration: 0
+    # L03: Low Battery Warning (RxBt < 13.8V for 4S LiPo)
+    - func: 3 # a < x
+      val1: 50 # RxBt telemetry sensor
+      val2: 138 # 13.8V
+      delay: 5 # Must persist 0.5s to filter sag spikes
+    # L04: Critical Link Quality (RQly < 60%)
+    - func: 3 # a < x
+      val1: 52 # RQly
+      val2: 60 # 60%
+      delay: 2
+
+  customFn:
+    # SF1: Force Throttle to -100% when NOT Armed (L01 is FALSE)
+    - switch: -1 # !L01
+      func: 1 # Override Channel
+      param1: 2 # CH3 (Spin Throttle)
+      param2: -100
+      enabled: true
+    # SF2: Force Throttle to -100% when Weapon Kill Asserted (SD UP)
+    - switch: 2 # SD_UP
+      func: 1 # Override Channel
+      param1: 2 # CH3
+      param2: -100
+      enabled: true
+    # SF3: Audible state callouts
+    - switch: 1 # L01 Active
+      func: 4 # Play Track
+      param1: "armed.wav"
+      enabled: true
+    - switch: -1 # L01 Inactive
+      func: 4
+      param1: "disarmed.wav"
+      enabled: true
+    - switch: 2 # SD_UP
+      func: 4
+      param1: "kill.wav"
+      enabled: true
+    # SF4: Haptic pulse on low battery
+    - switch: 3 # L03 Active
+      func: 6 # Haptic
+      param1: 2 # Heavy
+      enabled: true
+
+  modules:
+    internal:
+      type: 9 # CRSF / ExpressLRS
+      channelsStart: 0
+      channelsCount: 8
+      failsafeMode: 3 # Custom
+      failsafe:
+        - 0 # CH1
+        - 0 # CH2
+        - -1000 # CH3
+        - 0 # CH4
+        - -1000 # CH5
+        - -1000 # CH6
+        - -1000 # CH7
+        - -1000 # CH8
+    external:
+      type: 0 # OFF

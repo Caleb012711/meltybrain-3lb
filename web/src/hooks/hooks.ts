@@ -97,15 +97,15 @@ async function loadParts(modelId: string): Promise<PartInfo[]> {
 }
 
 export function useModelParts(modelId: string): PartInfo[] {
-  const [parts, setParts] = useState<PartInfo[]>([]);
+  const [loaded, setLoaded] = useState<{ modelId: string; parts: PartInfo[] }>({ modelId, parts: [] });
   useEffect(() => {
     let alive = true;
     loadParts(modelId).then((ps) => {
-      if (alive) setParts(ps);
+      if (alive) setLoaded({ modelId, parts: ps });
     });
     return () => {
       alive = false;
     };
   }, [modelId]);
-  return parts;
+  return loaded.modelId === modelId ? loaded.parts : [];
 }

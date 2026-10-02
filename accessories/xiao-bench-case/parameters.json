@@ -1,0 +1,14 @@
+{
+  "board_length": 22.5,
+  "board_width": 17.8,
+  "board_height": 4.5,
+  "side_clearance": 2.0,
+  "headroom": 4.0,
+  "wall": 2.4,
+  "floor": 2.4,
+  "corner_radius": 6.0,
+  "lid_plate": 2.4,
+  "lid_lip_height": 2.0,
+  "lid_lip_wall": 1.2,
+  "lid_clearance_per_side": 0.3
+}

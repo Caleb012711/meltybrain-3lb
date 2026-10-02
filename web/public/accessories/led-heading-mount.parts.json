@@ -1,0 +1,28 @@
+[
+  {
+    "node": "solid_000",
+    "name": "Heading Mount Body",
+    "role": "fastener-dark",
+    "vol_cm3": 3.229,
+    "bbox_mm": [
+      34.3,
+      16.3,
+      11.5
+    ],
+    "faces": 60,
+    "dropped_from_glb": false
+  },
+  {
+    "node": "solid_001",
+    "name": "120\u00b0 Diffuser Lens",
+    "role": "electronics-pcb",
+    "vol_cm3": 0.8607,
+    "bbox_mm": [
+      18.3,
+      14.3,
+      3.3
+    ],
+    "faces": 10,
+    "dropped_from_glb": false
+  }
+]

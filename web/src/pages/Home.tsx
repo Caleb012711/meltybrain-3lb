@@ -1,342 +1,160 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { Link } from 'react-router';
-import { buildSteps, cadHref, cadModels, proofStats, stackCards, stackGroups, type StackGroup } from '../data/content';
-import { Reveal } from '../components/Layout';
-import { useCountUp, useReveal } from '../hooks/hooks';
+import '../cyber-combat.css';
 
-const HeroStage = lazy(() =>
-  import('../components/HeroStage').then((m) => ({ default: m.HeroStage }))
-);
-
-function ProofStrip() {
-  const { ref, visible } = useReveal<HTMLDivElement>();
-  return (
-    <div className="proof" ref={ref} aria-label="Key specifications">
-      {proofStats.map((s) => (
-        <Stat key={s.label} {...s} active={visible} />
-      ))}
-    </div>
-  );
-}
-
-function Stat({
-  value,
-  prefix,
-  suffix,
-  label,
-  active,
-}: {
-  value: number;
-  prefix: string;
-  suffix: string;
-  label: string;
-  active: boolean;
-}) {
-  const v = useCountUp(value, active);
-  return (
-    <div className="stat">
-      <b aria-label={`${prefix}${value}${suffix}`}>
-        {prefix}
-        {v}
-        {suffix}
-      </b>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function StackSection() {
-  const [group, setGroup] = useState<'All' | StackGroup>('All');
-  const shown = group === 'All' ? stackCards : stackCards.filter((c) => c.group === group);
-  return (
-    <section id="stack" className="section">
-      <p className="eyebrow">04 — Systems stack</p>
-      <h2>Every gram has a job.</h2>
-      <p className="lede">
-        Teensy 4.0 plus dual ±400 g accels plus DShot600 at 8 kHz. Copy LiftOff Rev9,
-        don’t freestyle. Follow Branch E math — fight-ready at or under 1361 g (1360.8 g cap).
-      </p>
-      <div className="stack-stats" aria-label="Key system figures">
-        <div><b>600 MHz</b><span>Cortex-M7 Teensy 4.0</span></div>
-        <div><b>8 kHz</b><span>DShot600 bidir loop</span></div>
-        <div><b>±400 g</b><span>H3LIS331DLTR dual</span></div>
-        <div><b>2–4k RPM</b><span>Liftoff spin target</span></div>
-        <div><b>≤1361 g</b><span>3 lb cap (1360.8 g)</span></div>
-      </div>
-      <div className="stack-tabs" role="group" aria-label="Filter by subsystem">
-        {stackGroups.map((g) => {
-          const n = g === 'All' ? stackCards.length : stackCards.filter((c) => c.group === g).length;
-          return (
-            <button
-              key={g}
-              className="stack-tab"
-              aria-pressed={group === g}
-              onClick={() => setGroup(g)}
-            >
-              {g} ({n})
-            </button>
-          );
-        })}
-      </div>
-      <div className="stack-grid">
-        {shown.map((c) => (
-          <div className="stack-card" key={c.id}>
-            <h3>
-              {c.part}{' '}
-              <span className={c.stamp === 'Locked' ? 'stamp ok' : c.stamp === 'Estimate' ? 'stamp estimate' : 'stamp todo'}>{c.stamp}</span>
-            </h3>
-            <p className="spec">{c.spec}</p>
-            <p>{c.role}</p>
-            <p className="grp">{c.group}</p>
-          </div>
-        ))}
-      </div>
-      <p className="meta">
-        Prices are estimates, US, Sep 2026 — see <Link to="/bom">BOM + cost</Link>. Verify before
-        ordering. TX-off stops the bot in under 1 s — film it to <code>firmware/failsafe-test.mp4</code>.
-      </p>
-    </section>
-  );
-}
+const ModelShowcase = lazy(() => import('../components/ModelShowcase').then((m) => ({ default: m.ModelShowcase })));
 
 export function Home() {
-
   return (
-    <div className="page">
-      {/* 01 hero */}
-      <section id="hero">
-        <p className="eyebrow">01 — Overview</p>
-        <div className="hero-badges" aria-label="Build status">
-          <span className="pill"><span className="dot" aria-hidden="true" />Live CAD</span>
-          <span className="pill">Eyeliner-3LB / Rev9</span>
-          <span className="pill hot">≤1361 g fight-ready</span>
+    <div className="page overview-page cyber-container" style={{ padding: '24px 20px 80px', maxWidth: '1440px', margin: '0 auto' }}>
+      {/* Topline Status Bar */}
+      <div className="overview-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="cyber-badge">TACTICAL CYBER-STATION // COMBAT ARCHITECTURE</span>
+          <span className="cyber-badge green">ALL SYSTEMS READY</span>
         </div>
-        <Suspense
-          fallback={
-            <div className="hero-static">
-              <h1 className="hero-giant">SPIN THE WHOLE BOT. DRIVE LIKE IT'S STANDING STILL.</h1>
-              <div className="hero-poster" style={{ position: 'static', padding: '24px 0' }}>
-                <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" style={{ maxWidth: '100%' }} width="1600" height="1200" />
-              </div>
-            </div>
-          }
-        >
-          <HeroStage />
-        </Suspense>
-        <div className="hero-after">
-          <p className="lede">
-            A 3 lb translational-drift combat robot: the entire body spins at 2000–4000 RPM
-            while two hub motors modulate once per revolution to drive. Teensy 4.0, dual
-            H3LIS331 accelerometers, PROPDRIVE 2836 1200KV hubmotors, AM32 with bidirectional
-            DShot600, ELRS. This page is the full build path with the real CAD.
-          </p>
-          <div className="warn">
-            <b>New here?</b> A meltybrain spins its whole body as the weapon (2000–4000 RPM) and
-            pulses its two wheels once per rev to drift-drive. Start at <Link to="/build">step 0</Link> —
-            rules and safety first. Budget about $660 plus spares, 4–8 weeks with metal lead time.
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <span className="cyber-badge amber">WEIGHT: ≤1,360.8 g CAP (3 LB)</span>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <section className="overview-hero" aria-labelledby="overview-title" style={{ padding: '20px 0 40px' }}>
+        <div>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <span className="cyber-badge crimson">3,500 RPM KINETIC STRIKE</span>
+            <span className="cyber-badge amber">DSHOT600 8kHz</span>
+            <span className="cyber-badge">CRSF 250Hz</span>
           </div>
-          <div className="btn-row">
-            <Link className="btn primary" to="/build">Start build (Step 0)</Link>
-            <Link className="btn primary" to="/liftoff">Why LiftOff works</Link>
-            <Link className="btn" to="/studio">Drive it + fight reel</Link>
-            <Link className="btn" to="/explorer">3D explorer</Link>
-            <Link className="btn" to="/bom">BOM + cost</Link>
-            <Link className="btn" to="/engineering">Engineering math</Link>
-            <Link className="btn" to="/pcbway">PCBWay files</Link>
+
+          <h1 id="overview-title" style={{ fontSize: 'clamp(38px, 6vw, 76px)', letterSpacing: '-0.05em', margin: '0 0 16px', lineHeight: 1.05, color: '#fff' }}>
+            EYELINER <span style={{ color: 'var(--neon-cyan)', fontSize: '0.65em' }}>/ 3 LB</span>
+          </h1>
+
+          <p className="overview-subtitle" style={{ fontSize: 'clamp(18px, 2.2vw, 26px)', color: 'var(--neon-amber)', margin: '0 0 16px' }}>
+            Next-Gen Autonomous Meltybrain Combat Robot.
+          </p>
+
+          <p className="overview-description" style={{ color: 'var(--cyber-text-muted)', fontSize: '15px', lineHeight: 1.6, maxWidth: '44ch', margin: '0 0 24px' }}>
+            High-speed rotational translation weapon. Spun up to 3,500 RPM, guided by dual ±400g H3LIS331
+            accelerometers, pulsed stroboscopic optical beacon, and autonomous LiDAR opponent auto-ramming.
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <Link className="cyber-btn primary" to="/lab" style={{ padding: '12px 24px', fontSize: '14px' }}>
+              ⚡ ENTER COMBAT LAB
+            </Link>
+            <Link className="cyber-btn" to="/explorer" style={{ padding: '12px 20px', fontSize: '14px' }}>
+              🛰️ 3D MODEL EXPLORER
+            </Link>
+            <Link className="cyber-btn amber" to="/cyberdeck" style={{ padding: '12px 20px', fontSize: '14px' }}>
+              🎮 RADIOMASTER STATION
+            </Link>
           </div>
-          <p className="meta">
-            Source of truth: <code>Main CAD.step</code> (17.7 MB, 145 solids, 89 meshed — thread specks stats-only). Viewer loads
-            converted GLB meshes; STEP downloads are linked per model.
-          </p>
-          <ProofStrip />
-          <p className="meta">
-            Cap 1360.8 g — build target ≤1310 g (50 g margin for wires, Loctite, scale error).
-            Tip-speed math: v(mph) = π × D(in) × RPM / 1056, but you must measure YOUR spin
-            diameter first. An 8 in ring at 4000 RPM is about 95 mph — not 200+.
-          </p>
+        </div>
+
+        <div className="glass-panel hud-corner" style={{ padding: '16px', minHeight: '380px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Suspense fallback={<div className="model-showcase-stage" role="status" style={{ color: 'var(--neon-cyan)' }}>INITIALIZING 3D TACTICAL VIEWER…</div>}>
+            <ModelShowcase />
+          </Suspense>
         </div>
       </section>
 
-      {/* 02 render + how melty works */}
-      <Reveal as="section">
-        <section id="how" className="section">
-          <p className="eyebrow">02 — How a melty works</p>
-          <h2>Controlled drift, not a top</h2>
-          <p className="lede">
-            Two drive wheels spin the body up. An accelerometer measures the resulting
-            g-force, the controller derives RPM and heading, and each motor is powered for a
-            slice of every revolution. Shift the slice and the orbit becomes straight-line
-            drive. OpenMelt2 proved the math to about 3200 RPM; LiftOff made it deterministic
-            with two opposed accelerometers at 45 degrees so hits that move the center of
-            rotation do not break tracking.
-          </p>
-          <figure className="render-figure">
-            <img src="eyeliner_summer_2025_render.webp" alt="Overhead render of the Eyeliner 3lb meltybrain" width="1600" height="1200" loading="lazy" decoding="async" />
-            <figcaption className="mono">
-              eyeliner_summer_2025_render.webp (PNG source in repo root) — steel ring plus TPU shell. Balance is everything:
-              3–5 g off means violent hop at 3000 RPM.
-            </figcaption>
-          </figure>
-        </section>
-      </Reveal>
-
-      {/* 02b liftoff teaser */}
-      <Reveal as="section">
-        <section id="liftoff-teaser" className="section">
-          <p className="eyebrow">02b — Why LiftOff works</p>
-          <h2>Six equations one fight-ready bot</h2>
-          <p className="lede">
-            1361g cap 95mph 1.77x dual accels reasoning page shows every formula with measured CAD masses.
-          </p>
-          <div className="btn-row">
-            <Link className="btn primary" to="/liftoff">Why LiftOff works</Link>
-            <Link className="btn" to="/engineering">Engineering calculators</Link>
+      {/* Cyber Combat Station Navigation Modules */}
+      <section style={{ marginTop: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '12px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="cyber-dot" /> TACTICAL COMBAT STATIONS &amp; MODULES
+            </h2>
+            <span style={{ fontSize: '12px', color: 'var(--cyber-text-muted)' }}>
+              Integrated engineering suites: physics simulation, firmware kernel, telemetry, and 3D printing
+            </span>
           </div>
-        </section>
-      </Reveal>
+        </div>
 
-      {/* 03 anatomy */}
-      <Reveal as="section">
-        <section id="anatomy" className="section">
-          <p className="eyebrow">03 — Anatomy</p>
-          <h2>Ring, pods, electronics</h2>
-          <div className="cards">
-            <div className="card">
-              <h3>Weapon: AR500 ring</h3>
-              <p>Symmetric 2-tooth weapon, measured 55.63 cm³ a pair in CAD: 437 g in AR500 steel, 246 g in Grade 5 titanium. No lightening holes, no bolt holes through the rim — holes start cracks. Steel teeth fly at ~1245 g with ~65 g of margin — legal but tight; titanium at ~1055 g is comfortable (Liftoff's tapered steel ring hit 241 g).</p>
-              <footer className="foot meta mono">Standard Weapon Teeth.step · 295 KB · 2 solids</footer>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          
+          {/* Station 1: Combat Test Lab */}
+          <Link to="/lab" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge">SIMULATOR</span>
+              <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
             </div>
-            <div className="card">
-              <h3>Drive: hubmotor pods</h3>
-              <p>PROPDRIVE 2836 1200KV cans rebuilt as hubmotors per Liftoff Rev5: 6 mm dead axle, two 626 bearings, machined aluminum inner and outer hubs, 1.55 in titanium cleat wheels. Shim endplay under 1 mm.</p>
-              <footer className="foot meta mono">Wheel Pod.step · 4.1 MB · 25 solids</footer>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>01 // Combat Test Lab</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Spin up to 3,500 RPM on Canvas physics. Drive translation with the virtual RadioMaster Pocket,
+              sweep simulated 360° LiDAR radar, and engage AI auto-ramming!
+            </p>
+          </Link>
+
+          {/* Station 2: 3D Model Explorer */}
+          <Link to="/explorer" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-amber)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge amber">3D CAD</span>
+              <span style={{ color: 'var(--neon-amber)', fontSize: '18px' }}>↗</span>
             </div>
-            <div className="card">
-              <h3>Electronics: Teensy core</h3>
-              <p>Teensy 4.0 lockable without pins, two H3LIS331DLTR at ±400 g opposed at 45°, AM32 55 A with bidirectional DShot600 at 8 kHz, ELRS receiver, two 4S 550 mAh packs in parallel. Pi Zero 2W plus camera for logging and trim assist at 50–100 Hz — it never drives.</p>
-              <footer className="foot meta mono">BOM.md · firmware/README.md</footer>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>02 // 3D Model Explorer</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Orbit and explode source CAD assemblies. Inspect TPU chassis pucks, titanium cleats, PropDrive motors,
+              and 1.2 kJ AR500 hardened teeth.
+            </p>
+          </Link>
+
+          {/* Station 3: Firmware & .ino Explorer */}
+          <Link to="/firmware" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-green)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge green">KERNEL</span>
+              <span style={{ color: 'var(--neon-green)', fontSize: '18px' }}>↗</span>
             </div>
-          </div>
-        </section>
-      </Reveal>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>03 // Firmware &amp; .ino Studio</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Browse the production Teensy 4.0 flight sketch. Live config generator for custom spin RPM,
+              sensor baseline, latency, and SPARC failsafe timeouts.
+            </p>
+          </Link>
 
-      {/* 04 stack */}
-      <Reveal as="section">
-        <StackSection />
-      </Reveal>
-
-      {/* 05 build path */}
-      <Reveal as="section">
-        <section id="build-path" className="section">
-          <p className="eyebrow">05 — Build path, 8 steps</p>
-          <h2>Do it in order, tick boxes</h2>
-          {buildSteps.map((s) => (
-            <div className="step" key={s.n}>
-              <h3>{s.n} · {s.title}</h3>
-              <p>{s.body}</p>
+          {/* Station 4: RadioMaster Tactical Station */}
+          <Link to="/cyberdeck" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-purple)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>GROUND LINK</span>
+              <span style={{ color: 'var(--neon-purple)', fontSize: '18px' }}>↗</span>
             </div>
-          ))}
-          <div className="btn-row">
-            <Link className="btn primary" to="/build">Full build guide with checklists</Link>
-          </div>
-        </section>
-      </Reveal>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>04 // RadioMaster Cyberdeck</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              RadioMaster Pocket ELRS 2.4GHz hardware layout, EdgeTX model skeleton, CRSF wiring crossover,
+              and live telemetry downlinks.
+            </p>
+          </Link>
 
-      {/* 05 CAD files */}
-      <Reveal as="section">
-        <section id="cad" className="section">
-          <p className="eyebrow">06 — CAD files, actual sizes</p>
-          <h2>Download the real assemblies</h2>
-          <p className="lede">
-            These live in the repo root. They are the source — not the order. Export single
-            bodies from them in Onshape, then send the exports to PCBWay. Toggle the models
-            in the hero viewer above; every row here links the same files.
-          </p>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th scope="col">File</th><th scope="col">Size</th><th scope="col">Solids</th><th scope="col">Role</th><th scope="col">Get</th></tr>
-              </thead>
-              <tbody>
-                {cadModels.map((m) => (
-                  <tr key={m.id}>
-                    <td className="mono">{m.step.split('/').pop()}</td>
-                    <td className="mono">{m.stepSize}</td>
-                    <td className="mono">{m.solids}</td>
-                    <td><span className="stamp todo">Source — do not upload</span><br />{m.note}</td>
-                    <td><Link to="/explorer" aria-label={`Inspect ${m.step} in the 3D explorer`}>Inspect</Link> · <a href={cadHref(m.step)} download aria-label={`Download ${m.step}`}>STEP</a> · <a href={cadHref(m.glb)} download aria-label={`Download ${m.glb} viewer mesh`}>GLB</a></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="btn-row">
-            <Link className="btn" to="/onshape">How to export from Onshape</Link>
-            <Link className="btn" to="/pcbway">What to send PCBWay</Link>
-          </div>
-        </section>
-      </Reveal>
+          {/* Station 5: 3D Printing & Slicer Studio */}
+          <Link to="/printing" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge">ADDITIVE MFG</span>
+              <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
+            </div>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>05 // 3D Printing &amp; Slicer</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Bambu Studio / OrcaSlicer profiles (TPU 95A HF, PA6-CF, PETG HF). 17 direct STL downloads,
+              Bambu preset export (.ini), and material cost calculator.
+            </p>
+          </Link>
 
-      {/* 06 teasers */}
-      <Reveal as="section">
-        <section id="more" className="section">
-          <p className="eyebrow">07 — Metal, plastic, firmware</p>
-          <h2>Metal, plastic, firmware</h2>
-          <div className="cards">
-            <Link className="card" to="/pcbway">
-              <h3>Send metal to PCBWay</h3>
-              <p>CNC STEP one-solid-per-file in millimeters, sheet DXF 1:1 with cut outlines only, materials per part, the pre-pay check.</p>
-              <footer className="foot meta mono">manufacturing/pcbway/</footer>
-            </Link>
-            <Link className="card" to="/printing">
-              <h3>Print plastics unsliced</h3>
-              <p>STLs only, never G-code. TPU 95A profile for Orca, Bambu, and PrusaSlicer, drying, inserts, and common failure modes.</p>
-              <footer className="foot meta mono">3d-printing/stl/</footer>
-            </Link>
-            <Link className="card" to="/firmware">
-              <h3>Flash Teensy, add AI cam</h3>
-              <p>OpenMelt2 learning rig to LiftOff fight stack, AM32 plus ELRS wiring, bench to 4000 RPM, failsafe filming, onboard Pi plus pit YOLO advisory loop.</p>
-              <footer className="foot meta mono">firmware/README.md</footer>
-            </Link>
-          </div>
-        </section>
-      </Reveal>
+          {/* Station 6: Bill of Materials & Cost */}
+          <Link to="/bom" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-crimson)', transition: 'all 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge crimson">BOM &amp; SPEC</span>
+              <span style={{ color: 'var(--neon-crimson)', fontSize: '18px' }}>↗</span>
+            </div>
+            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>06 // BOM, Weight &amp; Cost</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Full 3lb weight budget accounting (1,360.8g cap). Verified vendor links for motors, ESCs,
+              Teensy MCU, SendCutSend armor lot, and spares kit.
+            </p>
+          </Link>
 
-      {/* 07 FAQ */}
-      <Reveal as="section">
-        <section id="faq" className="section">
-          <p className="eyebrow">08 — Questions every builder asks</p>
-          <h2>Weight, failsafe, cloud</h2>
-          <div className="step">
-            <h3>How do you make 1361 g?</h3>
-            <p>Branch E from the mass audit: titanium weapon band around 200–250 g, aluminum plates and structure 300–400 g, TPU 80–120 g, pods about 50 g — all-in near 1000–1250 g before battery and wiring. Keep 50 g margin for wires, Loctite, and scale error. Titanium is the relief valve: swapping the teeth pair from steel to titanium saves about 190 g.</p>
-          </div>
-          <div className="step">
-            <h3>What failsafe do inspectors want to see?</h3>
-            <p>Transmitter off means motors stopped or braked in under one second, with no restart until a deliberate re-arm. Same behavior on Pi brown-out. It must never boot armed with throttle high. Film it and save firmware/failsafe-test.mp4.</p>
-          </div>
-          <div className="step">
-            <h3>How much does it cost, and how long?</h3>
-            <p>About $662 including the handset ($590 without), spares near $161 plus an armor lot at $100–180. Order metal first — it has the longest lead time.</p>
-          </div>
-          <div className="step">
-            <h3>Can I skip the Pi?</h3>
-            <p>Yes — the Teensy flies alone. The Pi adds logging and trim assist at 50–100 Hz. It never drives.</p>
-          </div>
-          <div className="step">
-            <h3>ELRS or SBUS?</h3>
-            <p>Liftoff Rev9 flew SBUS; this build locks ELRS CRSF for telemetry back to the handset. Either link needs a filmed TX-off failsafe.</p>
-          </div>
-          <div className="step">
-            <h3>Overweight at weigh-in?</h3>
-            <p>Titanium-swap the teeth first — it saves about 190 g a pair (437 g down to 246 g) before you shrink the battery. Bring a backup 450 mAh option and a lightening plan.</p>
-          </div>
-          <div className="step">
-            <h3>Does the cloud AI drive the bot?</h3>
-            <p>No. The match link is FHSS ELRS with its own failsafe. The onboard Pi trims and logs at 50–100 Hz, the pit dashboard watches at about 5 Hz, and cloud vision plus strategy hints arrive in seconds, human-gated. Anything beyond advisory autonomy needs event pre-clear under SPARC §6.4.3.</p>
-          </div>
-        </section>
-      </Reveal>
+        </div>
+      </section>
     </div>
   );
 }

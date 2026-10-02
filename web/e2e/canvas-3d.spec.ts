@@ -4,7 +4,7 @@ test.describe('3D Canvas Rendering & WebGL', () => {
   test('renders 3D canvas element on home page hero stage', async ({ page }) => {
     await page.goto('/#/');
     const canvas = page.locator('canvas').first();
-    await expect(canvas).toBeVisible({ timeout: 15000 });
+    await expect(canvas).toBeVisible({ timeout: 25000 });
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
     expect(box?.width).toBeGreaterThan(100);

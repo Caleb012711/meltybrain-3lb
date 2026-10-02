@@ -75,10 +75,50 @@ export const BUILD_GUIDE: Record<PartRole, GuideEntry> = {
       { to: '/firmware', label: 'Firmware + failsafe' },
     ],
   },
+  'electronics-pcb': {
+    role: 'electronics-pcb',
+    where: 'Electronics stack & sensor carriers — Dual H3LIS331DL accelerometer PCBs, Teensy 4.0, LED diffuser lenses, and supervisor boards.',
+    stepDetail: 'BS5 Wire on the bench + BS2 Order electronics',
+    note: 'Solder direct or mount in rigid brackets. Never allow accelerometer flex under centripetal loads.',
+    links: [
+      { to: '/build', label: 'Build step 5' },
+      { to: '/printing', label: 'Accessory prints' },
+    ],
+  },
+  'hardware-steel': {
+    role: 'hardware-steel',
+    where: 'Sensor clamping plates, retention brackets, and structural fastener hardware.',
+    stepDetail: 'BS4 Assemble frame & sensor retention',
+    note: 'Torque evenly with blue Loctite 243. Clamps maintain sensor orthogonality up to 400g.',
+    links: [
+      { to: '/build', label: 'Build step 4' },
+      { to: '/explorer', label: 'Inspect hardware' },
+    ],
+  },
+  'case-body': {
+    role: 'case-body',
+    where: 'XIAO bench-storage enclosure lower housing — holds board with clearance and friction fit.',
+    stepDetail: 'Bench-case prototype 3D print (PETG HF or PLA)',
+    note: 'Print upright with 0.4 mm nozzle, 0.2 mm layer height, 3-4 perimeters for sturdy wall thickness and crisp interior ledge geometry.',
+    links: [
+      { to: '/printing', label: 'Print desk' },
+      { to: '/explorer?model=bench-case', label: 'Inspect bench case' },
+    ],
+  },
+  'case-lid': {
+    role: 'case-lid',
+    where: 'XIAO bench-storage enclosure snap/sliding lid — protects unpowered MCU pins.',
+    stepDetail: 'Bench-case prototype 3D print (PETG HF or PLA)',
+    note: 'Print top-down on smooth or textured PEI plate. Designed with 0.2 mm fit tolerance over the lower body perimeter lip.',
+    links: [
+      { to: '/printing', label: 'Print desk' },
+      { to: '/explorer?model=bench-case', label: 'Inspect bench case' },
+    ],
+  },
 };
 
 export const STEP_ROLES: Record<BuildStepKey, PartRole[]> = {
-  '3': ['shell-tpu'],
-  '4': ['weapon-steel', 'chassis-alu', 'pod-metal', 'fastener-dark'],
-  '5': ['electro-green', 'shell-tpu'],
+  '3': ['shell-tpu', 'case-body', 'case-lid'],
+  '4': ['weapon-steel', 'chassis-alu', 'pod-metal', 'fastener-dark', 'hardware-steel'],
+  '5': ['electro-green', 'electronics-pcb', 'shell-tpu'],
 };

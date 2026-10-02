@@ -130,15 +130,15 @@ export function Liftoff() {
   return (
     <div className="page">
       <p className="spec-plate">
-        <span>EYELINER-3LB / REV9 / SHEET LIFTOFF-01</span>
+        <span>EYELINER-3LB / REFERENCE / SHEET LIFTOFF-01</span>
         <span>Why LiftOff works</span>
       </p>
       <h1>Why LiftOff works</h1>
       <p className="lede">
-        Project LiftOff Rev9 is the proven 3 lb meltybrain formula this build copies — symmetric
-        2-tooth steel ring, dual accelerometers, hubmotor drive, and TPU shock structure — because
-        it makes weight, holds heading through hits, and translates at 2000–4000 RPM. Copy LiftOff
-        Rev9, don&apos;t freestyle.
+        Project LiftOff is an inspiration for this project. The{' '}
+        <a href="https://wiki.nhrl.io/wiki/index.php?title=Project_LiftOff">NHRL project history</a>{' '}
+        documents its evolution. It does not establish that our CAD matches a particular
+        revision or validate the calculations below. Our component choices and physical fit remain under review.
       </p>
       <ProofStrip />
 

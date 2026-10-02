@@ -1,0 +1,46 @@
+{
+  "status": "FIT-TEST PROTOTYPE \u2014 physical fit not verified",
+  "units": "mm",
+  "source_step_sha256": "6ef8e559608ab10c1c77ae6c8206081db6deea8d553960bb906b317635392106",
+  "clearance_per_side_mm": 0.3,
+  "interference_volume_mm3": {
+    "body_lid": 0.0,
+    "body_board_envelope": 0.0,
+    "lid_board_envelope": 0.0
+  },
+  "parts": {
+    "body": {
+      "triangles": 700,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "volume_mm3": 3921.5681202377414,
+      "bbox_mm": [
+        31.299999,
+        26.6,
+        10.9
+      ],
+      "cad_valid": true,
+      "solid_count": 1,
+      "step_round_trip": true,
+      "cad_volume_mm3": 3922.3951105491833,
+      "sha256": "e982b2efd2dae763b0e708fe9392adc70070f1ad2909fc17df1935feab0efef8"
+    },
+    "lid": {
+      "triangles": 1172,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "volume_mm3": 2112.664522891669,
+      "bbox_mm": [
+        31.299999,
+        26.6,
+        4.4
+      ],
+      "cad_valid": true,
+      "solid_count": 1,
+      "step_round_trip": true,
+      "cad_volume_mm3": 2112.933724279973,
+      "sha256": "c1ae6ea4092ee8a25426d344d9a07ce7d1fb10a3d1207d3cc1a8900bc0bad3df"
+    }
+  },
+  "assembly_step_round_trip": true
+}

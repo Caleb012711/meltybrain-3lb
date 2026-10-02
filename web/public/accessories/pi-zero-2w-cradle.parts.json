@@ -1,0 +1,41 @@
+[
+  {
+    "node": "solid_000",
+    "name": "Carrier Base & BEC Bay",
+    "role": "chassis-alu",
+    "vol_cm3": 20.69,
+    "bbox_mm": [
+      81.399,
+      64.098,
+      10.5
+    ],
+    "faces": 88,
+    "dropped_from_glb": false
+  },
+  {
+    "node": "solid_001",
+    "name": "Top Heatsink Shroud",
+    "role": "weapon-steel",
+    "vol_cm3": 6.913,
+    "bbox_mm": [
+      70.4,
+      53.1,
+      2.0
+    ],
+    "faces": 22,
+    "dropped_from_glb": false
+  },
+  {
+    "node": "solid_002",
+    "name": "TPU Isolation Bushing",
+    "role": "shell-tpu",
+    "vol_cm3": 0.1557,
+    "bbox_mm": [
+      7.998,
+      7.999,
+      5.5
+    ],
+    "faces": 8,
+    "dropped_from_glb": false
+  }
+]

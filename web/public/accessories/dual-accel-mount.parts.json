@@ -1,0 +1,28 @@
+[
+  {
+    "node": "solid_000",
+    "name": "Baseplate (Dual H3LIS331)",
+    "role": "chassis-alu",
+    "vol_cm3": 10.5326,
+    "bbox_mm": [
+      46.7,
+      46.6,
+      9.2
+    ],
+    "faces": 78,
+    "dropped_from_glb": false
+  },
+  {
+    "node": "solid_001",
+    "name": "Clamping Top Plate",
+    "role": "hardware-steel",
+    "vol_cm3": 3.4108,
+    "bbox_mm": [
+      31.7,
+      46.6,
+      3.0
+    ],
+    "faces": 34,
+    "dropped_from_glb": false
+  }
+]

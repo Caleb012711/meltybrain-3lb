@@ -268,68 +268,6 @@ export function Pcbway() {
   );
 }
 
-export function Printing() {
-  return (
-    <div className="page">
-      <p className="eyebrow">3D printing — unsliced on purpose</p>
-      <h1>No G-code here</h1>
-      <div className="warn">
-        <b>Someone else's G-code crashes nozzles.</b> We ship <b>STL only</b>; you slice for <b>your printer and your spool</b>. Preview any STL in the <Link to="/">hero viewer</Link>.
-      </div>
-      <h2>What prints, what never prints</h2>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th scope="col">Prints (plastic)</th><th scope="col">Never prints — PCBWay metal</th></tr></thead>
-          <tbody>
-            <tr><td>TPU shell and cradle halves, pod guards, LED mount, Pi and BEC mount, battery tray, bench wheel locks</td><td>Ring, teeth, plates, shafts</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <h2>Materials</h2>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th scope="col">Use</th><th scope="col">For</th></tr></thead>
-          <tbody>
-            <tr><td><b>TPU 95A</b> (Overture, SainSmart, Cheetah)</td><td>Shell, cradle, guards — the shock absorber. LiftOff retired HDPE and UHMW for this.</td></tr>
-            <tr><td>PETG / ABS-ASA</td><td>Jigs, pit stand, LED mounts — not impact structure.</td></tr>
-            <tr><td>PLA</td><td>Fit-check only. Shatters in fights.</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <details className="step">
-        <summary><b>Pre-print checklist</b></summary>
-        <div style={{ marginTop: 8 }}>
-          <CheckItem label="STLs exported to 3d-printing/stl/ as NN-part-name.stl" />
-          <CheckItem label="Flow rate + temperature tower calibrated per TPU spool" />
-          <CheckItem label="PLA/PETG quick fit-check completed before final TPU print" />
-          <CheckItem label="Weighed printed parts at 1.21 g/cc density into BOM (shell budget 80–120 g)" />
-          <CheckItem label="TPU dried at 65 °C for 4–6 hours prior to printing" />
-        </div>
-      </details>
-      <h2>TPU 95A profile (Orca, Bambu, PrusaSlicer)</h2>      <div className="table-wrap">
-        <table>
-          <thead><tr><th scope="col">Setting</th><th scope="col">Value</th></tr></thead>
-          <tbody>
-            <tr><td>Printer</td><td>Direct drive strongly preferred. Bowden plus TPU jams — use direct-drive only.</td></tr>
-            <tr><td>Nozzle / bed</td><td>225–240 °C per spool after a temp tower. Bed 40–60 °C with glue on smooth plate.</td></tr>
-            <tr><td>Speed / retraction</td><td>20–35 mm/s. Retraction off or 1 mm max. Pressure advance off to start.</td></tr>
-            <tr><td>Walls / infill</td><td>4–6 perimeters, 5–6 top and bottom layers, 30–60% gyroid. Dense cradle, not hollow, never 100% solid.</td></tr>
-            <tr><td>Drying</td><td>65 °C for 4–6 hours. Wet TPU strings, pops, and delaminates — the number one beginner failure.</td></tr>
-            <tr><td>Finish</td><td>Heat-set M3/M4 inserts at 200–220 °C. Never tap TPU. Test-fit in cheap PLA or PETG first, then TPU; weigh prints into the BOM (TPU is 1.21 g/cc).</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <h2>Downloads — pod reference pack</h2>
-      <p className="meta">No print STLs yet — export NN-name.stl from Onshape (binary, about 0.1 mm chord) into 3d-printing/stl/. The pod reference below is assembly geometry, not print-ready.</p>
-      <DownloadCards modelId="pod" />
-      <div className="btn-row">
-        <Link className="btn primary" to="/firmware">Next: firmware</Link>
-        <Link className="btn" to="/pcbway">Back to PCBWay</Link>
-      </div>
-    </div>
-  );
-}
-
 export function Parts() {
   const rows: [string, string, string][] = [
     ['Motors', 'PROPDRIVE v2 2836 1200KV, 82 g, 48 A max, 3–4S. Hubmotor build: 6 mm dead axle, two 626 bearings, aluminum hubs.', '2 + 1 spare'],
@@ -389,68 +327,6 @@ export function Parts() {
           both <code>Standard Weapon Teeth.step</code> and <code>Undercutter Config.step</code>;
           compare them in the <Link to="/explorer">3D explorer</Link> before ordering steel.
         </p>
-      </div>
-    </div>
-  );
-}
-
-export function Firmware() {
-  return (
-    <div className="page">
-      <p className="eyebrow">Firmware + AI camera</p>
-      <h1>Teensy spins, Pi watches, cloud suggests</h1>
-      <div className="warn danger">
-        <b>Safety ladder:</b> T0 failsafe, T1 Teensy spin at 8 kHz DShot600, T2 onboard Pi assist at 50–100 Hz, T3 pit dashboard near 5 Hz, T4 cloud hints in seconds. T3 and T4 <b>never drive</b>. TX-off stops the bot in under one second, filmed.
-      </div>
-      <h2>OpenMelt2 learning rig to LiftOff fight stack</h2>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th scope="col"></th><th scope="col">OpenMelt2 (learn)</th><th scope="col">LiftOff Rev9 (fight)</th></tr></thead>
-          <tbody>
-            <tr><td>MCU</td><td>Arduino Micro</td><td>Teensy 4.0 at 600 MHz</td></tr>
-            <tr><td>Sensing</td><td>Single H3LIS331, 3.9 cm radius default</td><td>Dual H3LIS331DLTR, opposed at 45°, SPI</td></tr>
-            <tr><td>Drive</td><td>Binary or 490 Hz PWM, SimonK</td><td>DShot600 bidirectional at 8 kHz, AM32 55 A</td></tr>
-            <tr><td>Motors</td><td>Brushed / stock</td><td>PROPDRIVE v2 2836 1200KV hubmotors (82 g each)</td></tr>
-            <tr><td>Pack</td><td>Small 3S</td><td>2× 4S 550 mAh in parallel</td></tr>
-            <tr><td>Spin</td><td>To about 3200 RPM, drifts after hits</td><td>2000–4000 RPM, survives center shifts</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <details className="step">
-        <summary><b>Stack pick — one stack, don't mix</b></summary>
-        <p className="mono">Fight: Teensy 4.0 lock (no pins) + 2× H3LIS331DL + AM32 DShot600 bidirectional + ELRS CRSF · Learn rig: OpenMelt2 on Arduino Micro + single accel + 490 Hz/SimonK to ~3200 RPM · Fallback: Rotini ESP32-S2 + SimpleMelt</p>
-      </details>
-      <details className="step">
-        <summary><b>Flash checklist</b></summary>
-        <div style={{ marginTop: 8 }}>
-          <CheckItem label="Teensyduino / Arduino / PlatformIO installed with Teensy 4.0 support" />
-          <CheckItem label="Baseline firmware flashed with zero custom gains" />
-          <CheckItem label="USB enumerates properly and configuration interface loads" />
-          <CheckItem label="Stock EEPROM configuration backed up to repository" />
-          <CheckItem label="Match-day firmware version frozen after tuning and committed" />
-        </div>
-      </details>
-      <div className="step">
-        <h3>Wiring, locked</h3>
-        <ul>
-          <li>Battery → link (<b>XT60</b> mains, <b>16 AWG</b> — XT30 is 30 A continuous, inadequate per 48 A pack path) → AM32 boards → PROPDRIVEs (18 AWG minimum on short motor leads)</li>
-          <li>ELRS CRSF → Teensy UART · Pi link UART <b>115200</b> · never power the MCU from Pi USB in-bot</li>
-          <li>Dual accels on short stiff SPI <b>within ~20 mm of spin center</b> (±400 g saturates past ~2800 RPM at 45 mm, ~3450 RPM at 30 mm) · 4700µF on 5 V + 10:1 divider for battery sense</li>
-          <li>Pi power: BEC <b>5 V / 3 A</b> → Pi Zero 2W on TPU standoffs (~40 g with camera) · never power the MCU from Pi USB in-bot</li>
-          <li>Green LED = front, raised/inset a few mm for shallow arena angles · learn defaults: radius 3.9 cm, LED offset 7%</li>
-        </ul>
-      </div>
-      <div className="step">
-        <h3>Tune: bench, slide, 2k, 3k, 4k</h3>
-        <p>Bench with no weapon energy. Cap 1500–2000 RPM with soft start plus the ESC current limit until trim is straight. Low-RPM slide to check the LED matches the stick. Trim straight for the floor. Ramp 2000, heat-check, 3000, heat-check, 4000. Blip-test hit recovery — it must re-hold RPM, not toilet-bowl. One gain at a time, log RPM, g, battery, and temperature on the Pi.</p>
-      </div>
-      <div className="step">
-        <h3>Failsafe — film this</h3>
-        <p>TX-off stops or brakes the bot in under 1 s, with no restart without a deliberate re-arm. Yank Pi power — the MCU must still failsafe. It must never boot armed with throttle high. Save firmware/failsafe-test.mp4, freeze the firmware version, back up config and logs. Show TRC at check-in.</p>
-      </div>
-      <div className="step">
-        <h3>Dual-camera AI, both, advisory only</h3>
-        <p>Onboard Pi Zero 2W plus wide camera over UART: optical-flow trim, RPM hold, 1080p log to SD, telemetry back to the handset. Pit overhead camera plus laptop: YOLO tracks both bots, cloud model suggests strategy for the driver to approve. Reference: DeepMelt. DIY handset is a trainer until TRC pre-clears §6.4.3. Match radio is the RadioMaster Pocket plus EP1/RP1.</p>
       </div>
     </div>
   );

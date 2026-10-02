@@ -1,0 +1,242 @@
+/* ==========================================================================
+   CYBER-COMBAT STATION DESIGN SYSTEM
+   Modern Web: Glassmorphism, Container Queries, Tactical HUD Aesthetics
+   ========================================================================== */
+
+:root {
+  --cyber-bg: #080c15;
+  --cyber-panel: rgba(13, 20, 36, 0.72);
+  --cyber-panel-solid: #0d1526;
+  --cyber-panel-elevated: rgba(20, 31, 56, 0.75);
+  --cyber-border: rgba(0, 240, 255, 0.22);
+  --cyber-border-faint: rgba(255, 255, 255, 0.08);
+  --cyber-border-strong: rgba(0, 240, 255, 0.55);
+  --cyber-glow-cyan: rgba(0, 240, 255, 0.35);
+  --neon-cyan: #00f0ff;
+  --neon-amber: #ffaa00;
+  --neon-crimson: #ff2a55;
+  --neon-green: #00ff88;
+  --neon-purple: #a855f7;
+  --cyber-text: #e2e8f0;
+  --cyber-text-muted: #94a3b8;
+  --cyber-text-dim: #64748b;
+  --cyber-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+}
+
+[data-theme='light'] {
+  --cyber-bg: #f3f6fa;
+  --cyber-panel: rgba(255, 255, 255, 0.85);
+  --cyber-panel-solid: #ffffff;
+  --cyber-panel-elevated: rgba(240, 244, 250, 0.95);
+  --cyber-border: rgba(0, 140, 200, 0.3);
+  --cyber-border-faint: rgba(0, 0, 0, 0.08);
+  --cyber-border-strong: rgba(0, 140, 200, 0.7);
+  --cyber-glow-cyan: rgba(0, 140, 200, 0.2);
+  --neon-cyan: #0088cc;
+  --neon-amber: #d97706;
+  --neon-crimson: #dc2626;
+  --neon-green: #059669;
+  --neon-purple: #7c3aed;
+  --cyber-text: #0f172a;
+  --cyber-text-muted: #475569;
+  --cyber-text-dim: #64748b;
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: var(--cyber-panel);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--cyber-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 0 0 1px var(--cyber-border-faint);
+  border-radius: 12px;
+  position: relative;
+}
+
+.glass-panel-elevated {
+  background: var(--cyber-panel-elevated);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid var(--cyber-border-strong);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 0 20px var(--cyber-glow-cyan);
+  border-radius: 14px;
+}
+
+/* Tactical HUD brackets */
+.hud-corner {
+  position: relative;
+}
+
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.hud-corner::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--neon-cyan);
+  border-left: 2px solid var(--neon-cyan);
+}
+
+.hud-corner::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--neon-cyan);
+  border-right: 2px solid var(--neon-cyan);
+}
+
+/* Cyber badges & status pill */
+.cyber-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--cyber-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.cyber-badge.amber {
+  background: rgba(255, 170, 0, 0.12);
+  color: var(--neon-amber);
+  border-color: rgba(255, 170, 0, 0.35);
+}
+
+.cyber-badge.crimson {
+  background: rgba(255, 42, 85, 0.12);
+  color: var(--neon-crimson);
+  border-color: rgba(255, 42, 85, 0.35);
+}
+
+.cyber-badge.green {
+  background: rgba(0, 255, 136, 0.12);
+  color: var(--neon-green);
+  border-color: rgba(0, 255, 136, 0.35);
+}
+
+.cyber-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  animation: cyberPulse 2s infinite ease-in-out;
+}
+
+@keyframes cyberPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+/* Container Queries setup */
+.cyber-container {
+  container-type: inline-size;
+  container-name: cyber-station;
+  width: 100%;
+}
+
+/* Cyber Button Styles */
+.cyber-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--cyber-mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  border: 1px solid var(--cyber-border);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--cyber-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cyber-btn:hover {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 16px var(--cyber-glow-cyan);
+  transform: translateY(-1px);
+}
+
+.cyber-btn.primary {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(0, 140, 255, 0.15));
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.cyber-btn.primary:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.45), rgba(0, 140, 255, 0.3));
+  color: #fff;
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.6);
+}
+
+.cyber-btn.danger {
+  background: linear-gradient(135deg, rgba(255, 42, 85, 0.25), rgba(200, 20, 50, 0.15));
+  border-color: var(--neon-crimson);
+  color: var(--neon-crimson);
+}
+
+.cyber-btn.danger:hover {
+  background: linear-gradient(135deg, rgba(255, 42, 85, 0.45), rgba(200, 20, 50, 0.3));
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 42, 85, 0.6);
+}
+
+.cyber-btn.amber {
+  background: linear-gradient(135deg, rgba(255, 170, 0, 0.25), rgba(220, 120, 0, 0.15));
+  border-color: var(--neon-amber);
+  color: var(--neon-amber);
+}
+
+.cyber-btn.amber:hover {
+  background: linear-gradient(135deg, rgba(255, 170, 0, 0.45), rgba(220, 120, 0, 0.3));
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 170, 0, 0.6);
+}
+
+/* Tactical Header Branding */
+.tactical-station-header {
+  border-bottom: 1px solid var(--cyber-border);
+  background: var(--cyber-panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(8, 12, 21, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+}

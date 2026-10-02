@@ -1,0 +1,19 @@
+{
+  "led_dia": 5.1,
+  "led_flange_dia": 5.9,
+  "led_flange_depth": 1.2,
+  "led_count": 2,
+  "led_spacing": 10.0,
+  "resistor_pocket_w": 4.0,
+  "resistor_pocket_l": 12.0,
+  "resistor_pocket_d": 3.5,
+  "wall_thickness": 2.2,
+  "base_thickness": 3.0,
+  "chassis_mount_hole_dia": 3.4,
+  "chassis_counterbore_dia": 6.2,
+  "chassis_counterbore_depth": 2.5,
+  "flange_width": 7.0,
+  "corner_radius": 1.5,
+  "lens_thickness": 1.8,
+  "lens_clearance": 0.2
+}

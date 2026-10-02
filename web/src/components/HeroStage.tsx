@@ -63,7 +63,7 @@ function RollingBot({ shared, mobile }: { shared: React.MutableRefObject<Shared>
           xray={false}
           spin={false}
           colorMode="role"
-          circularShell={true}
+          circularShell={false}
           shellMaterial="titanium"
           selected={null}
           hovered={null}
@@ -90,7 +90,7 @@ function ParkedBot() {
           xray={false}
           spin={false}
           colorMode="role"
-          circularShell={true}
+          circularShell={false}
           shellMaterial="titanium"
           selected={null}
           hovered={null}

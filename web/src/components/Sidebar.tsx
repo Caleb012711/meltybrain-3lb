@@ -126,10 +126,10 @@ export function Sidebar({
         <div style={{ padding: '16px 12px 6px', borderTop: '1px solid var(--line)', marginTop: 14 }}>
           <div className="spec-plate" style={{ fontSize: '11px', margin: 0, borderBottom: 'none' }}>
             <span>EYELINER-3LB</span>
-            <span>REV9 · CAD LIVE</span>
+            <span>PROJECT WORKSPACE</span>
           </div>
           <p className="meta" style={{ fontSize: '11.5px', margin: '4px 0 0' }}>
-            ≤1360.8 g translational combat robot
+            CAD, materials, and working notes
           </p>
         </div>
       </nav>

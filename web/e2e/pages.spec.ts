@@ -4,7 +4,7 @@ test.describe('Page Loading & Route Accessibility', () => {
   test('loads home page with title, hero, and core sections', async ({ page }) => {
     await page.goto('/#/');
     await expect(page).toHaveTitle(/Eyeliner/i);
-    await expect(page.locator('h1')).toContainText(/SPIN THE WHOLE BOT/i);
+    await expect(page.locator('h1')).toContainText(/Eyeliner/i);
     await expect(page.getByRole('link', { name: /studio/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /explorer/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /bom/i }).first()).toBeVisible();

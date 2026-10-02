@@ -1,0 +1,28 @@
+[
+  {
+    "node": "solid_000",
+    "name": "Case body",
+    "role": "case-body",
+    "vol_cm3": 3.9224,
+    "bbox_mm": [
+      31.3,
+      26.6,
+      10.9
+    ],
+    "faces": 19,
+    "dropped_from_glb": false
+  },
+  {
+    "node": "solid_001",
+    "name": "Case lid",
+    "role": "case-lid",
+    "vol_cm3": 2.1129,
+    "bbox_mm": [
+      31.3,
+      26.6,
+      4.4
+    ],
+    "faces": 30,
+    "dropped_from_glb": false
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "title": "Pi Zero 2W / Orange Pi Supervisor Shock Isolation Cradle",
+  "components": {
+    "pi_cradle_base": "Bambu PETG HF",
+    "pi_cradle_cover": "Bambu PETG HF",
+    "tpu_isolation_grommet": "Bambu TPU 95A HF"
+  },
+  "parts": {
+    "pi_cradle_base": {
+      "triangles": 8824,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 20689.601,
+      "cad_volume_mm3": 20690.037,
+      "volume_deviation_pct": 0.002,
+      "bbox_mm": [
+        81.399,
+        64.098,
+        10.5
+      ],
+      "sha256": "932c44ec7f40428c2266fe929fc8b4dedba8f89aa42fb41177a7e3b1cff720ea",
+      "step_verified": true
+    },
+    "pi_cradle_cover": {
+      "triangles": 2592,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 6912.999,
+      "cad_volume_mm3": 6912.992,
+      "volume_deviation_pct": 0.0,
+      "bbox_mm": [
+        70.4,
+        53.1,
+        2.0
+      ],
+      "sha256": "768093a2f50440730ff1e921ab8d4ed8ceae4799b7165ed35db85d073250ea9c",
+      "step_verified": true
+    },
+    "tpu_isolation_grommet": {
+      "triangles": 1680,
+      "closed_manifold_edges": true,
+      "consistent_winding": true,
+      "mesh_volume_mm3": 155.557,
+      "cad_volume_mm3": 155.65,
+      "volume_deviation_pct": 0.06,
+      "bbox_mm": [
+        7.998,
+        7.999,
+        5.5
+      ],
+      "sha256": "cf9a615d4880f510d34f747a6c71e5da5235400ad7d8d5c41f2a0e59b01e0119",
+      "step_verified": true
+    }
+  },
+  "assembly_step_round_trip": true
+}

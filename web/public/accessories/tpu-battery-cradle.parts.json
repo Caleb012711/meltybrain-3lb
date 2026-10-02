@@ -1,0 +1,15 @@
+[
+  {
+    "node": "solid_000",
+    "name": "Dual 4S LiPo TPU Cradle",
+    "role": "shell-tpu",
+    "vol_cm3": 25.2749,
+    "bbox_mm": [
+      82.5,
+      70.0,
+      15.375
+    ],
+    "faces": 82,
+    "dropped_from_glb": false
+  }
+]

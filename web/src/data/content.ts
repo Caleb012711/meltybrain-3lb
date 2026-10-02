@@ -3,16 +3,18 @@ export type NavEntry = { to: string; label: string; end?: boolean; anchors?: Nav
 
 export const nav: NavEntry[] = [
   { to: '/', label: 'Overview', end: true },
-  { to: '/studio', label: '3D Studio' },
-  { to: '/explorer', label: 'Explorer' },
-  { to: '/build', label: 'Build' },
+  { to: '/lab', label: '⚡ Combat Lab' },
+  { to: '/explorer', label: '3D Explorer' },
+  { to: '/firmware', label: 'Firmware & .ino' },
+  { to: '/cyberdeck', label: 'RadioMaster Station' },
+  { to: '/printing', label: 'Slicer Studio' },
+  { to: '/studio', label: 'Drive Studio' },
+  { to: '/bom', label: 'BOM + cost' },
+  { to: '/build', label: 'Build Guide' },
   { to: '/onshape', label: 'Onshape' },
   { to: '/pcbway', label: 'PCBWay files' },
-  { to: '/printing', label: '3D printing' },
-  { to: '/bom', label: 'BOM + cost' },
   { to: '/engineering', label: 'Engineering' },
   { to: '/liftoff', label: 'Why LiftOff' },
-  { to: '/firmware', label: 'Firmware + AI' },
 ];
 
 /** Encode public/cad hrefs (STEP names contain spaces). */
@@ -26,6 +28,7 @@ export type CadModel = {
   stepSize: string;
   solids: number;
   note: string;
+  accessory?: boolean;
 };
 
 export const cadModels: CadModel[] = [
@@ -48,6 +51,31 @@ export const cadModels: CadModel[] = [
     id: 'undercutter', label: 'Undercutter',
     glb: 'cad/undercutter-config.glb', step: 'cad/Undercutter Config.step', stepSize: '458 KB',
     solids: 10, note: 'Alternate weapon config. 45.4 cm³ across 10 solids.',
+  },
+  {
+    id: 'bench-case', label: 'Bench case',
+    glb: 'accessories/xiao-bench-case.glb', step: 'accessories/xiao-bench-case.step', stepSize: '166 KB',
+    solids: 2, note: 'XIAO desktop storage prototype. Body and lift-off lid; physical fit unverified.', accessory: true,
+  },
+  {
+    id: 'accel-mount', label: 'Dual accel mount',
+    glb: 'accessories/dual-accel-mount.glb', step: 'accessories/dual-accel-mount.step', stepSize: '2.1 MB',
+    solids: 2, note: 'Rigid registration mount for dual H3LIS331DL ±400g accelerometers (13.9 cm³ across 2 parts).', accessory: true,
+  },
+  {
+    id: 'pi-cradle', label: 'Pi Zero 2W cradle',
+    glb: 'accessories/pi-zero-2w-cradle.glb', step: 'accessories/pi-zero-2w-cradle.step', stepSize: '3.4 MB',
+    solids: 3, note: 'Shock isolation carrier for Pi Zero 2W / SBC + BEC with TPU bushings (27.8 cm³ across 3 parts).', accessory: true,
+  },
+  {
+    id: 'led-mount', label: 'LED heading mount',
+    glb: 'accessories/led-heading-mount.glb', step: 'accessories/led-heading-mount.step', stepSize: '1.2 MB',
+    solids: 2, note: 'Directional heading indicator mount with 120° snap-in optical diffuser lens (4.1 cm³ across 2 parts).', accessory: true,
+  },
+  {
+    id: 'battery-cradle', label: 'TPU battery cradle',
+    glb: 'accessories/tpu-battery-cradle.glb', step: 'accessories/tpu-battery-cradle.step', stepSize: '1.8 MB',
+    solids: 1, note: 'Bambu TPU 95A HF shock-absorbing cradle for 2× 4S 550mAh LiPo packs (25.3 cm³).', accessory: true,
   },
 ];
 

@@ -1,7 +1,7 @@
 # Eyeliner build site (React + Vite)
 
-The full build guide as a light-mode site. Hero loads the **actual CAD** as
-converted GLB meshes; every STEP is linked for download.
+Project workspace with persistent light/dark themes. The homepage and Explorer
+load the checked-in CAD meshes without decorative replacement geometry.
 
 ## Run it
 
@@ -47,15 +47,35 @@ Needs `OCP`, `trimesh`, `numpy`, `fast-simplification` (`pip install`).
 
 ## Pages
 
-`/` long overview with scroll-driven hero (bot rolls over the headline) and
-systems-stack showcase · `/explorer` part-level 3D with isolate/hide/downloads ·
+`/` concise overview with an interactive source-CAD preview · `/explorer` part-level 3D with isolate/hide/downloads ·
 `/build` 8 steps · `/onshape` export flow · `/pcbway` order pack · `/printing`
 unsliced guide · `/parts` locked BOM · `/bom` costed BOM + weights ·
-`/firmware` Teensy plus advisory AI cameras.
+`/firmware` local source inventory and equipment-log review.
 
-Design: light mode only, white, IntersectionObserver reveals,
-count-up spec strip, `prefers-reduced-motion` respected.
+Design: warm neutral surfaces, restrained orange accents, light/dark themes,
+and reduced-motion support. Theme follows the system until explicitly selected.
+
+The Systems page accepts local JSON logs (up to 1 MB / 5,000 records), computes
+voltage/temperature ranges, and exports a review brief. It has no live hardware
+or AI connection and makes no external requests for imported data.
+
+Visual references: [clean layout](https://in.pinterest.com/pin/dashboard-ui--545357836127209965/)
+and [dark minimal UI](https://in.pinterest.com/pin/93871973476701944/).
+No reference imagery is copied into the site.
 The old static prototype in `site/` is superseded by this app.
+
+## Print desk
+
+`/#/printing` provides Bambu-oriented material guidance for ordinary non-weapon
+accessories, an editable filament-cost calculator, and a comparison between
+the source CAD components and proposed BOM. It explicitly distinguishes
+assembly viewer assets from verified individual print exports.
+
+The audit snapshot and material references live in `src/data/printGuide.ts`.
+Update the dated snapshot only when new source evidence or verified exports
+are available. Selecting a material does not certify a CAD part.
+
+Focused checks: `npx playwright test e2e/printing.spec.ts e2e/pages.spec.ts`.
 
 ## Deploy (Render)
 

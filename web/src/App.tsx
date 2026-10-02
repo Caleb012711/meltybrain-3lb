@@ -6,14 +6,16 @@ import { Home } from './pages/Home';
 const Build = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Build })));
 const Onshape = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Onshape })));
 const Pcbway = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Pcbway })));
-const Printing = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Printing })));
+const Printing = lazy(() => import('./pages/Printing').then((m) => ({ default: m.Printing })));
 const Parts = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Parts })));
-const Firmware = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Firmware })));
+const Firmware = lazy(() => import('./pages/Firmware').then((m) => ({ default: m.Firmware })));
 const Explorer = lazy(() => import('./pages/Explorer').then((m) => ({ default: m.Explorer })));
 const Studio = lazy(() => import('./pages/Studio').then((m) => ({ default: m.Studio })));
 const Bom = lazy(() => import('./pages/Bom').then((m) => ({ default: m.Bom })));
 const Engineering = lazy(() => import('./pages/Engineering').then((m) => ({ default: m.Engineering })));
 const Liftoff = lazy(() => import('./pages/Liftoff').then((m) => ({ default: m.Liftoff })));
+const Lab = lazy(() => import('./pages/Lab').then((m) => ({ default: m.Lab })));
+const Cyberdeck = lazy(() => import('./pages/Cyberdeck').then((m) => ({ default: m.Cyberdeck })));
 
 export function App() {
   return (
@@ -21,8 +23,8 @@ export function App() {
       fallback={
         <div className="page" role="status">
           <p className="spec-plate">
-            <span>EYELINER-3LB / REV9</span>
-            <span>Loading — sheet</span>
+            <span>EYELINER-3LB // COMBAT STATION</span>
+            <span>INITIALIZING TACTICAL SYSTEMS…</span>
           </p>
           <p className="mono">Loading sheet…</p>
         </div>
@@ -31,6 +33,9 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="lab" element={<Lab />} />
+          <Route path="cyberdeck" element={<Cyberdeck />} />
+          <Route path="radio" element={<Cyberdeck />} />
           <Route path="studio" element={<Studio />} />
           <Route path="explorer" element={<Explorer />} />
           <Route path="build" element={<Build />} />

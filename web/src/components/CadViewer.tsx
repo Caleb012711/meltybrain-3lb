@@ -5,6 +5,7 @@ import { Environment, Lightformer, OrbitControls, useGLTF, useProgress } from '@
 import { cadHref, cadModels } from '../data/content';
 import { useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
 import { indexColor, roleMaterial, type PartInfo } from './materials';
+import { useTheme } from '../hooks/useTheme';
 
 export type ColorMode = 'role' | 'index' | 'plain';
 
@@ -46,9 +47,10 @@ import {
 // environment map or they render near-black: this builds one procedurally
 // (Lightformers only — no network fetch, safe on static hosts and offline).
 export function ViewerLights() {
+  const { theme } = useTheme();
   return (
     <>
-      <hemisphereLight args={['#ffffff', '#d8dce2', 0.95]} />
+      <hemisphereLight args={['#fffaf1', theme === 'dark' ? '#404640' : '#c9c8bd', theme === 'dark' ? 1.15 : 0.95]} />
       <directionalLight position={[5, 8, 4]} intensity={2.2} />
       <directionalLight position={[-6, 3, -6]} intensity={1.0} color="#dfe8ff" />
       <directionalLight position={[-2, 2, 6]} intensity={0.5} color="#ffffff" />
@@ -77,18 +79,18 @@ export function ExplodingModel({
   hovered,
   hidden,
   isolated,
-  circularShell = true,
+  circularShell = false,
   // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
   shellMaterial = 'tpu-orange',
   shellProfile = 'body',
-  topShell = true,
+  topShell = false,
   topShellFinish = 'titanium',
   topShellPocket = 'radial',
   topShellBeacon = 'flush-prism',
-  wheelPodEnhanced = true,
+  wheelPodEnhanced = false,
   wheelTread = 'urethane',
   wheelCutaway = false,
-  precisionHardware = true,
+  precisionHardware = false,
   precisionConfig,
   onSelect,
   onHover,
@@ -582,7 +584,7 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
         top: 12,
         left: 12,
         right: 12,
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid #d4d7dd',
         borderTop: '3px solid #1a1d21',
         borderRadius: 6,
@@ -598,23 +600,24 @@ function LoaderBar({ onDone }: { onDone: () => void }) {
 
 export function CadViewer({ compact = false }: { compact?: boolean }) {
   const reduced = usePrefersReducedMotion();
+  const { theme } = useTheme();
   const [modelId, setModelId] = useState('full');
   const [explode, setExplode] = useState(0);
   const [wireframe, setWireframe] = useState(false);
   const [xray, setXray] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('role');
-  const [circularShell, setCircularShell] = useState(true);
+  const [circularShell, setCircularShell] = useState(false);
   // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
   const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('tpu-orange');
   const [shellProfile, setShellProfile] = useState<ShellProfilePreset>('body');
-  const [topShell, setTopShell] = useState(true);
+  const [topShell, setTopShell] = useState(false);
   const [topShellFinish, setTopShellFinish] = useState<TopShellFinishPreset>('titanium');
   const [topShellPocket, setTopShellPocket] = useState<LighteningPocketPreset>('radial');
   const [topShellBeacon, setTopShellBeacon] = useState<BeaconWindowPreset>('flush-prism');
-  const [wheelPodEnhanced, setWheelPodEnhanced] = useState(true);
+  const [wheelPodEnhanced, setWheelPodEnhanced] = useState(false);
   const [wheelTread, setWheelTread] = useState<WheelTreadType>('urethane');
   const [wheelCutaway, setWheelCutaway] = useState(false);
-  const [precisionHardware, setPrecisionHardware] = useState(true);
+  const [precisionHardware, setPrecisionHardware] = useState(false);
   const [spinOverride, setSpinOverride] = useState<boolean | null>(null);
   const spin = spinOverride ?? !reduced;
   const [stlGeo, setStlGeo] = useState<THREE.BufferGeometry | null>(null);
@@ -690,13 +693,14 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
             gl.toneMapping = THREE.NeutralToneMapping;
             gl.toneMappingExposure = 1.0;
             gl.outputColorSpace = THREE.SRGBColorSpace;
-            gl.setClearColor('#ffffff', 1);
+            gl.setClearColor('#000000', 0);
           }}
           role="img"
           aria-label={`3D model of Eyeliner combat robot, ${model.label}`}
         >
+          <color attach="background" args={[theme === 'dark' ? '#20211f' : '#eeece5']} />
           <ViewerLights />
-          <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
+          <gridHelper args={[12, 24, theme === 'dark' ? '#4a4842' : '#c9c5ba', theme === 'dark' ? '#2b2b28' : '#e2ded4']} position={[0, -0.62, 0]} />
           <Suspense fallback={null}>
             {/* CAD is Z-up: level the ring flat. */}
             <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -1005,6 +1009,9 @@ export function CadViewer({ compact = false }: { compact?: boolean }) {
           {stlErr}
         </p>
       )}
+      <p className="status">{circularShell || topShell || wheelPodEnhanced || precisionHardware
+        ? 'Visual approximation: decorative geometry is enabled. Downloads remain the original source files.'
+        : 'Original source geometry. Role colors are inferred; material specifications are unverified.'}</p>
       <p className="status path" role="status">
         <b>{model.label}</b> <i>·</i> {model.solids} solids, heuristic roles <i>·</i>{' '}
         <a href={cadHref(model.step)} download>

@@ -1,0 +1,70 @@
+/* Source-model presentation, shared by the explorer, studio and homepage. */
+.model-caption,
+.model-showcase figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.model-caption strong,
+.model-showcase figcaption strong { display: block; font-size: 17px; font-weight: 550; }
+.model-eyebrow { display: block; margin-bottom: 5px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.model-provenance { font-family: var(--mono, monospace); color: var(--muted); font-size: 11px; }
+.explorer-page .viewer,
+.studio-page .viewer,
+.explorer-page .part-panel,
+.studio-page .part-panel { border: 1px solid var(--line); box-shadow: none; border-radius: 5px; }
+.explorer-page .explorer-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; }
+.explorer-page .viewer-bar { padding: 18px 20px; gap: 12px; background: var(--surface); }
+.explorer-page .viewer-bar .tabs { flex-basis: 100%; gap: 0; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 2px; }
+.explorer-page .viewer-bar .tab { background: transparent; border-color: transparent; border-radius: 2px; font-size: 12px; color: var(--muted); padding-inline: 10px; }
+.explorer-page .viewer-bar .tab[aria-checked="true"] { color: var(--ink); background: var(--inset); border-color: var(--line); box-shadow: inset 0 -2px var(--accent-graphic); }
+.explorer-page .viewer-bar label { display: flex; align-items: center; gap: 8px; }
+.explorer-page .viewer-bar input[type="range"] { width: 105px; }
+.explorer-page .viewer-bar select { max-width: 180px; }
+.model-interaction-note { margin: 0; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.explorer-page .status,
+.explorer-page .legend { padding-inline: 20px; }
+.explorer-page .part-panel header,
+.studio-page .part-panel header { background: var(--surface); }
+.parts-heading { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 16px; font-size: 17px; }
+.parts-heading span { font-size: 12px; font-family: var(--mono, monospace); color: var(--muted); font-weight: 400; }
+.explorer-page .part-list { max-height: 470px; }
+.explorer-page .part-list .row-main b { font-size: 12px; font-weight: 550; }
+.explorer-page .part-list .row-main span { display: block; font-size: 10px; line-height: 1.6; margin-top: 3px; overflow-wrap: anywhere; }
+.explorer-page .part-list button:focus-visible { outline: 2px solid var(--accent-graphic) !important; outline-offset: -3px; }
+.explorer-page .readout { padding: 18px; background: var(--inset); }
+.explorer-page .readout dl { font-size: 12px; }
+.explorer-page .step { padding: 24px; box-shadow: none; background: var(--surface); }
+.explorer-page .step h2 { font-size: 18px; margin-bottom: 12px; }
+.explorer-page .legend { gap: 9px 16px; }
+.explorer-page .legend > span { font-size: 11px; }
+.model-showcase { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.model-showcase-stage { height: clamp(300px, 36vw, 540px); position: relative; background: var(--inset); cursor: grab; }
+.model-showcase-stage canvas { display: block; }
+.model-showcase figcaption { border-top: 1px solid var(--line); border-bottom: 0; }
+.model-showcase-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 28px; background: var(--inset); color: var(--muted); font-size: 13px; text-align: center; pointer-events: none; }
+.model-showcase-placeholder img { max-width: 90%; max-height: 75%; object-fit: contain; }
+.studio-page .stack-tabs { margin-top: 24px; }
+.studio-page .hud-top { background: var(--surface); border-color: var(--line); }
+.studio-page .hud-pill { background: transparent; border: 0; border-radius: 0; }
+.studio-page .viewer-bar { background: var(--surface); }
+.studio-page .drive-viewport { background: var(--inset); }
+@media (max-width: 1100px) {
+  .explorer-page .explorer-grid { grid-template-columns: minmax(0, 1fr); }
+  .explorer-page .part-list { max-height: 330px; }
+}
+@media (max-width: 600px) {
+  .model-caption, .model-showcase figcaption { padding: 16px; }
+  .model-provenance { display: none; }
+  .explorer-page .viewer-bar { padding: 12px; gap: 8px; }
+  .explorer-page .viewer-bar .tab { font-size: 11px; padding-inline: 8px; }
+  .explorer-page .viewer-bar label { flex-wrap: wrap; }
+  .explorer-page .step { padding: 18px; }
+  .model-showcase-stage { height: 310px; }
+}
+
+.explorer-page .viewer-fallback { min-height: 360px; padding: 24px; text-align: center; color: var(--muted); background: var(--inset); }
+.explorer-page .viewer-fallback img { max-height: 340px; width: 100%; object-fit: contain; }

@@ -12,3 +12,8 @@ logs/
 coverage/
 __pycache__/
 *.pyc
+*.o
+*.dylib
+*.a
+*.FCBak
+.pytest_cache/

@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { cadModels } from '../data/content';
+import { useTheme } from '../hooks/useTheme';
+import './Explorer.css';
 import { BUILD_GUIDE, STEP_ROLES, type BuildStepKey } from '../data/buildGuide';
 import { useModelParts, usePrefersReducedMotion } from '../hooks/hooks';
 import { ExplodingModel, FocusRig, GlErrorBoundary, ViewerLights, EMPTY_SET } from '../components/CadViewer';
@@ -143,7 +145,7 @@ function DriveBot({
   inputRef,
   parts,
   reduced,
-  circularShell = true,
+  circularShell = false,
   shellMaterial = 'titanium',
   shellProfile = 'body',
   keysRef,
@@ -298,7 +300,7 @@ function RivalBot({
   foeRef,
   parts,
   reduced,
-  circularShell = true,
+  circularShell = false,
   shellProfile = 'body',
 }: {
   selfRef: React.MutableRefObject<DriveState>;
@@ -525,6 +527,7 @@ function DriveTrail({
 const ARENA_EDGE = new THREE.EdgesGeometry(new THREE.BoxGeometry(2 * HALF, 0.02, 2 * HALF));
 
 function DriveArena() {
+  const { theme } = useTheme();
   const walls: [number, number, number, number, number][] = [
     [0, 0.5, -HALF - 0.2, 2 * HALF + 0.8, 0.4],
     [0, 0.5, HALF + 0.2, 2 * HALF + 0.8, 0.4],
@@ -535,11 +538,11 @@ function DriveArena() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2 * HALF + 1, 2 * HALF + 1]} />
-        <meshStandardMaterial color="#f7f8fa" roughness={0.95} />
+        <meshStandardMaterial color={theme === 'dark' ? '#272923' : '#eeece5'} roughness={0.95} />
       </mesh>
-      <gridHelper args={[2 * HALF, 2 * HALF, '#c3c8d0', '#e5e7eb']} position={[0, 0.01, 0]} />
+      <gridHelper args={[2 * HALF, 2 * HALF, theme === 'dark' ? '#53564c' : '#c9c5ba', theme === 'dark' ? '#373a32' : '#dfdbd0']} position={[0, 0.01, 0]} />
       <lineSegments geometry={ARENA_EDGE} position={[0, 0.02, 0]}>
-        <lineBasicMaterial color="#1a1d21" />
+        <lineBasicMaterial color={theme === 'dark' ? '#a9ad9e' : '#55584e'} />
       </lineSegments>
       {walls.map(([x, , z, w, d], i) => (
         <mesh key={i} position={[x, 0.3, z]}>
@@ -561,7 +564,7 @@ function BuildCanvas({
   hidden: hid,
   isolated: iso,
   explode,
-  circularShell = true,
+  circularShell = false,
   shellMaterial = 'titanium',
   shellProfile = 'body',
   onSelect,
@@ -583,6 +586,7 @@ function BuildCanvas({
   onFocus: (i: number | null) => void;
 }) {
   const model = cadModels.find((m) => m.id === mid) ?? cadModels[0];
+  const { theme } = useTheme();
   return (
     <div style={{ position: 'relative' }}>
       <Canvas
@@ -593,7 +597,7 @@ function BuildCanvas({
           gl.toneMapping = THREE.NeutralToneMapping;
           gl.toneMappingExposure = 1.0;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.setClearColor('#ffffff', 1);
+          gl.setClearColor('#000000', 0);
         }}
         role="img"
         aria-label={`Build guide model, ${model.label}. Model orbit is pointer-only; full part control is in the list below.`}
@@ -602,8 +606,9 @@ function BuildCanvas({
           if (sel !== null) onFocus(sel);
         }}
       >
+        <color attach="background" args={[theme === 'dark' ? '#20211f' : '#eeece5']} />
         <ViewerLights />
-        <gridHelper args={[12, 24, '#c3c8d0', '#e5e7eb']} position={[0, -0.62, 0]} />
+        <gridHelper args={[12, 24, theme === 'dark' ? '#4a4842' : '#c9c5ba', theme === 'dark' ? '#2b2b28' : '#e2ded4']} position={[0, -0.62, 0]} />
         <Suspense fallback={null}>
           {/* CAD is Z-up: level the ring flat. */}
           <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -757,6 +762,7 @@ function useSpinAudio(
 }
 
 export function Studio() {
+  const { theme } = useTheme();
   const reduced = usePrefersReducedMotion();
   const [mode, setMode] = useState<'drive' | 'build'>('drive');
   const [armed, setArmed] = useState(false);
@@ -770,7 +776,7 @@ export function Studio() {
   const [hud, setHud] = useState({ rpm: 0, speed: 0, thr: 0, grip: 0, x: 0, y: 0 });
   const [srText, setSrText] = useState('Stopped. Focus the viewport, then drive.');
   const [glFailed, setGlFailed] = useState(false);
-  const [circularShell, setCircularShell] = useState(true);
+  const [circularShell, setCircularShell] = useState(false);
   // LiftOff Rev6 TPU shell default: TPU 95A tub is LiftOff-correct; Ti only for ring/cleats.
   // (titanium tub overstates mass 3.7x — 4.43 vs 1.21 — and mislabels damping.)
   const [shellMaterial, setShellMaterial] = useState<ShellMaterialPreset>('tpu-orange');
@@ -1124,17 +1130,13 @@ export function Studio() {
   return (
     <div className="page studio-page">
       <p className="spec-plate">
-        <span>EYELINER-3LB / REV9 / SHEET ST-01</span>
+        <span>EYELINER / INTERACTIVE STUDIO</span>
         <span>3D Studio — drive + build</span>
       </p>
-      <h1>
-        3D Studio <span className="stamp ok">Live</span>{' '}
-        <span className="stamp todo">Heuristic colors</span>
-      </h1>
+      <h1>3D studio</h1>
       <p className="lede">
-        Drive the bot around the arena floor, or step the build guide part by part.
-        Driving teaches the melty truth: hold <span className="mono">Shift</span> to spin up —
-        with no RPM, there is no translation.
+        Explore the source assembly in an interactive arena or inspect it part by part.
+        The arena is an illustrative demo; its motion and readouts are not measured robot performance.
       </p>
 
       <div className="stack-tabs" role="radiogroup" aria-label="Studio mode">
@@ -1198,7 +1200,7 @@ export function Studio() {
                   AUTH <b>{Math.round(hud.grip * 100)}%</b>
                 </span>
                 <span className="hud-pill" title="Armor Ring Configuration">
-                  ARMOR <b style={{ color: 'var(--accent-graphic)' }}>{circularShell ? '◯ CIRCULAR' : '◻ STOCK'}</b>
+                  MODEL <b style={{ color: 'var(--accent-graphic)' }}>{circularShell ? 'ILLUSTRATIVE SHELL' : 'SOURCE CAD'}</b>
                 </span>
                 {circularShell && (
                   <span className="hud-pill" title="Active Material Preset">
@@ -1243,11 +1245,12 @@ export function Studio() {
                       camera={{ position: [0, 11, 9], fov: 42 }}
                       onCreated={({ gl }) => {
                         gl.toneMapping = THREE.NeutralToneMapping;
-                        gl.setClearColor('#ffffff', 1);
+                        gl.setClearColor('#000000', 0);
                       }}
                       role="img"
                       aria-label="Top-down arena with the drivable Eyeliner robot"
                     >
+                      <color attach="background" args={[theme === 'dark' ? '#20211f' : '#eeece5']} />
                       <ViewerLights />
                       <Suspense fallback={null}>
                         <DriveArena />
@@ -1377,11 +1380,11 @@ export function Studio() {
                   aria-pressed={circularShell}
                   onClick={() => {
                     setCircularShell((v) => !v);
-                    setSrText(!circularShell ? 'Circular armor shell active.' : 'Stock CAD shell active.');
+                    setSrText(!circularShell ? 'Illustrative shell enabled; this is not source geometry.' : 'Source CAD shell active.');
                   }}
                   title="Toggle circularized outer shell vs stock CAD squarish solid_080"
                 >
-                  Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+                  Shell {circularShell ? 'Illustrative' : 'Source CAD'}
                 </button>
                 {circularShell && (
                   <select
@@ -1519,8 +1522,8 @@ export function Studio() {
                 <dd>{Math.round(hud.grip * 100)} %</dd>
                 <dt>Armor Shell</dt>
                 <dd>{circularShell ? `◯ ${SHELL_MATERIAL_LABELS[shellMaterial]} (${SHELL_PROFILE_LABELS[shellProfile]})` : '◻ Stock CAD solid_080 (~137.7 × 131.5 mm)'}</dd>
-                <dt>Balance</dt>
-                <dd>{circularShell ? '100% rotational symmetry · <0.02 mm runout' : 'Asymmetric envelope'}</dd>
+                <dt>Geometry</dt>
+                <dd>{circularShell ? 'Decorative shell approximation' : 'Original source assembly'}</dd>
                 <dt>Position</dt>
                 <dd>
                   {hud.x.toFixed(1)}, {hud.y.toFixed(1)}
@@ -1583,7 +1586,7 @@ export function Studio() {
                       onClick={() => setCircularShell((v) => !v)}
                       title="Toggle circularized outer shell vs stock CAD squarish solid_080"
                     >
-                      Shell {circularShell ? '◯ Circular' : '◻ Stock'}
+                      Shell {circularShell ? 'Illustrative' : 'Source CAD'}
                     </button>
                     {circularShell && (
                       <select
