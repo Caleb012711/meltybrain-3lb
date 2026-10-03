@@ -46,12 +46,12 @@ function ScrollToTop() {
 
 const primaryNav = [
   { to: '/', label: 'Overview' },
-  { to: '/lab', label: '⚡ Combat Lab' },
+  { to: '/lab', label: '⚡ Combat Lab (Sim)' },
   { to: '/explorer', label: '3D Explorer' },
+  { to: '/build', label: '🛠️ Build Guide' },
+  { to: '/bom', label: 'Parts & BOM' },
   { to: '/firmware', label: 'Firmware & .ino' },
   { to: '/cyberdeck', label: 'RadioMaster Station' },
-  { to: '/printing', label: 'Slicer Studio' },
-  { to: '/bom', label: 'BOM' },
 ];
 
 export function Layout() {
@@ -84,9 +84,22 @@ export function Layout() {
       <Sidebar open={open} onClose={closeMenu} nav={nav} triggerRef={triggerRef} />
       <main id="main-content" tabIndex={-1}><Outlet /></main>
       <footer className="workspace-footer">
-        <div><Link to="/" className="footer-brand">eyeliner</Link><p>An independent robotics project.<br />Source models, parts, and working notes.</p></div>
-        <div className="footer-links"><Link to="/explorer">CAD explorer</Link><Link to="/printing">Print desk</Link><Link to="/firmware">Systems &amp; review</Link></div>
-        <div className="footer-links"><a href="https://github.com/Caleb012711/meltybrain-3lb">GitHub ↗</a><a href="https://wiki.nhrl.io/wiki/index.php?title=Project_LiftOff">Project LiftOff reference ↗</a><span className="meta">Work in progress · hardware fit under review</span></div>
+        <div>
+          <Link to="/" className="footer-brand">eyeliner</Link>
+          <p>Autonomous 3lb Meltybrain Combat Robot.<br />Kinetic translation weapon, CAD, and telemetry station.</p>
+        </div>
+        <div className="footer-links">
+          <Link to="/lab">⚡ Combat Lab (Sim)</Link>
+          <Link to="/explorer">3D CAD Explorer</Link>
+          <Link to="/build">Build Guide &amp; Wiring</Link>
+          <Link to="/bom">Interactive Parts &amp; BOM</Link>
+        </div>
+        <div className="footer-links">
+          <Link to="/firmware">Firmware &amp; .ino Studio</Link>
+          <Link to="/cyberdeck">RadioMaster &amp; Cyberdeck</Link>
+          <a href="https://github.com/Caleb012711/meltybrain-3lb" target="_blank" rel="noreferrer">GitHub Repo ↗</a>
+          <span className="meta">SPARC &amp; NHRL 3lb Beetleweight Class</span>
+        </div>
       </footer>
     </>
   );

@@ -10,7 +10,7 @@ export const nav: NavEntry[] = [
   { to: '/printing', label: 'Slicer Studio' },
   { to: '/studio', label: 'Drive Studio' },
   { to: '/bom', label: 'BOM + cost' },
-  { to: '/build', label: 'Build Guide' },
+  { to: '/build', label: '🛠️ Build Guide' },
   { to: '/onshape', label: 'Onshape' },
   { to: '/pcbway', label: 'PCBWay files' },
   { to: '/engineering', label: 'Engineering' },

@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import '../cyber-combat.css';
 
 export function Cyberdeck() {
-  const [activeTab, setActiveTab] = useState<'schematic' | 'channels' | 'wiring' | 'safety' | 'telemetry'>('schematic');
+  const [activeTab, setActiveTab] = useState<'schematic' | 'dock' | 'channels' | 'wiring' | 'safety' | 'telemetry'>('schematic');
   const [simLinkActive, setSimLinkActive] = useState(true);
 
   return (
@@ -39,7 +39,13 @@ export function Cyberdeck() {
           className={`cyber-btn ${activeTab === 'schematic' ? 'primary' : ''}`}
           onClick={() => setActiveTab('schematic')}
         >
-          🎮 HARDSET SCHEMATIC
+          🎮 HANDSET SCHEMATIC
+        </button>
+        <button
+          className={`cyber-btn ${activeTab === 'dock' ? 'primary' : ''}`}
+          onClick={() => setActiveTab('dock')}
+        >
+          🏗️ 3D CYBERDECK DOCK
         </button>
         <button
           className={`cyber-btn ${activeTab === 'channels' ? 'primary' : ''}`}
@@ -159,6 +165,111 @@ export function Cyberdeck() {
                 Carbon fiber and aluminum armor plates attenuate 2.4 GHz signals by &gt;25 dB. Route the RP1 dipole T-antenna
                 directly through the polycarbonate optical diffuser window on top of the robot to ensure clean spherical coverage.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: 3D Printed Cyberdeck Dock */}
+      {activeTab === 'dock' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="glass-panel hud-corner" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', color: 'var(--neon-purple)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="cyber-dot" style={{ background: 'var(--neon-purple)' }} />
+                  RadioMaster Pocket Custom Cyberdeck Dock &amp; Ground Station
+                </h2>
+                <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>
+                  Heavy-duty combat pit station integrating transmitter cradle, 7" telemetry display, and quick-swap battery bay
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>PA6-CF NYLON</span>
+                <span className="cyber-badge green">M3 HEATSETS</span>
+                <span className="cyber-badge">NEODYMIUM LATCH</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '24px' }}>
+              <div className="glass-panel" style={{ overflow: 'hidden', padding: '14px', borderTop: '3px solid var(--neon-purple)' }}>
+                <img
+                  src="/cad/cyberdeck_dock_detail.png"
+                  alt="RadioMaster Pocket Dock Detail"
+                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}
+                />
+                <h3 style={{ margin: '12px 0 6px', fontSize: '16px', color: '#fff' }}>Transmitter Cradle &amp; Snap Dock</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Contoured TPU-lined pocket holds the RadioMaster Pocket firmly with zero slip. Recessed channels protect gimbal sticks and top antenna during transit.
+                </p>
+              </div>
+
+              <div className="glass-panel" style={{ overflow: 'hidden', padding: '14px', borderTop: '3px solid var(--neon-cyan)' }}>
+                <img
+                  src="/cad/cyberdeck_base_station.png"
+                  alt="Cyberdeck Base Station Assembly"
+                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}
+                />
+                <h3 style={{ margin: '12px 0 6px', fontSize: '16px', color: '#fff' }}>Base Station Enclosure</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Unified clamshell housing supporting an adjustable-tilt 7" IPS display bracket, USB-C telemetry pass-through, and external SMA dipole antenna mount.
+                </p>
+              </div>
+
+              <div className="glass-panel" style={{ overflow: 'hidden', padding: '14px', borderTop: '3px solid var(--neon-amber)' }}>
+                <img
+                  src="/cad/cyberdeck_screen_case.png"
+                  alt="Cyberdeck Screen Bezel"
+                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}
+                />
+                <h3 style={{ margin: '12px 0 6px', fontSize: '16px', color: '#fff' }}>Display Bezel &amp; Sunshade</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Recessed screen frame with integrated sunshade flaps. Eliminates arena floodlight glare during driver line-of-sight operations.
+                </p>
+              </div>
+
+              <div className="glass-panel" style={{ overflow: 'hidden', padding: '14px', borderTop: '3px solid var(--neon-green)' }}>
+                <img
+                  src="/cad/cyberdeck_internals.png"
+                  alt="Cyberdeck Internal Routing"
+                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}
+                />
+                <h3 style={{ margin: '12px 0 6px', fontSize: '16px', color: '#fff' }}>Internal Bus &amp; Power Routing</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Cable management tunnels for CP2102 UART telemetry tap, 5V/3A UBEC power rail, dual 18650 cell carrier, and safety isolation switch.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              <div className="glass-panel" style={{ padding: '16px' }}>
+                <strong style={{ color: 'var(--neon-purple)', fontSize: '13px' }}>🖨️ PRINT SPECIFICATION</strong>
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Material: Bambu PA6-CF or PETG-HF<br />
+                  Walls: 5 loops | Infill: 40% Gyroid<br />
+                  Layer height: 0.16mm Optimal<br />
+                  Hardware: 14× M3×6mm brass heatset inserts
+                </p>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '16px' }}>
+                <strong style={{ color: 'var(--neon-cyan)', fontSize: '13px' }}>🔋 POWER ARCHITECTURE</strong>
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Cells: 2× 18650 Li-Ion (parallel 1S2P or 2S)<br />
+                  Runtime: &gt;8.5 hours continuous telemetry<br />
+                  Charging: USB-C PD 15W onboard module<br />
+                  Protection: Over-discharge &amp; thermal cutoff
+                </p>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '16px' }}>
+                <strong style={{ color: 'var(--neon-amber)', fontSize: '13px' }}>⚡ PIT TELEMETRY BRIDGE</strong>
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+                  Interface: EdgeTX AUX serial port<br />
+                  Baud rate: 420,000 baud CRSF / 115,200 NMEA<br />
+                  Outputs: Live Combat Lab telemetry feed, CSV blackbox logger, and battery cell health monitor
+                </p>
+              </div>
             </div>
           </div>
         </div>

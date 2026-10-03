@@ -91,13 +91,14 @@ details.step[open], .part-panel header { background: var(--surface); }
 [data-theme='dark'] .print-release { background: var(--inset); color: var(--ink); }
 [data-theme='dark'] .warn.danger, [data-theme='dark'] .stamp.ban { background: #332320; border-color: #674139; color: var(--danger); }
 [data-theme='dark'] .stamp.ok { background: #1e3225; border-color: #405e48; }
-@media (max-width: 1040px) {
-  .workspace-masthead { gap: 20px; }
-  .workspace-masthead nav { gap: 16px; }
+@media (max-width: 1140px) {
+  .workspace-masthead { gap: 16px; }
+  .workspace-masthead nav { gap: 14px; }
+  .workspace-masthead nav a { font-size: 12px; }
   .theme-toggle span { display: none; }
   .overview-hero { gap: 30px; }
 }
-@media (max-width: 850px) {
+@media (max-width: 960px) {
   .workspace-masthead nav { display: none; }
   .workspace-tools { margin-left: auto; }
   .workspace-masthead { min-height: 68px; }

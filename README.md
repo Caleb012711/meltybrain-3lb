@@ -334,12 +334,14 @@ The repository includes a modern, responsive web application located in [`web/`]
 <img src="web/src/assets/hero-preview.png" width="700" alt="Web Test Lab Preview" onerror="this.style.display='none'"/>
 </div>
 
-### Key Features
-- **Interactive 3D CAD Explorer:** Orbit, inspect, pan, and explode the master assembly, titanium cleat wheels, and electronics cavities.
-- **Melty Combat Test Lab (`/lab`):** Real-time physics simulator with virtual RadioMaster joystick controls, centrifugal spinup dynamics, translational drift vectoring, and simulated 360° LiDAR radar sweep.
-- **Firmware & Config Studio (`/firmware`):** Live parameter tuning sliders generating copy-pasteable `#define` C configuration headers.
-- **Tactical Cyberdeck Hub (`/cyberdeck`):** EdgeTX switch visualizer and real-time blackbox telemetry log analyzer.
-- **Bambu 3D Printing Station (`/printing`):** Visual slicer matrix with per-component filament guidelines, shrinkage offsets, and mass estimators.
+### Key Features & Tactical Web Stations
+- **⚡ Melty Combat Driving Simulator (`/lab`):** Real-time Canvas physics simulator featuring virtual RadioMaster joystick controls, centrifugal spin-up up to 3,500 RPM, translational throttle modulation, live 360° LiDAR radar sweeps, and autonomous opponent auto-ramming!
+- **🔍 3D CAD Explorer (`/explorer`):** Real-time Three.js WebGL orbit, sectioning, and exploded view inspection of the master CAD assembly, titanium cleat drive pods, and electronics bay.
+- **🛠️ Step-by-Step Build Guide (`/build`):** Comprehensive assembly walkthrough covering mechanical fastener torques, titanium cleat seating, Teensy 4.0 & IMU soldering, and DShot600 ESC calibration.
+- **📋 Interactive Parts & BOM (`/bom`):** Dynamic 3lb weight budget calculator (1,222.0g combat weight vs 1,360.8g legal cap with 138.8g margin), verified vendor links, and live component cost accounting.
+- **💻 Firmware & .ino Studio (`/firmware`):** Live parameter tuning sliders generating copy-pasteable `#define` C configuration headers for the Teensy 4.0 flight sketch.
+- **📻 RadioMaster & Cyberdeck Station (`/cyberdeck`):** EdgeTX channel mapper, 3D printed cyberdeck dock CAD specifications, simulated 50Hz CRSF telemetry stream, and SPARC failsafe compliance testing.
+- **🖨️ Bambu 3D Printing & Slicer Studio (`/printing`):** Visual slicer matrix with per-component filament guidelines (TPU 95A HF, PA6-CF, PETG HF), shrinkage offsets, and mass estimators.
 
 ### Web Quickstart
 ```bash

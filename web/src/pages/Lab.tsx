@@ -2,14 +2,26 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import '../cyber-combat.css';
 
-// Combat Constants
+// ============================================================================
+// COMBAT KINEMATICS & SENSOR CONSTANTS
+// ============================================================================
 const MAX_TEST_RPM = 3500;
 const ABSOLUTE_CUTOFF_RPM = 4000;
-const SENSOR_RADIUS_M = 0.025; // 25mm radius
+const SENSOR_RADIUS_M = 0.025; // 25mm radius from center of rotation
 const GRAVITY_MSS = 9.80665;
+const BOT_MOMENT_OF_INERTIA = 0.00235; // kg*m^2 for 3lb meltybrain disc + AR500 teeth
+const TOOTH_TIP_RADIUS_M = 0.075; // 75mm radius to AR500 impact tooth tip
+const ARENA_RADIUS = 260;
+const ARENA_CENTER = { x: 300, y: 300 };
+const EYELINER_RADIUS = 22;
+
+// ============================================================================
+// TYPES
+// ============================================================================
+type OpponentId = 'tombstone' | 'wedge' | 'drum';
 
 type Opponent = {
-  id: string;
+  id: OpponentId;
   name: string;
   type: string;
   x: number;
@@ -18,8 +30,15 @@ type Opponent = {
   vy: number;
   radius: number;
   color: string;
+  accentColor: string;
   health: number;
+  maxHealth: number;
   destroyed: boolean;
+  weaponAngle: number;
+  weaponSpeed: number; // rad/s
+  aiState: 'patrol' | 'charge' | 'flank' | 'evade' | 'recover';
+  aiTimer: number;
+  massLb: number;
 };
 
 type Spark = {
@@ -30,8 +49,325 @@ type Spark = {
   life: number;
   maxLife: number;
   color: string;
+  size: number;
 };
 
+type MetalDebris = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  vRot: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+};
+
+type FloorScuff = {
+  x: number;
+  y: number;
+  radius: number;
+  alpha: number;
+  color: string;
+};
+
+type FloatingCombatText = {
+  id: number;
+  text: string;
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  life: number;
+  maxLife: number;
+};
+
+// ============================================================================
+// WEB AUDIO API PROCEDURAL SOUND ENGINE
+// ============================================================================
+class CombatAudioEngine {
+  private ctx: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
+  private motorGain: GainNode | null = null;
+  private motorFundOsc: OscillatorNode | null = null;
+  private motorHarmOsc: OscillatorNode | null = null;
+  private motorSubOsc: OscillatorNode | null = null;
+  private motorPwmOsc: OscillatorNode | null = null;
+  private scrubGain: GainNode | null = null;
+  private scrubFilter: BiquadFilterNode | null = null;
+  private scrubSource: AudioBufferSourceNode | null = null;
+  private noiseBuffer: AudioBuffer | null = null;
+  private muted: boolean = false;
+  private initialized: boolean = false;
+
+  public init() {
+    if (this.initialized && this.ctx) {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+      return;
+    }
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      this.ctx = ctx;
+
+      // Master Output
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(this.muted ? 0 : 0.7, ctx.currentTime);
+      master.connect(ctx.destination);
+      this.masterGain = master;
+
+      // 1. Brushless Motor Whine Synthesis
+      const motorGain = ctx.createGain();
+      motorGain.gain.setValueAtTime(0, ctx.currentTime);
+      motorGain.connect(master);
+      this.motorGain = motorGain;
+
+      // Fundamental electrical whine (14-pole motor: freq = RPM * 7 / 60)
+      const fundOsc = ctx.createOscillator();
+      fundOsc.type = 'sawtooth';
+      fundOsc.frequency.setValueAtTime(70, ctx.currentTime);
+      const fundGain = ctx.createGain();
+      fundGain.gain.setValueAtTime(0.22, ctx.currentTime);
+      fundOsc.connect(fundGain);
+      fundGain.connect(motorGain);
+      fundOsc.start();
+      this.motorFundOsc = fundOsc;
+
+      // 2nd Harmonic
+      const harmOsc = ctx.createOscillator();
+      harmOsc.type = 'triangle';
+      harmOsc.frequency.setValueAtTime(140, ctx.currentTime);
+      const harmGain = ctx.createGain();
+      harmGain.gain.setValueAtTime(0.14, ctx.currentTime);
+      harmOsc.connect(harmGain);
+      harmGain.connect(motorGain);
+      harmOsc.start();
+      this.motorHarmOsc = harmOsc;
+
+      // Sub Rumble (Mechanical balance vibration at RPM / 60)
+      const subOsc = ctx.createOscillator();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(30, ctx.currentTime);
+      const subGain = ctx.createGain();
+      subGain.gain.setValueAtTime(0.32, ctx.currentTime);
+      subOsc.connect(subGain);
+      subGain.connect(motorGain);
+      subOsc.start();
+      this.motorSubOsc = subOsc;
+
+      // DSHOT PWM High-Frequency Switching Ripple (~4-8 kHz)
+      const pwmOsc = ctx.createOscillator();
+      pwmOsc.type = 'sine';
+      pwmOsc.frequency.setValueAtTime(4000, ctx.currentTime);
+      const pwmGain = ctx.createGain();
+      pwmGain.gain.setValueAtTime(0.035, ctx.currentTime);
+      pwmOsc.connect(pwmGain);
+      pwmGain.connect(motorGain);
+      pwmOsc.start();
+      this.motorPwmOsc = pwmOsc;
+
+      // 2. High-Traction Tire Scrub Synthesis
+      const bufferSize = ctx.sampleRate * 2;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const channelData = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99 * b0 + white * 0.05;
+        b1 = 0.96 * b1 + white * 0.11;
+        b2 = 0.86 * b2 + white * 0.25;
+        channelData[i] = (b0 + b1 + b2 + white * 0.1) * 0.35;
+      }
+      this.noiseBuffer = noiseBuffer;
+
+      const scrubFilter = ctx.createBiquadFilter();
+      scrubFilter.type = 'bandpass';
+      scrubFilter.frequency.setValueAtTime(480, ctx.currentTime);
+      scrubFilter.Q.setValueAtTime(2.0, ctx.currentTime);
+
+      const scrubGain = ctx.createGain();
+      scrubGain.gain.setValueAtTime(0, ctx.currentTime);
+
+      const scrubSource = ctx.createBufferSource();
+      scrubSource.buffer = noiseBuffer;
+      scrubSource.loop = true;
+      scrubSource.connect(scrubFilter);
+      scrubFilter.connect(scrubGain);
+      scrubGain.connect(master);
+      scrubSource.start();
+
+      this.scrubGain = scrubGain;
+      this.scrubFilter = scrubFilter;
+      this.scrubSource = scrubSource;
+
+      this.initialized = true;
+    } catch {
+      // AudioContext unavailable or blocked
+    }
+  }
+
+  public setMuted(muted: boolean) {
+    this.muted = muted;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(muted ? 0 : 0.7, this.ctx.currentTime, 0.02);
+    }
+  }
+
+  public isMuted() {
+    return this.muted;
+  }
+
+  public updateMotor(rpm: number, armed: boolean, throttle: number) {
+    if (!this.initialized || !this.ctx || !this.motorGain || this.muted) return;
+    const now = this.ctx.currentTime;
+    if (!armed || rpm < 40) {
+      this.motorGain.gain.setTargetAtTime(0, now, 0.08);
+      return;
+    }
+
+    // 14-pole motor electrical frequency (7 pole-pairs)
+    const fundFreq = Math.max(30, (rpm * 7) / 60);
+    const harmFreq = fundFreq * 2;
+    const subFreq = Math.max(15, rpm / 60);
+
+    this.motorFundOsc?.frequency.setTargetAtTime(fundFreq, now, 0.03);
+    this.motorHarmOsc?.frequency.setTargetAtTime(harmFreq, now, 0.03);
+    this.motorSubOsc?.frequency.setTargetAtTime(subFreq, now, 0.03);
+
+    const pwmFreq = 3800 + throttle * 600;
+    this.motorPwmOsc?.frequency.setTargetAtTime(pwmFreq, now, 0.03);
+
+    const rpmFrac = Math.min(1, rpm / 3500);
+    const targetVol = 0.03 + rpmFrac * 0.16 + throttle * 0.05;
+    this.motorGain.gain.setTargetAtTime(targetVol, now, 0.04);
+  }
+
+  public updateScrub(lateralVelocityMag: number, rpm: number) {
+    if (!this.initialized || !this.ctx || !this.scrubGain || this.muted) return;
+    const now = this.ctx.currentTime;
+    if (rpm < 500) {
+      this.scrubGain.gain.setTargetAtTime(0, now, 0.06);
+      return;
+    }
+    const scrubIntensity = Math.min(1, lateralVelocityMag / 140);
+    const targetGain = scrubIntensity > 0.1 ? (scrubIntensity - 0.08) * 0.22 : 0;
+    this.scrubGain.gain.setTargetAtTime(targetGain, now, 0.04);
+
+    const freq = 420 + scrubIntensity * 450;
+    this.scrubFilter?.frequency.setTargetAtTime(freq, now, 0.04);
+  }
+
+  public playImpact(intensity: number, isWall: boolean) {
+    if (!this.initialized || !this.ctx || !this.masterGain || this.muted) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const norm = Math.min(1.6, Math.max(0.25, intensity));
+
+    // 1. Metallic Clang Shock (Resonant Bandpassed Noise)
+    if (this.noiseBuffer) {
+      const noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = this.noiseBuffer;
+
+      const bpFilter = ctx.createBiquadFilter();
+      bpFilter.type = 'bandpass';
+      bpFilter.frequency.setValueAtTime(isWall ? 1400 : 940, now);
+      bpFilter.Q.setValueAtTime(isWall ? 5.5 : 4.0, now);
+
+      const impactGain = ctx.createGain();
+      const peak = 0.48 * norm;
+      impactGain.gain.setValueAtTime(peak, now);
+      impactGain.gain.exponentialRampToValueAtTime(0.001, now + (isWall ? 0.2 : 0.35));
+
+      noiseSrc.connect(bpFilter);
+      bpFilter.connect(impactGain);
+      impactGain.connect(this.masterGain);
+
+      noiseSrc.start(now);
+      noiseSrc.stop(now + 0.38);
+    }
+
+    // 2. High-Frequency Metallic Harmonics Ping
+    const pingOsc = ctx.createOscillator();
+    pingOsc.type = isWall ? 'triangle' : 'sine';
+    const baseFreq = isWall ? 1680 : 1150;
+    pingOsc.frequency.setValueAtTime(baseFreq * (0.92 + Math.random() * 0.16), now);
+    pingOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, now + 0.18);
+
+    const pingGain = ctx.createGain();
+    pingGain.gain.setValueAtTime(0.32 * norm, now);
+    pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+    pingOsc.connect(pingGain);
+    pingGain.connect(this.masterGain);
+    pingOsc.start(now);
+    pingOsc.stop(now + 0.26);
+
+    // 3. Low Sub-thud for Kinetic Transfer
+    const thudOsc = ctx.createOscillator();
+    thudOsc.type = 'sine';
+    thudOsc.frequency.setValueAtTime(160, now);
+    thudOsc.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+
+    const thudGain = ctx.createGain();
+    thudGain.gain.setValueAtTime(0.55 * norm, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    thudOsc.connect(thudGain);
+    thudGain.connect(this.masterGain);
+    thudOsc.start(now);
+    thudOsc.stop(now + 0.16);
+  }
+
+  public playDestruction() {
+    if (!this.initialized || !this.ctx || !this.masterGain || this.muted) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    if (this.noiseBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(750, now);
+      filter.frequency.exponentialRampToValueAtTime(90, now + 0.65);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.75, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      src.start(now);
+      src.stop(now + 0.75);
+    }
+  }
+
+  public destroy() {
+    try {
+      this.scrubSource?.stop();
+      this.motorFundOsc?.stop();
+      this.motorHarmOsc?.stop();
+      this.motorSubOsc?.stop();
+      this.motorPwmOsc?.stop();
+      this.ctx?.close();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+// Global sound engine instance
+const soundEngine = new CombatAudioEngine();
+
+// ============================================================================
+// MAIN COMPONENT: LAB
+// ============================================================================
 export function Lab() {
   // Simulator State
   const [armed, setArmed] = useState(false);
@@ -40,45 +376,152 @@ export function Lab() {
   const [overdrive, setOverdrive] = useState(false);
   const [autoRam, setAutoRam] = useState(false);
   const [driveMode, setDriveMode] = useState<'Normal' | 'Acro' | 'Orbit-Lock'>('Normal');
-  const [selectedOpponent, setSelectedOpponent] = useState<string>('tombstone');
+  const [selectedOpponent, setSelectedOpponent] = useState<OpponentId>('tombstone');
   const [impactG, setImpactG] = useState(0);
+  const [peakG, setPeakG] = useState(0);
   const [totalHits, setTotalHits] = useState(0);
+  const [hitCombo, setHitCombo] = useState(0);
+  const [comboMultiplier, setComboMultiplier] = useState(1);
+  const [audioMuted, setAudioMuted] = useState(false);
 
-  // Translation Vector (from Virtual RadioMaster Pocket)
+  // Translation Vector
   const [transVector, setTransVector] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const transVectorRef = useRef({ x: 0, y: 0 });
   const armedRef = useRef(false);
   const throttleRef = useRef(0);
   const autoRamRef = useRef(false);
   const overdriveRef = useRef(false);
+  const selectedOpponentRef = useRef<OpponentId>('tombstone');
+  const driveModeRef = useRef<'Normal' | 'Acro' | 'Orbit-Lock'>('Normal');
 
   useEffect(() => { transVectorRef.current = transVector; }, [transVector]);
   useEffect(() => { armedRef.current = armed; }, [armed]);
   useEffect(() => { throttleRef.current = throttle; }, [throttle]);
   useEffect(() => { autoRamRef.current = autoRam; }, [autoRam]);
   useEffect(() => { overdriveRef.current = overdrive; }, [overdrive]);
+  useEffect(() => { selectedOpponentRef.current = selectedOpponent; }, [selectedOpponent]);
+  useEffect(() => { driveModeRef.current = driveMode; }, [driveMode]);
+
+  // Audio mute toggle sync
+  const toggleAudioMute = () => {
+    soundEngine.init();
+    const next = !audioMuted;
+    setAudioMuted(next);
+    soundEngine.setMuted(next);
+  };
 
   // Canvas Refs
   const arenaCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const radarCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const accelCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Direct Click/Touch to Aim in Arena state
+  const isArenaPointerDownRef = useRef(false);
+  const arenaPointerTargetRef = useRef<{ x: number; y: number } | null>(null);
+
   // Physics simulation data
-  const robotPosRef = useRef({ x: 300, y: 300, vx: 0, vy: 0, angle: 0, headingAngle: 0 });
+  const robotPosRef = useRef({
+    x: 300,
+    y: 300,
+    vx: 0,
+    vy: 0,
+    angle: 0,
+    headingAngle: 0,
+    motorBias: 0,
+  });
+
   const rpmRef = useRef(0);
   const sparksRef = useRef<Spark[]>([]);
+  const debrisRef = useRef<MetalDebris[]>([]);
+  const scuffsRef = useRef<FloorScuff[]>([]);
+  const floatingTextsRef = useRef<FloatingCombatText[]>([]);
+  const comboTimerRef = useRef(0);
+  const nextTextIdRef = useRef(1);
+
+  // Opponent Roster
   const opponentsRef = useRef<Opponent[]>([
-    { id: 'tombstone', name: 'TOMBSTONE JR', type: 'Horizontal Bar', x: 450, y: 200, vx: -0.8, vy: 0.5, radius: 24, color: '#ff2a55', health: 100, destroyed: false },
-    { id: 'wedge', name: 'WEDGE-HOUND', type: 'Plow Rammer', x: 180, y: 420, vx: 0.6, vy: -0.4, radius: 22, color: '#ffaa00', health: 100, destroyed: false },
-    { id: 'drum', name: 'DRUM-FIEND', type: 'Eggbeater Drum', x: 420, y: 450, vx: -0.4, vy: -0.7, radius: 20, color: '#a855f7', health: 100, destroyed: false },
+    {
+      id: 'tombstone',
+      name: 'TOMBSTONE JR',
+      type: 'Horizontal Bar',
+      x: 460,
+      y: 190,
+      vx: -0.6,
+      vy: 0.4,
+      radius: 25,
+      color: '#ff2a55',
+      accentColor: '#ff6b8b',
+      health: 100,
+      maxHealth: 100,
+      destroyed: false,
+      weaponAngle: 0,
+      weaponSpeed: 380,
+      aiState: 'patrol',
+      aiTimer: 0,
+      massLb: 3.2,
+    },
+    {
+      id: 'wedge',
+      name: 'WEDGE-HOUND',
+      type: 'Titanium Wedge',
+      x: 170,
+      y: 430,
+      vx: 0.5,
+      vy: -0.5,
+      radius: 23,
+      color: '#ffaa00',
+      accentColor: '#ffd166',
+      health: 120,
+      maxHealth: 120,
+      destroyed: false,
+      weaponAngle: 0,
+      weaponSpeed: 0,
+      aiState: 'patrol',
+      aiTimer: 0,
+      massLb: 3.5,
+    },
+    {
+      id: 'drum',
+      name: 'DRUM-FIEND',
+      type: 'Eggbeater Drum',
+      x: 430,
+      y: 440,
+      vx: -0.5,
+      vy: -0.7,
+      radius: 21,
+      color: '#a855f7',
+      accentColor: '#c084fc',
+      health: 90,
+      maxHealth: 90,
+      destroyed: false,
+      weaponAngle: 0,
+      weaponSpeed: 520,
+      aiState: 'patrol',
+      aiTimer: 0,
+      massLb: 2.9,
+    },
   ]);
 
-  // Waveform history buffers for Dual Accel Oscilloscope
+  // Dual Accel Waveform History Buffer
   const accelHistoryRef = useRef<{ s1: number; s2: number; rpm: number }[]>([]);
 
-  // Dragging states for Virtual RadioMaster Pocket gimbals
+  // Virtual RadioMaster Pocket Gimbal State
   const rightStickRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRight = useRef(false);
+
+  // Helper to add floating combat text
+  const addFloatingText = (text: string, x: number, y: number, color: string, size = 13) => {
+    floatingTextsRef.current.push({
+      id: nextTextIdRef.current++,
+      text,
+      x: x + (Math.random() - 0.5) * 16,
+      y: y - 10,
+      color,
+      size,
+      life: 0,
+      maxLife: 0.85,
+    });
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -92,31 +535,32 @@ export function Lab() {
       if (keysDown.has('ArrowLeft') || keysDown.has('KeyA')) x -= 1;
       if (keysDown.has('ArrowRight') || keysDown.has('KeyD')) x += 1;
 
-      // Normalize diagonal vector
       const mag = Math.hypot(x, y);
       if (mag > 0) {
         setTransVector({ x: x / mag, y: y / mag });
-      } else if (!isDraggingRight.current) {
+      } else if (!isDraggingRight.current && !isArenaPointerDownRef.current) {
         setTransVector({ x: 0, y: 0 });
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      soundEngine.init(); // Resume audio on interaction
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
         e.preventDefault();
       }
       keysDown.add(e.code);
 
       if (e.code === 'Space') {
-        // Emergency Spin Kill / Brake
+        // Emergency Spin Kill / E-Brake
         setThrottle(0);
         setArmed(false);
       } else if (e.code === 'KeyR') {
         // Reset Arena
-        robotPosRef.current = { x: 300, y: 300, vx: 0, vy: 0, angle: 0, headingAngle: 0 };
-        opponentsRef.current.forEach((opp) => { opp.health = 100; opp.destroyed = false; });
+        resetArena();
       } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
         setOverdrive(true);
+      } else if (e.code === 'KeyM') {
+        toggleAudioMute();
       }
 
       updateFromKeys();
@@ -136,126 +580,353 @@ export function Lab() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [audioMuted]);
 
-  // Main 60FPS Physics, Radar, and Waveform Loop
+  // Reset Arena State
+  const resetArena = () => {
+    robotPosRef.current = { x: 300, y: 300, vx: 0, vy: 0, angle: 0, headingAngle: 0, motorBias: 0 };
+    opponentsRef.current = [
+      {
+        id: 'tombstone',
+        name: 'TOMBSTONE JR',
+        type: 'Horizontal Bar',
+        x: 460,
+        y: 190,
+        vx: -0.6,
+        vy: 0.4,
+        radius: 25,
+        color: '#ff2a55',
+        accentColor: '#ff6b8b',
+        health: 100,
+        maxHealth: 100,
+        destroyed: false,
+        weaponAngle: 0,
+        weaponSpeed: 380,
+        aiState: 'patrol',
+        aiTimer: 0,
+        massLb: 3.2,
+      },
+      {
+        id: 'wedge',
+        name: 'WEDGE-HOUND',
+        type: 'Titanium Wedge',
+        x: 170,
+        y: 430,
+        vx: 0.5,
+        vy: -0.5,
+        radius: 23,
+        color: '#ffaa00',
+        accentColor: '#ffd166',
+        health: 120,
+        maxHealth: 120,
+        destroyed: false,
+        weaponAngle: 0,
+        weaponSpeed: 0,
+        aiState: 'patrol',
+        aiTimer: 0,
+        massLb: 3.5,
+      },
+      {
+        id: 'drum',
+        name: 'DRUM-FIEND',
+        type: 'Eggbeater Drum',
+        x: 430,
+        y: 440,
+        vx: -0.5,
+        vy: -0.7,
+        radius: 21,
+        color: '#a855f7',
+        accentColor: '#c084fc',
+        health: 90,
+        maxHealth: 90,
+        destroyed: false,
+        weaponAngle: 0,
+        weaponSpeed: 520,
+        aiState: 'patrol',
+        aiTimer: 0,
+        massLb: 2.9,
+      },
+    ];
+    sparksRef.current = [];
+    debrisRef.current = [];
+    scuffsRef.current = [];
+    floatingTextsRef.current = [];
+    setTotalHits(0);
+    setHitCombo(0);
+    setComboMultiplier(1);
+    setImpactG(0);
+    setPeakG(0);
+  };
+
+  // Direct Arena Click-to-Aim / Touch Handlers
+  const handleArenaPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    soundEngine.init();
+    isArenaPointerDownRef.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    handleArenaPointerMove(e);
+  };
+
+  const handleArenaPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isArenaPointerDownRef.current) return;
+    const canvas = arenaCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = ((e.clientX - rect.left) / rect.width) * 600;
+    const clickY = ((e.clientY - rect.top) / rect.height) * 600;
+    arenaPointerTargetRef.current = { x: clickX, y: clickY };
+
+    // Calculate translation vector from robot to pointer
+    const bot = robotPosRef.current;
+    const dx = clickX - bot.x;
+    const dy = clickY - bot.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 15) {
+      setTransVector({ x: dx / dist, y: dy / dist });
+    } else {
+      setTransVector({ x: 0, y: 0 });
+    }
+  };
+
+  const handleArenaPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    isArenaPointerDownRef.current = false;
+    arenaPointerTargetRef.current = null;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    if (!isDraggingRight.current) {
+      setTransVector({ x: 0, y: 0 });
+    }
+  };
+
+  // Main 60FPS Physics, Audio, and Canvas Loop
   useEffect(() => {
     let animId: number;
     let lastTime = performance.now();
-    let radarAngle = 0;
+    let radarSweepAngle = 0;
 
-    const runPhysicsLoop = (now: number) => {
+    const runCombatLoop = (now: number) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
 
-      // 1. Motor & Spin Dynamics
+      // ----------------------------------------------------------------------
+      // 1. MOTOR & SPIN KINEMATICS
+      // ----------------------------------------------------------------------
       const maxTargetRpm = overdriveRef.current ? ABSOLUTE_CUTOFF_RPM : MAX_TEST_RPM;
       const targetRpm = armedRef.current ? throttleRef.current * maxTargetRpm : 0;
-      const spinTau = armedRef.current ? 1.2 : 2.5; // Acceleration & coasting
+      const spinTau = armedRef.current ? 1.0 : 2.2;
       rpmRef.current += (targetRpm - rpmRef.current) * (1 - Math.exp(-dt / spinTau));
       if (Math.abs(rpmRef.current - targetRpm) < 2) rpmRef.current = targetRpm;
       setCurrentRpm(Math.round(rpmRef.current));
 
       const bot = robotPosRef.current;
       const radPerSec = (rpmRef.current * 2 * Math.PI) / 60;
-      bot.angle += radPerSec * dt;
+      bot.angle = (bot.angle + radPerSec * dt) % (2 * Math.PI);
 
-      // 2. Translational Drive Physics (Meltybrain modulation)
-      // Only translates if spinning fast enough (>800 RPM)
-      const minSpinThreshold = 800;
-      const spinFactor = Math.min(1, Math.max(0, (rpmRef.current - minSpinThreshold) / 1500));
+      // Sound Engine update
+      soundEngine.updateMotor(rpmRef.current, armedRef.current, throttleRef.current);
+
+      // ----------------------------------------------------------------------
+      // 2. MELTYBRAIN TRANSLATIONAL DRIVE (Sinusoidal Motor Modulation)
+      // ----------------------------------------------------------------------
+      const minSpinThreshold = 650;
+      const spinFactor = Math.min(1, Math.max(0, (rpmRef.current - minSpinThreshold) / 1200));
 
       let moveX = transVectorRef.current.x;
       let moveY = transVectorRef.current.y;
 
-      // Auto-Ram AI navigation override
-      if (autoRamRef.current && armedRef.current && rpmRef.current > 1200) {
-        const target = opponentsRef.current.find((o) => o.id === selectedOpponent && !o.destroyed) ||
+      // Autonomous AI Auto-Ramming Intercept
+      if (autoRamRef.current && armedRef.current && rpmRef.current > 1000) {
+        const target = opponentsRef.current.find((o) => o.id === selectedOpponentRef.current && !o.destroyed) ||
                        opponentsRef.current.find((o) => !o.destroyed);
         if (target) {
           const dx = target.x - bot.x;
           const dy = target.y - bot.y;
           const dist = Math.hypot(dx, dy);
-          if (dist > 10) {
-            // Proportional lead pursuit
-            moveX = (dx + target.vx * 12) / dist;
-            moveY = (dy + target.vy * 12) / dist;
+          if (dist > 12) {
+            // Proportional lead pursuit trajectory calculation
+            const leadTime = dist / 220;
+            const predX = target.x + target.vx * 60 * leadTime;
+            const predY = target.y + target.vy * 60 * leadTime;
+            const pdx = predX - bot.x;
+            const pdy = predY - bot.y;
+            const pdist = Math.hypot(pdx, pdy);
+            moveX = pdx / (pdist || 1);
+            moveY = pdy / (pdist || 1);
             transVectorRef.current = { x: moveX, y: moveY };
           }
         }
       }
 
-      const maxSpeed = 160; // Arena px/s
+      // Melty translation angle and sinusoidal throttle bias
+      const transMag = Math.hypot(moveX, moveY);
+      if (transMag > 0.05) {
+        bot.headingAngle = Math.atan2(moveY, moveX);
+        // Calculate instantaneous sinusoidal motor bias
+        bot.motorBias = transMag * Math.sin(bot.angle - bot.headingAngle);
+      } else {
+        bot.motorBias = 0;
+      }
+
+      // Acro / Orbit-Lock mode alterations
+      let maxSpeed = 220; // px/sec
+      if (driveModeRef.current === 'Acro') {
+        maxSpeed = 280;
+      } else if (driveModeRef.current === 'Orbit-Lock') {
+        maxSpeed = 180;
+      }
+
       const targetVx = moveX * maxSpeed * spinFactor;
       const targetVy = moveY * maxSpeed * spinFactor;
-      const accelK = 5.0;
-      bot.vx += (targetVx - bot.vx) * (1 - Math.exp(-accelK * dt));
-      bot.vy += (targetVy - bot.vy) * (1 - Math.exp(-accelK * dt));
+      const tractionK = 8.5; // High responsiveness
+      bot.vx += (targetVx - bot.vx) * (1 - Math.exp(-tractionK * dt));
+      bot.vy += (targetVy - bot.vy) * (1 - Math.exp(-tractionK * dt));
       bot.x += bot.vx * dt;
       bot.y += bot.vy * dt;
 
-      // Virtual Stroboscopic Heading calculation
-      if (Math.hypot(moveX, moveY) > 0.05) {
-        bot.headingAngle = Math.atan2(moveY, moveX);
+      // Tire scrub audio & floor markings
+      const lateralVel = Math.hypot(bot.vx, bot.vy);
+      soundEngine.updateScrub(lateralVel, rpmRef.current);
+
+      if (spinFactor > 0.4 && transMag > 0.4 && Math.random() < 0.15) {
+        scuffsRef.current.push({
+          x: bot.x + (Math.random() - 0.5) * 8,
+          y: bot.y + (Math.random() - 0.5) * 8,
+          radius: 3 + Math.random() * 4,
+          alpha: 0.22,
+          color: '#1e293b',
+        });
+        if (scuffsRef.current.length > 80) scuffsRef.current.shift();
       }
 
-      // Arena boundary collision (Arena circle radius 260, center 300, 300)
-      const arenaCenter = { x: 300, y: 300 };
-      const arenaRadius = 260;
-      const botRadius = 22;
-      const distFromCenter = Math.hypot(bot.x - arenaCenter.x, bot.y - arenaCenter.y);
+      // Arena boundary collision for Eyeliner
+      const distFromCenter = Math.hypot(bot.x - ARENA_CENTER.x, bot.y - ARENA_CENTER.y);
+      if (distFromCenter > ARENA_RADIUS - EYELINER_RADIUS) {
+        const nx = (bot.x - ARENA_CENTER.x) / distFromCenter;
+        const ny = (bot.y - ARENA_CENTER.y) / distFromCenter;
+        bot.x = ARENA_CENTER.x + nx * (ARENA_RADIUS - EYELINER_RADIUS);
+        bot.y = ARENA_CENTER.y + ny * (ARENA_RADIUS - EYELINER_RADIUS);
 
-      if (distFromCenter > arenaRadius - botRadius) {
-        const nx = (bot.x - arenaCenter.x) / distFromCenter;
-        const ny = (bot.y - arenaCenter.y) / distFromCenter;
-        bot.x = arenaCenter.x + nx * (arenaRadius - botRadius);
-        bot.y = arenaCenter.y + ny * (arenaRadius - botRadius);
-
-        // Wall impact bounce
         const dot = bot.vx * nx + bot.vy * ny;
         if (dot > 0) {
           bot.vx -= 1.6 * dot * nx;
           bot.vy -= 1.6 * dot * ny;
 
-          // Wall sparks if high RPM
-          if (rpmRef.current > 1000) {
-            for (let i = 0; i < 8; i++) {
+          const wallImpactSpd = Math.abs(dot);
+          if (wallImpactSpd > 25 || rpmRef.current > 800) {
+            soundEngine.playImpact(Math.min(1.5, wallImpactSpd / 100 + (rpmRef.current / 3500)), true);
+
+            // Wall sparks
+            const sparkCount = Math.min(24, Math.round(8 + (rpmRef.current / 3500) * 16));
+            for (let i = 0; i < sparkCount; i++) {
               sparksRef.current.push({
                 x: bot.x,
                 y: bot.y,
-                vx: -nx * (100 + Math.random() * 150) + (Math.random() - 0.5) * 80,
-                vy: -ny * (100 + Math.random() * 150) + (Math.random() - 0.5) * 80,
+                vx: -nx * (80 + Math.random() * 160) + (Math.random() - 0.5) * 90,
+                vy: -ny * (80 + Math.random() * 160) + (Math.random() - 0.5) * 90,
                 life: 0,
-                maxLife: 0.2 + Math.random() * 0.3,
-                color: '#00f0ff',
+                maxLife: 0.2 + Math.random() * 0.35,
+                color: Math.random() > 0.3 ? '#00f0ff' : '#ffaa00',
+                size: 1.5 + Math.random() * 1.5,
               });
             }
           }
         }
       }
 
-      // 3. Opponent Bot AI & Collisions
+      // ----------------------------------------------------------------------
+      // 3. OPPONENT BOT BEHAVIORS & COMBAT DYNAMICS
+      // ----------------------------------------------------------------------
       opponentsRef.current.forEach((opp) => {
         if (opp.destroyed) return;
 
-        // Opponent movement
-        opp.x += opp.vx;
-        opp.y += opp.vy;
-
-        // Opponent arena bounce
-        const oppDist = Math.hypot(opp.x - arenaCenter.x, opp.y - arenaCenter.y);
-        if (oppDist > arenaRadius - opp.radius) {
-          const onx = (opp.x - arenaCenter.x) / oppDist;
-          const ony = (opp.y - arenaCenter.y) / oppDist;
-          opp.vx = -onx * Math.abs(opp.vx) * 1.05 + (Math.random() - 0.5) * 0.4;
-          opp.vy = -ony * Math.abs(opp.vy) * 1.05 + (Math.random() - 0.5) * 0.4;
+        // Weapon rotation
+        if (opp.weaponSpeed > 0) {
+          opp.weaponAngle = (opp.weaponAngle + opp.weaponSpeed * dt) % (2 * Math.PI);
         }
 
-        // Collision with Eyeliner 3lb Meltybrain!
+        // AI State Machine (Chase, Flank, Evade, Recover)
+        opp.aiTimer -= dt;
+        const dxToBot = bot.x - opp.x;
+        const dyToBot = bot.y - opp.y;
+        const distToBot = Math.hypot(dxToBot, dyToBot);
+        const dirToBotX = dxToBot / (distToBot || 1);
+        const dirToBotY = dyToBot / (distToBot || 1);
+
+        if (opp.aiTimer <= 0) {
+          opp.aiTimer = 1.0 + Math.random() * 1.5;
+
+          if (opp.id === 'tombstone') {
+            // Tombstone Jr: Aggressive charger, pauses if recovering
+            opp.aiState = opp.health < 40 && Math.random() < 0.4 ? 'recover' : 'charge';
+          } else if (opp.id === 'wedge') {
+            // Wedge-Hound: Relentless rammer, cuts off lines
+            opp.aiState = 'charge';
+          } else if (opp.id === 'drum') {
+            // Drum-Fiend: Tactical flanker, circles and darts in
+            if (rpmRef.current > 3200 && distToBot < 120) {
+              opp.aiState = 'evade';
+            } else if (distToBot > 180) {
+              opp.aiState = 'flank';
+            } else {
+              opp.aiState = 'charge';
+            }
+          }
+        }
+
+        // Execute AI Behavior
+        let targetOppVx = 0;
+        let targetOppVy = 0;
+        let oppSpeed = 85;
+
+        if (opp.id === 'wedge') oppSpeed = 125;
+        if (opp.id === 'drum') oppSpeed = 145;
+
+        if (opp.aiState === 'charge') {
+          targetOppVx = dirToBotX * oppSpeed;
+          targetOppVy = dirToBotY * oppSpeed;
+        } else if (opp.aiState === 'flank') {
+          // Circle around Eyeliner at standoff distance
+          const perpX = -dirToBotY;
+          const perpY = dirToBotX;
+          targetOppVx = (perpX * 0.8 + dirToBotX * 0.3) * oppSpeed;
+          targetOppVy = (perpY * 0.8 + dirToBotY * 0.3) * oppSpeed;
+        } else if (opp.aiState === 'evade' || opp.aiState === 'recover') {
+          // Back away towards center or away from bot
+          targetOppVx = -dirToBotX * oppSpeed * 0.9;
+          targetOppVy = -dirToBotY * oppSpeed * 0.9;
+        } else {
+          // Patrol wander
+          targetOppVx = opp.vx;
+          targetOppVy = opp.vy;
+        }
+
+        const oppAccel = 4.0;
+        opp.vx += (targetOppVx - opp.vx) * (1 - Math.exp(-oppAccel * dt));
+        opp.vy += (targetOppVy - opp.vy) * (1 - Math.exp(-oppAccel * dt));
+        opp.x += opp.vx * dt;
+        opp.y += opp.vy * dt;
+
+        // Opponent arena perimeter collision
+        const oppDist = Math.hypot(opp.x - ARENA_CENTER.x, opp.y - ARENA_CENTER.y);
+        if (oppDist > ARENA_RADIUS - opp.radius) {
+          const onx = (opp.x - ARENA_CENTER.x) / oppDist;
+          const ony = (opp.y - ARENA_CENTER.y) / oppDist;
+          opp.x = ARENA_CENTER.x + onx * (ARENA_RADIUS - opp.radius);
+          opp.y = ARENA_CENTER.y + ony * (ARENA_RADIUS - opp.radius);
+          opp.vx = -onx * Math.abs(opp.vx) * 1.1 + (Math.random() - 0.5) * 20;
+          opp.vy = -ony * Math.abs(opp.vy) * 1.1 + (Math.random() - 0.5) * 20;
+        }
+
+        // --------------------------------------------------------------------
+        // COLLISION WITH EYELINER 3LB MELTYBRAIN
+        // --------------------------------------------------------------------
         const cdx = opp.x - bot.x;
         const cdy = opp.y - bot.y;
         const cdist = Math.hypot(cdx, cdy);
-        const minDist = opp.radius + botRadius;
+        const minDist = opp.radius + EYELINER_RADIUS;
 
         if (cdist < minDist) {
           const overlap = minDist - cdist;
@@ -265,112 +936,253 @@ export function Lab() {
           opp.x += nx * overlap;
           opp.y += ny * overlap;
 
-          // Kinetic impact calculation (E = 1/2 I w^2)
-          const spinEnergyRatio = (rpmRef.current / MAX_TEST_RPM);
-          const impactForce = 150 + spinEnergyRatio * 450;
+          // Kinetic energy calculation (E = 1/2 * I * omega^2)
+          const spinRatio = rpmRef.current / MAX_TEST_RPM;
+          const joules = 0.5 * BOT_MOMENT_OF_INERTIA * Math.pow(radPerSec, 2);
+          const impactForce = 120 + spinRatio * 520;
 
-          opp.vx = nx * (impactForce * 0.04);
-          opp.vy = ny * (impactForce * 0.04);
-          bot.vx -= nx * (impactForce * 0.015);
-          bot.vy -= ny * (impactForce * 0.015);
+          // Momentum exchange based on mass
+          const botMass = 3.0;
+          const oppMass = opp.massLb;
+          const totalMass = botMass + oppMass;
 
-          const dmg = Math.round(15 + spinEnergyRatio * 45);
-          opp.health = Math.max(0, opp.health - dmg);
-          if (opp.health === 0) opp.destroyed = true;
+          opp.vx = nx * (impactForce * (botMass / totalMass) * 0.08);
+          opp.vy = ny * (impactForce * (botMass / totalMass) * 0.08);
+          bot.vx -= nx * (impactForce * (oppMass / totalMass) * 0.035);
+          bot.vy -= ny * (impactForce * (oppMass / totalMass) * 0.035);
 
-          // Accelerometer spike (centripetal + tangential shock up to 400g)
-          const gSpike = Math.min(400, Math.round(180 + spinEnergyRatio * 200 + Math.random() * 40));
-          setImpactG(gSpike);
+          // Opponent weapon recoil if hitting active spinner
+          if (opp.id === 'tombstone' && opp.weaponSpeed > 100) {
+            opp.weaponSpeed *= 0.5; // Weapon bite stall
+            opp.aiState = 'recover';
+            opp.aiTimer = 1.2;
+          }
+
+          // Damage calculation with armor mitigation
+          let baseDamage = Math.round(18 + spinRatio * 55 + (joules / 160) * 25);
+          let isCritical = false;
+
+          // Wedge-Hound front angle deflection
+          if (opp.id === 'wedge') {
+            const oppHeading = Math.atan2(opp.vy, opp.vx);
+            const impactAngle = Math.atan2(-ny, -nx);
+            const angleDiff = Math.abs(oppHeading - impactAngle);
+            if (angleDiff < 0.8) {
+              baseDamage = Math.round(baseDamage * 0.55); // 45% deflection armor
+              addFloatingText('DEFLECTED!', opp.x, opp.y, '#ffd166', 11);
+            }
+          }
+
+          if (spinRatio > 0.85 && Math.random() < 0.4) {
+            baseDamage = Math.round(baseDamage * 1.5);
+            isCritical = true;
+          }
+
+          opp.health = Math.max(0, opp.health - baseDamage);
+          if (opp.health === 0) {
+            opp.destroyed = true;
+            soundEngine.playDestruction();
+            addFloatingText('TERMINATED!', opp.x, opp.y, '#ff2a55', 18);
+          } else {
+            addFloatingText(
+              isCritical ? `-${baseDamage} CRIT!` : `-${baseDamage}`,
+              opp.x,
+              opp.y,
+              isCritical ? '#ff0055' : '#00f0ff',
+              isCritical ? 16 : 13
+            );
+          }
+
+          // Accelerometer Shock G Spike (ST H3LIS331DLTR simulation)
+          const baseG = (Math.pow(radPerSec, 2) * SENSOR_RADIUS_M) / GRAVITY_MSS;
+          const shockG = Math.round(baseG + 80 + spinRatio * 260 + Math.random() * 40);
+          const cappedG = Math.min(400, shockG);
+          setImpactG(cappedG);
+          setPeakG((prev) => Math.max(prev, cappedG));
           setTotalHits((h) => h + 1);
 
-          // Kinetic sparks explosion
-          for (let s = 0; s < 18; s++) {
+          // Hit Combo System
+          comboTimerRef.current = 3.5;
+          setHitCombo((c) => {
+            const next = c + 1;
+            const mult = Math.min(4, 1 + Math.floor(next / 2));
+            setComboMultiplier(mult);
+            if (next > 1) {
+              addFloatingText(`x${next} COMBO (${mult}x)`, bot.x, bot.y - 25, '#ffaa00', 14);
+            }
+            return next;
+          });
+
+          // Violent Audio Impact
+          soundEngine.playImpact(impactForce / 300, false);
+
+          // High-Velocity Sparks & Hot Metal Shards
+          const sparkCount = Math.min(36, Math.round(14 + spinRatio * 22));
+          for (let s = 0; s < sparkCount; s++) {
+            const sAngle = Math.atan2(ny, nx) + (Math.random() - 0.5) * 1.5;
+            const sSpd = 90 + Math.random() * 260;
             sparksRef.current.push({
-              x: bot.x + nx * botRadius,
-              y: bot.y + ny * botRadius,
-              vx: nx * (80 + Math.random() * 200) + (Math.random() - 0.5) * 120,
-              vy: ny * (80 + Math.random() * 200) + (Math.random() - 0.5) * 120,
+              x: bot.x + nx * EYELINER_RADIUS,
+              y: bot.y + ny * EYELINER_RADIUS,
+              vx: Math.cos(sAngle) * sSpd,
+              vy: Math.sin(sAngle) * sSpd,
               life: 0,
-              maxLife: 0.3 + Math.random() * 0.4,
-              color: Math.random() > 0.4 ? '#ffaa00' : '#ff2a55',
+              maxLife: 0.25 + Math.random() * 0.45,
+              color: Math.random() > 0.5 ? '#ffffff' : Math.random() > 0.3 ? '#ffaa00' : '#ff2a55',
+              size: 1.8 + Math.random() * 1.8,
+            });
+          }
+
+          // Flying Metal Debris
+          for (let d = 0; d < 4; d++) {
+            debrisRef.current.push({
+              x: opp.x,
+              y: opp.y,
+              vx: (Math.random() - 0.5) * 180 + nx * 60,
+              vy: (Math.random() - 0.5) * 180 + ny * 60,
+              angle: Math.random() * Math.PI * 2,
+              vRot: (Math.random() - 0.5) * 20,
+              life: 0,
+              maxLife: 0.6 + Math.random() * 0.5,
+              size: 2.5 + Math.random() * 3.5,
+              color: opp.color,
             });
           }
         }
       });
 
-      // Update sparks
+      // Update Combo Timer
+      if (comboTimerRef.current > 0) {
+        comboTimerRef.current -= dt;
+        if (comboTimerRef.current <= 0) {
+          setHitCombo(0);
+          setComboMultiplier(1);
+        }
+      }
+
+      // Update Sparks
       for (let i = sparksRef.current.length - 1; i >= 0; i--) {
         const sp = sparksRef.current[i];
         sp.x += sp.vx * dt;
         sp.y += sp.vy * dt;
+        sp.vx *= 0.94;
+        sp.vy *= 0.94;
         sp.life += dt;
         if (sp.life >= sp.maxLife) {
           sparksRef.current.splice(i, 1);
         }
       }
 
-      // 4. Dual Accelerometer Telemetry Math
-      const omega = radPerSec;
-      const centripetalGs = (omega * omega * SENSOR_RADIUS_M) / GRAVITY_MSS;
-      // Sensor 1 and Sensor 2 with slight vibration jitter & impact spikes
-      const jitter1 = (Math.random() - 0.5) * (centripetalGs * 0.04);
-      const jitter2 = (Math.random() - 0.5) * (centripetalGs * 0.04);
-      const sensor1G = Math.min(400, centripetalGs + jitter1);
-      const sensor2G = Math.min(400, centripetalGs * 0.98 + jitter2);
+      // Update Metal Debris
+      for (let i = debrisRef.current.length - 1; i >= 0; i--) {
+        const deb = debrisRef.current[i];
+        deb.x += deb.vx * dt;
+        deb.y += deb.vy * dt;
+        deb.angle += deb.vRot * dt;
+        deb.vx *= 0.92;
+        deb.vy *= 0.92;
+        deb.life += dt;
+        if (deb.life >= deb.maxLife) {
+          debrisRef.current.splice(i, 1);
+        }
+      }
+
+      // Update Floating Combat Texts
+      for (let i = floatingTextsRef.current.length - 1; i >= 0; i--) {
+        const ft = floatingTextsRef.current[i];
+        ft.y -= 35 * dt;
+        ft.life += dt;
+        if (ft.life >= ft.maxLife) {
+          floatingTextsRef.current.splice(i, 1);
+        }
+      }
+
+      // ----------------------------------------------------------------------
+      // 4. DUAL ACCELEROMETER OSCILLOSCOPE TELEMETRY
+      // ----------------------------------------------------------------------
+      const centripetalGs = (radPerSec * radPerSec * SENSOR_RADIUS_M) / GRAVITY_MSS;
+      const jitter1 = (Math.random() - 0.5) * (centripetalGs * 0.035);
+      const jitter2 = (Math.random() - 0.5) * (centripetalGs * 0.035);
+      const s1 = Math.min(400, centripetalGs + jitter1);
+      const s2 = Math.min(400, centripetalGs * 0.985 + jitter2);
 
       accelHistoryRef.current.push({
-        s1: sensor1G,
-        s2: sensor2G,
+        s1,
+        s2,
         rpm: rpmRef.current,
       });
       if (accelHistoryRef.current.length > 200) {
         accelHistoryRef.current.shift();
       }
 
-      // 5. Render Canvas Views
+      // ----------------------------------------------------------------------
+      // 5. RENDER ALL CANVASES (RETINA / HIGH-DPI SUPPORTED)
+      // ----------------------------------------------------------------------
       drawArenaCanvas();
-      drawRadarCanvas(radarAngle);
+      drawRadarCanvas(radarSweepAngle);
       drawAccelCanvas();
 
-      radarAngle = (radarAngle + 4.5 * dt) % (2 * Math.PI);
-      animId = requestAnimationFrame(runPhysicsLoop);
+      radarSweepAngle = (radarSweepAngle + 4.8 * dt) % (2 * Math.PI);
+      animId = requestAnimationFrame(runCombatLoop);
     };
 
-    animId = requestAnimationFrame(runPhysicsLoop);
+    animId = requestAnimationFrame(runCombatLoop);
     return () => cancelAnimationFrame(animId);
-  }, [selectedOpponent]);
+  }, []);
 
-  // Draw Arena Canvas
+  // ==========================================================================
+  // DRAW ARENA CANVAS (60 FPS, RETINA CRISP)
+  // ==========================================================================
   const drawArenaCanvas = useCallback(() => {
     const canvas = arenaCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Retina High-DPI Scaling
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== 600 * dpr || canvas.height !== 600 * dpr) {
+      canvas.width = 600 * dpr;
+      canvas.height = 600 * dpr;
+    }
 
-    // Arena Background & Hex Grid
     ctx.save();
-    ctx.fillStyle = '#080c14';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, 600, 600);
 
-    // Hexagonal / Round Combat Arena Boundary
+    // Deep Tactical Cyberpunk Floor
+    ctx.fillStyle = '#060a12';
+    ctx.fillRect(0, 0, 600, 600);
+
+    // Circular Combat Arena Boundary
     ctx.beginPath();
-    ctx.arc(300, 300, 260, 0, 2 * Math.PI);
-    ctx.fillStyle = '#0c1220';
+    ctx.arc(ARENA_CENTER.x, ARENA_CENTER.y, ARENA_RADIUS, 0, 2 * Math.PI);
+    ctx.fillStyle = '#09101d';
     ctx.fill();
+
+    // Outer Neon Cyan Steel Hazard Ring
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#00f0ff';
     ctx.stroke();
 
-    // Secondary inner steel perimeter
+    // Steel Barrier Secondary Perimeter
     ctx.beginPath();
-    ctx.arc(300, 300, 256, 0, 2 * Math.PI);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    ctx.arc(ARENA_CENTER.x, ARENA_CENTER.y, ARENA_RADIUS - 5, 0, 2 * Math.PI);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
     ctx.stroke();
 
-    // Arena Floor Grid Lines
+    // Perimeter Hazard Warning Dashes
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ARENA_CENTER.x, ARENA_CENTER.y, ARENA_RADIUS - 12, 0, 2 * Math.PI);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 170, 0, 0.35)';
+    ctx.setLineDash([12, 12]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Hex / Orthogonal Floor Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.lineWidth = 1;
     for (let x = 60; x <= 540; x += 40) {
@@ -386,111 +1198,250 @@ export function Lab() {
       ctx.stroke();
     }
 
-    // Render Sparks
+    // Arena Floor Tire Scuffs & Scrape Marks
+    scuffsRef.current.forEach((scuff) => {
+      ctx.fillStyle = scuff.color;
+      ctx.globalAlpha = scuff.alpha;
+      ctx.beginPath();
+      ctx.arc(scuff.x, scuff.y, scuff.radius, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Direct Click-to-Aim / Pointer Target Reticle & Holographic Line
+    const pointerTarget = arenaPointerTargetRef.current;
+    const bot = robotPosRef.current;
+    if (pointerTarget && isArenaPointerDownRef.current) {
+      // Guidance laser chevrons from bot to target
+      ctx.save();
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(bot.x, bot.y);
+      ctx.lineTo(pointerTarget.x, pointerTarget.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // Pulsing reticle at pointer
+      ctx.save();
+      ctx.translate(pointerTarget.x, pointerTarget.y);
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Reticle tick crosshairs
+      ctx.beginPath();
+      ctx.moveTo(-18, 0); ctx.lineTo(-10, 0);
+      ctx.moveTo(10, 0); ctx.lineTo(18, 0);
+      ctx.moveTo(0, -18); ctx.lineTo(0, -10);
+      ctx.moveTo(0, 10); ctx.lineTo(0, 18);
+      ctx.stroke();
+
+      // Distance in meters readout
+      const distPx = Math.hypot(pointerTarget.x - bot.x, pointerTarget.y - bot.y);
+      const distM = (distPx * 0.005).toFixed(2);
+      ctx.fillStyle = '#00f0ff';
+      ctx.font = '10px monospace';
+      ctx.fillText(`${distM}m`, 18, -8);
+      ctx.restore();
+    }
+
+    // Render Metal Debris Shards
+    debrisRef.current.forEach((deb) => {
+      ctx.save();
+      ctx.translate(deb.x, deb.y);
+      ctx.rotate(deb.angle);
+      ctx.fillStyle = deb.color;
+      ctx.globalAlpha = 1 - deb.life / deb.maxLife;
+      ctx.fillRect(-deb.size / 2, -deb.size / 2, deb.size, deb.size);
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Render Kinetic Sparks
     sparksRef.current.forEach((sp) => {
       const alpha = 1 - sp.life / sp.maxLife;
       ctx.fillStyle = sp.color;
       ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 2.2, 0, 2 * Math.PI);
+      ctx.arc(sp.x, sp.y, sp.size, 0, 2 * Math.PI);
       ctx.fill();
     });
     ctx.globalAlpha = 1.0;
 
-    // Render Opponent Combat Bots
+    // Render Opponents
     opponentsRef.current.forEach((opp) => {
       ctx.save();
       ctx.translate(opp.x, opp.y);
 
       if (opp.destroyed) {
-        // Smoking wreck
-        ctx.fillStyle = '#334155';
+        // Destroyed Smoking Wreckage
+        ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.arc(0, 0, opp.radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
         ctx.stroke();
+
         ctx.fillStyle = '#ff2a55';
-        ctx.font = '10px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('DEAD', 0, 3);
+        ctx.fillText('WRECK', 0, 4);
+
+        // Persistent Smoke Puffs
+        if (Math.random() < 0.25) {
+          ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
+          ctx.beginPath();
+          ctx.arc((Math.random() - 0.5) * 12, -opp.radius - Math.random() * 8, 4 + Math.random() * 5, 0, 2 * Math.PI);
+          ctx.fill();
+        }
       } else {
-        // Active Opponent Bot
+        // Active Opponent Chassis
         ctx.fillStyle = opp.color;
         ctx.beginPath();
         ctx.arc(0, 0, opp.radius, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
-        // Weapon indicator
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(-opp.radius - 4, -3, 8, 6);
-        ctx.fillRect(opp.radius - 4, -3, 8, 6);
+        // Distinct Opponent Visual Features
+        if (opp.id === 'tombstone') {
+          // Horizontal Spinning S7 Tool Steel Bar
+          ctx.save();
+          ctx.rotate(opp.weaponAngle);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(-opp.radius - 8, -4, (opp.radius + 8) * 2, 8);
+          ctx.strokeStyle = '#ff2a55';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-opp.radius - 8, -4, (opp.radius + 8) * 2, 8);
+          // Glowing Bar Tips
+          ctx.fillStyle = '#ff2a55';
+          ctx.fillRect(-opp.radius - 9, -5, 5, 10);
+          ctx.fillRect(opp.radius + 4, -5, 5, 10);
+          ctx.restore();
+        } else if (opp.id === 'wedge') {
+          // Titanium Angled Wedge Front Armor
+          const wedgeAngle = Math.atan2(opp.vy, opp.vx);
+          ctx.save();
+          ctx.rotate(wedgeAngle);
+          ctx.fillStyle = '#ffd166';
+          ctx.beginPath();
+          ctx.moveTo(opp.radius + 6, 0);
+          ctx.lineTo(opp.radius - 4, -opp.radius);
+          ctx.lineTo(opp.radius - 12, -opp.radius);
+          ctx.lineTo(opp.radius - 2, 0);
+          ctx.lineTo(opp.radius - 12, opp.radius);
+          ctx.lineTo(opp.radius - 4, opp.radius);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        } else if (opp.id === 'drum') {
+          // Vertical Eggbeater Drum
+          const drumAngle = Math.atan2(opp.vy, opp.vx);
+          ctx.save();
+          ctx.rotate(drumAngle);
+          ctx.fillStyle = '#c084fc';
+          ctx.fillRect(opp.radius - 8, -12, 12, 24);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(opp.radius - 8, -12, 12, 24);
+          ctx.restore();
+        }
 
-        // Name & Health bar above bot
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(-22, -opp.radius - 18, 44, 7);
-        ctx.fillStyle = opp.health > 40 ? '#00ff88' : '#ff2a55';
-        ctx.fillRect(-21, -opp.radius - 17, (opp.health / 100) * 42, 5);
-
-        ctx.fillStyle = '#fff';
-        ctx.font = '9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(opp.name, 0, -opp.radius - 22);
-
-        // If target locked by Auto-Ram
-        if (autoRamRef.current && opp.id === selectedOpponent) {
+        // Target Lock Reticle if Selected
+        if (opp.id === selectedOpponentRef.current) {
           ctx.strokeStyle = '#00f0ff';
           ctx.lineWidth = 2;
-          ctx.strokeRect(-opp.radius - 6, -opp.radius - 6, opp.radius * 2 + 12, opp.radius * 2 + 12);
+          ctx.setLineDash([4, 2]);
+          ctx.strokeRect(-opp.radius - 8, -opp.radius - 8, (opp.radius + 8) * 2, (opp.radius + 8) * 2);
+          ctx.setLineDash([]);
         }
+
+        // Health Bar & Nameplate
+        const barWidth = 48;
+        const barHeight = 6;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillRect(-barWidth / 2, -opp.radius - 18, barWidth, barHeight);
+
+        const healthRatio = opp.health / opp.maxHealth;
+        ctx.fillStyle = healthRatio > 0.5 ? '#00ff88' : healthRatio > 0.25 ? '#ffaa00' : '#ff2a55';
+        ctx.fillRect(-barWidth / 2 + 1, -opp.radius - 17, (barWidth - 2) * healthRatio, barHeight - 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(opp.name, 0, -opp.radius - 22);
       }
       ctx.restore();
     });
 
-    // Render Eyeliner 3lb Meltybrain
-    const bot = robotPosRef.current;
+    // ------------------------------------------------------------------------
+    // RENDER EYELINER 3LB MELTYBRAIN ROBOT
+    // ------------------------------------------------------------------------
     ctx.save();
     ctx.translate(bot.x, bot.y);
 
-    // Render Stroboscopic Virtual LED Heading Beacon!
-    if (rpmRef.current > 400 && armedRef.current) {
-      const beamDist = 180;
-      const flashSpread = 0.28; // ~16 degrees
+    // Stroboscopic Persistence-Of-Vision (POV) Virtual LED Heading Beacons
+    if (rpmRef.current > 300 && armedRef.current) {
       const heading = bot.headingAngle;
 
-      const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, beamDist);
-      grad.addColorStop(0, 'rgba(0, 255, 136, 0.75)');
-      grad.addColorStop(0.4, 'rgba(0, 240, 255, 0.45)');
-      grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+      // 1. FRONT POV BEACON (GREEN)
+      const frontDist = 200;
+      const frontSpread = 0.26; // ~15 degrees
+      const frontGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, frontDist);
+      frontGrad.addColorStop(0, 'rgba(0, 255, 136, 0.85)');
+      frontGrad.addColorStop(0.35, 'rgba(0, 255, 136, 0.45)');
+      frontGrad.addColorStop(1, 'rgba(0, 255, 136, 0)');
 
-      ctx.fillStyle = grad;
+      ctx.fillStyle = frontGrad;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, beamDist, heading - flashSpread, heading + flashSpread);
+      ctx.arc(0, 0, frontDist, heading - frontSpread, heading + frontSpread);
       ctx.closePath();
       ctx.fill();
 
-      // Heading guideline
+      // Front Heading Guideline
       ctx.strokeStyle = '#00ff88';
       ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
+      ctx.setLineDash([5, 4]);
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(heading) * beamDist, Math.sin(heading) * beamDist);
+      ctx.lineTo(Math.cos(heading) * frontDist, Math.sin(heading) * frontDist);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // 2. REAR POV BEACON (RED)
+      const rearHeading = heading + Math.PI;
+      const rearDist = 120;
+      const rearSpread = 0.22;
+      const rearGrad = ctx.createRadialGradient(0, 0, 6, 0, 0, rearDist);
+      rearGrad.addColorStop(0, 'rgba(255, 42, 85, 0.7)');
+      rearGrad.addColorStop(0.4, 'rgba(255, 42, 85, 0.3)');
+      rearGrad.addColorStop(1, 'rgba(255, 42, 85, 0)');
+
+      ctx.fillStyle = rearGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, rearDist, rearHeading - rearSpread, rearHeading + rearSpread);
+      ctx.closePath();
+      ctx.fill();
     }
 
-    // Auto-Ram Trajectory Vector line to target
+    // Auto-Ram Autonomous Intercept Guideline
     if (autoRamRef.current && armedRef.current) {
-      const target = opponentsRef.current.find((o) => o.id === selectedOpponent && !o.destroyed);
+      const target = opponentsRef.current.find((o) => o.id === selectedOpponentRef.current && !o.destroyed);
       if (target) {
         ctx.strokeStyle = '#ffaa00';
         ctx.lineWidth = 2.5;
-        ctx.setLineDash([6, 3]);
+        ctx.setLineDash([8, 4]);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(target.x - bot.x, target.y - bot.y);
@@ -499,73 +1450,109 @@ export function Lab() {
       }
     }
 
-    // Rotating robot chassis & AR500 teeth
+    // Rotating Robot Chassis (spinning up to 3,500+ RPM)
     ctx.rotate(bot.angle);
 
-    // Chassis body puck (Bambu TPU 95A HF core)
+    // TPU 95A HF Core Base Disc
     ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(0, 0, 22, 0, 2 * Math.PI);
+    ctx.arc(0, 0, EYELINER_RADIUS, 0, 2 * Math.PI);
     ctx.fill();
     ctx.lineWidth = 2.5;
     ctx.strokeStyle = armedRef.current ? '#00f0ff' : '#64748b';
     ctx.stroke();
 
-    // Carbon / Aluminum Top Armor Plate clamping ring
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    // Aluminum / Carbon Clamping Ring
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.beginPath();
-    ctx.arc(0, 0, 16, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 15, 0, 2 * Math.PI);
     ctx.fill();
 
-    // Wheel Pods (Dual PropDrive Hubmotors)
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(-6, -19, 12, 6);
-    ctx.fillRect(-6, 13, 12, 6);
+    // Dual PropDrive Wheel Hubs
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(-6, -18, 12, 6);
+    ctx.fillRect(-6, 12, 12, 6);
 
     // AR500 Hardened Kinetic Impact Teeth (Symmetric Pair)
     ctx.fillStyle = '#e2e8f0';
     ctx.beginPath();
     // Tooth 1
-    ctx.moveTo(18, -6);
+    ctx.moveTo(17, -6);
     ctx.lineTo(29, 0);
-    ctx.lineTo(18, 6);
+    ctx.lineTo(17, 6);
     // Tooth 2
-    ctx.moveTo(-18, 6);
+    ctx.moveTo(-17, 6);
     ctx.lineTo(-29, 0);
-    ctx.lineTo(-18, -6);
+    ctx.lineTo(-17, -6);
     ctx.fill();
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#ffaa00';
     ctx.stroke();
 
-    // Optical LED beacon physical diode (Green)
-    ctx.fillStyle = '#00ff88';
+    // Optical LED Diode physical strobe flash on rotating puck
+    const angleDiffFront = Math.abs(((bot.angle - bot.headingAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+    const angleDiffRear = Math.abs(((bot.angle - (bot.headingAngle + Math.PI) + Math.PI) % (2 * Math.PI)) - Math.PI);
+    const isFlashingFront = angleDiffFront < 0.28;
+    const isFlashingRear = angleDiffRear < 0.28;
+
+    // Green Beacon LED
+    ctx.fillStyle = isFlashingFront ? '#ffffff' : '#00ff88';
     ctx.beginPath();
-    ctx.arc(12, 0, 3, 0, 2 * Math.PI);
+    ctx.arc(12, 0, isFlashingFront ? 4.5 : 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Red Beacon LED
+    ctx.fillStyle = isFlashingRear ? '#ffffff' : '#ff2a55';
+    ctx.beginPath();
+    ctx.arc(-12, 0, isFlashingRear ? 4.5 : 2.5, 0, 2 * Math.PI);
     ctx.fill();
 
     ctx.restore();
-    ctx.restore();
-  }, [selectedOpponent]);
 
-  // Draw Circular LiDAR Radar PPI Display
+    // Render Floating Combat Text
+    floatingTextsRef.current.forEach((ft) => {
+      ctx.save();
+      const alpha = 1 - ft.life / ft.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = ft.color;
+      ctx.font = `bold ${ft.size}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1.0;
+
+    ctx.restore();
+  }, []);
+
+  // ==========================================================================
+  // DRAW 360° MICRO-LIDAR RADAR PPI CANVAS (HIGH-DPI)
+  // ==========================================================================
   const drawRadarCanvas = useCallback((sweepAngle: number) => {
     const canvas = radarCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const r = w / 2 - 8;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== 160 * dpr || canvas.height !== 160 * dpr) {
+      canvas.width = 160 * dpr;
+      canvas.height = 160 * dpr;
+    }
 
-    ctx.fillStyle = '#050a12';
-    ctx.fillRect(0, 0, w, h);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, 160, 160);
 
-    // Radar Concentric Range Rings
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    const cx = 80;
+    const cy = 80;
+    const r = 72;
+
+    ctx.fillStyle = '#040810';
+    ctx.fillRect(0, 0, 160, 160);
+
+    // Concentric Range Rings (1m, 2m, 3m)
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
     ctx.lineWidth = 1;
     [0.33, 0.66, 1.0].forEach((ratio) => {
       ctx.beginPath();
@@ -573,7 +1560,7 @@ export function Lab() {
       ctx.stroke();
     });
 
-    // Radar Crosshairs
+    // Crosshairs
     ctx.beginPath();
     ctx.moveTo(cx, cy - r);
     ctx.lineTo(cx, cy + r);
@@ -582,13 +1569,13 @@ export function Lab() {
     ctx.stroke();
 
     // Range Labels
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
-    ctx.font = '9px monospace';
-    ctx.fillText('1.0m', cx + 4, cy - r * 0.33 + 10);
-    ctx.fillText('2.0m', cx + 4, cy - r * 0.66 + 10);
-    ctx.fillText('3.0m', cx + 4, cy - r + 10);
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.55)';
+    ctx.font = '8px monospace';
+    ctx.fillText('1m', cx + 3, cy - r * 0.33 + 8);
+    ctx.fillText('2m', cx + 3, cy - r * 0.66 + 8);
+    ctx.fillText('3m', cx + 3, cy - r + 8);
 
-    // Opponent Echoes
+    // Opponent Radar Blips
     const bot = robotPosRef.current;
     opponentsRef.current.forEach((opp) => {
       if (opp.destroyed) return;
@@ -597,35 +1584,34 @@ export function Lab() {
       const dist = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
 
-      // Scale distance to radar radius (arena 520px -> radar 130px)
+      // Arena 520px -> Radar 144px
       const radarDist = (dist / 520) * r * 2;
       if (radarDist <= r) {
         const rx = cx + Math.cos(angle) * radarDist;
         const ry = cy + Math.sin(angle) * radarDist;
 
-        // Blip
-        ctx.fillStyle = opp.id === selectedOpponent ? '#00f0ff' : '#ff2a55';
+        ctx.fillStyle = opp.id === selectedOpponentRef.current ? '#00f0ff' : opp.color;
         ctx.beginPath();
         ctx.arc(rx, ry, 4, 0, 2 * Math.PI);
         ctx.fill();
 
-        // Target Label
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = '8px monospace';
-        ctx.fillText(opp.name.split(' ')[0], rx + 6, ry - 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '7px monospace';
+        ctx.fillText(opp.name.split(' ')[0], rx + 6, ry - 2);
 
-        // Lock brackets
-        if (autoRamRef.current && opp.id === selectedOpponent) {
+        // Lock Brackets if Selected
+        if (opp.id === selectedOpponentRef.current) {
           ctx.strokeStyle = '#00f0ff';
-          ctx.strokeRect(rx - 7, ry - 7, 14, 14);
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(rx - 6, ry - 6, 12, 12);
         }
       }
     });
 
-    // Rotating Sweep Line with Phosphor Gradient Fade
+    // Phosphor Gradient Sweep Line
     const sweepGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    sweepGrad.addColorStop(0, 'rgba(0, 240, 255, 0.4)');
-    sweepGrad.addColorStop(1, 'rgba(0, 240, 255, 0.05)');
+    sweepGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');
+    sweepGrad.addColorStop(1, 'rgba(0, 240, 255, 0.04)');
 
     ctx.save();
     ctx.fillStyle = sweepGrad;
@@ -636,30 +1622,45 @@ export function Lab() {
     ctx.fill();
 
     ctx.strokeStyle = '#00f0ff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(sweepAngle) * r, cy + Math.sin(sweepAngle) * r);
     ctx.stroke();
     ctx.restore();
-  }, [selectedOpponent]);
 
-  // Draw Dual Accelerometer Oscilloscope Waveform
+    ctx.restore();
+  }, []);
+
+  // ==========================================================================
+  // DRAW DUAL ACCELEROMETER OSCILLOSCOPE WAVEFORM (±400G, RETINA)
+  // ==========================================================================
   const drawAccelCanvas = useCallback(() => {
     const canvas = accelCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.fillStyle = '#060a12';
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== 500 * dpr || canvas.height !== 110 * dpr) {
+      canvas.width = 500 * dpr;
+      canvas.height = 110 * dpr;
+    }
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, 500, 110);
+
+    const w = 500;
+    const h = 110;
+
+    ctx.fillStyle = '#04070e';
     ctx.fillRect(0, 0, w, h);
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    // Oscilloscope Grid Lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.lineWidth = 1;
-    for (let y = 0; y <= h; y += 25) {
+    for (let y = 0; y <= h; y += 22) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -673,52 +1674,57 @@ export function Lab() {
     }
 
     const history = accelHistoryRef.current;
-    if (history.length < 2) return;
+    if (history.length < 2) {
+      ctx.restore();
+      return;
+    }
 
-    // Zero line at bottom (padding 15px)
-    const zeroY = h - 20;
-    const maxGScale = 400; // 400g scale
+    const zeroY = h - 18;
+    const maxGScale = 400;
 
-    // Channel 1: Sensor 1 (Cyan)
+    // Channel 1: Sensor 1 Front (Cyan)
     ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 2;
     ctx.beginPath();
     history.forEach((pt, i) => {
       const x = (i / (history.length - 1)) * w;
-      const y = zeroY - (pt.s1 / maxGScale) * (h - 35);
+      const y = zeroY - (pt.s1 / maxGScale) * (h - 32);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // Channel 2: Sensor 2 (Amber)
+    // Channel 2: Sensor 2 Rear (Amber)
     ctx.strokeStyle = '#ffaa00';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     history.forEach((pt, i) => {
       const x = (i / (history.length - 1)) * w;
-      const y = zeroY - (pt.s2 / maxGScale) * (h - 35);
+      const y = zeroY - (pt.s2 / maxGScale) * (h - 32);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // 400G Saturation Limit Marker
-    ctx.strokeStyle = 'rgba(255, 42, 85, 0.6)';
+    // ±400G Saturation Threshold Line
+    ctx.strokeStyle = 'rgba(255, 42, 85, 0.65)';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(0, zeroY - (400 / maxGScale) * (h - 35));
-    ctx.lineTo(w, zeroY - (400 / maxGScale) * (h - 35));
+    ctx.moveTo(0, zeroY - (400 / maxGScale) * (h - 32));
+    ctx.lineTo(w, zeroY - (400 / maxGScale) * (h - 32));
     ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.fillStyle = '#ff2a55';
     ctx.font = '9px monospace';
     ctx.fillText('±400G SATURATION LIMIT', 8, 14);
+
+    ctx.restore();
   }, []);
 
-  // Joystick Pointer Event Handlers for Right Stick (Translation Vector)
+  // Pointer Event Handlers for Right Gimbal
   const handleStickPointerDown = (e: React.PointerEvent) => {
+    soundEngine.init();
     isDraggingRight.current = true;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     handleStickMove(e);
@@ -753,26 +1759,45 @@ export function Lab() {
     } catch {
       // ignore
     }
-    // Spring return to center
-    setTransVector({ x: 0, y: 0 });
+    if (!isArenaPointerDownRef.current) {
+      setTransVector({ x: 0, y: 0 });
+    }
   };
 
-  const currentGs = ((Math.pow((currentRpm * 2 * Math.PI) / 60, 2) * SENSOR_RADIUS_M) / GRAVITY_MSS).toFixed(1);
+  // Kinetic Calculations
+  const omegaRadS = (currentRpm * 2 * Math.PI) / 60;
+  const currentGs = ((Math.pow(omegaRadS, 2) * SENSOR_RADIUS_M) / GRAVITY_MSS).toFixed(1);
+  const kineticJoules = Math.round(0.5 * BOT_MOMENT_OF_INERTIA * Math.pow(omegaRadS, 2));
+  const tipSpeedMph = Math.round(((omegaRadS * TOOTH_TIP_RADIUS_M) / 0.44704));
 
   return (
     <div className="page lab-page cyber-container" style={{ padding: '24px 20px 80px', maxWidth: '1440px', margin: '0 auto' }}>
-      {/* Top Combat Breadcrumb */}
-      <div className="overview-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Top Combat Breadcrumb & Tactical Toolbar */}
+      <div className="overview-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span className="cyber-badge">SYSTEM // COMBAT TEST LAB</span>
           <span className="cyber-badge amber">DSHOT600 8kHz</span>
           <span className="cyber-badge green">ELRS 250Hz CRSF</span>
+          <span className="cyber-badge crimson">H3LIS331DLTR ±400G</span>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Audio Mute/Unmute Toggle */}
+          <button
+            className={`cyber-btn ${audioMuted ? '' : 'primary'}`}
+            style={{ padding: '6px 12px', fontSize: '11px' }}
+            onClick={toggleAudioMute}
+            title="Toggle Procedural Web Audio Synthesis"
+          >
+            {audioMuted ? '🔇 AUDIO: MUTED' : '🔊 AUDIO: ACTIVE'}
+          </button>
+          {/* Master Arm Safety Switch */}
           <button
             className={`cyber-btn ${armed ? 'danger' : 'primary'}`}
             style={{ padding: '6px 14px', fontSize: '11px' }}
-            onClick={() => setArmed(!armed)}
+            onClick={() => {
+              soundEngine.init();
+              setArmed(!armed);
+            }}
           >
             <span className="cyber-dot" />
             {armed ? 'DISARM COMBAT BOT' : 'SAFETY: ARM ROBOT'}
@@ -788,51 +1813,91 @@ export function Lab() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '18px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="cyber-dot" /> TACTICAL PHYSICS ARENA
+                <span className="cyber-dot" /> TACTICAL COMBAT ARENA
               </h2>
               <span style={{ fontSize: '12px', color: 'var(--cyber-text-muted)' }}>
-                3,500 RPM Kinematics · Stroboscopic Optical Heading · Collision Dynamics
+                3,500 RPM Kinematics · Sinusoidal Motor Modulation · AR500 Tooth Collision Dynamics
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 className="cyber-btn"
                 style={{ padding: '4px 10px', fontSize: '11px' }}
-                onClick={() => {
-                  robotPosRef.current = { x: 300, y: 300, vx: 0, vy: 0, angle: 0, headingAngle: 0 };
-                  opponentsRef.current.forEach((opp) => { opp.health = 100; opp.destroyed = false; });
-                }}
+                onClick={resetArena}
               >
                 RESET ARENA (R)
               </button>
             </div>
           </div>
 
-          {/* Arena Canvas Container */}
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#050811', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+          {/* Arena Canvas Container with Direct Click-to-Aim / Touch */}
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              aspectRatio: '1/1',
+              background: '#04070e',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid rgba(0, 240, 255, 0.25)',
+              touchAction: 'none',
+              cursor: isArenaPointerDownRef.current ? 'crosshair' : 'default',
+            }}
+          >
             <canvas
               ref={arenaCanvasRef}
-              width={600}
-              height={600}
               style={{ width: '100%', height: '100%', display: 'block' }}
+              onPointerDown={handleArenaPointerDown}
+              onPointerMove={handleArenaPointerMove}
+              onPointerUp={handleArenaPointerUp}
+              onPointerCancel={handleArenaPointerUp}
             />
 
             {/* In-Canvas Telemetry HUD Overlays */}
             <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '4px', pointerEvents: 'none' }}>
-              <div className="cyber-badge" style={{ background: 'rgba(0, 0, 0, 0.7)' }}>
+              <div className="cyber-badge" style={{ background: 'rgba(0, 0, 0, 0.75)' }}>
                 SPIN: <strong style={{ color: '#fff', marginLeft: '4px' }}>{currentRpm} RPM</strong>
               </div>
-              <div className="cyber-badge amber" style={{ background: 'rgba(0, 0, 0, 0.7)' }}>
+              <div className="cyber-badge amber" style={{ background: 'rgba(0, 0, 0, 0.75)' }}>
                 CENTRIPETAL: <strong style={{ color: '#fff', marginLeft: '4px' }}>{currentGs} G</strong>
               </div>
-              <div className="cyber-badge crimson" style={{ background: 'rgba(0, 0, 0, 0.7)' }}>
+              <div className="cyber-badge crimson" style={{ background: 'rgba(0, 0, 0, 0.75)' }}>
                 LAST HIT: <strong style={{ color: '#fff', marginLeft: '4px' }}>{impactG > 0 ? `${impactG} G` : 'NONE'}</strong>
               </div>
             </div>
 
+            {/* Active Combo Multiplier Pill */}
+            {hitCombo > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  background: 'linear-gradient(135deg, rgba(255, 170, 0, 0.9), rgba(255, 42, 85, 0.9))',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  boxShadow: '0 0 16px rgba(255, 170, 0, 0.6)',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>{hitCombo}x COMBO</span>
+                <span style={{ fontSize: '10px', background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>
+                  {comboMultiplier}X DMG
+                </span>
+              </div>
+            )}
+
+            {/* Bottom Keyboard & Touch Controls Hint */}
             <div style={{ position: 'absolute', bottom: '12px', right: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', pointerEvents: 'none' }}>
-              <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)', background: 'rgba(0, 0, 0, 0.7)', padding: '2px 6px', borderRadius: '3px' }}>
-                WASD / ARROWS = DRIVE · SPACE = BRAKE · SHIFT = 4,000 RPM
+              <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', background: 'rgba(0, 0, 0, 0.8)', padding: '3px 8px', borderRadius: '3px' }}>
+                CLICK / TOUCH ARENA = AIM &amp; DRIVE · WASD / ARROWS = DRIVE · SHIFT = 4,000 RPM · M = AUDIO
               </span>
             </div>
           </div>
@@ -846,21 +1911,21 @@ export function Lab() {
               </div>
             </div>
             <div className="glass-panel" style={{ padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>TIP SPEED</div>
+              <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>TOOTH TIP SPEED</div>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--neon-cyan)' }}>
-                {Math.round((currentRpm / 3500) * 88)} MPH
+                {tipSpeedMph} MPH
               </div>
             </div>
             <div className="glass-panel" style={{ padding: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>KINETIC ENERGY</div>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--neon-amber)' }}>
-                {Math.round(0.5 * 0.002 * Math.pow((currentRpm * 2 * Math.PI) / 60, 2))} J
+                {kineticJoules} J
               </div>
             </div>
             <div className="glass-panel" style={{ padding: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>HITS RECORDED</div>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>
-                {totalHits}
+                {totalHits} {peakG > 0 && <span style={{ fontSize: '10px', color: 'var(--neon-crimson)' }}>({peakG}G PEAK)</span>}
               </div>
             </div>
           </div>
@@ -871,10 +1936,10 @@ export function Lab() {
           
           {/* Top Row: Simulated LiDAR Radar PPI + Auto-Ramming Controls */}
           <div className="glass-panel hud-corner" style={{ padding: '18px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="cyber-dot" /> 360° LIDAR RADAR SWEEP &amp; AUTONOMY
+                  <span className="cyber-dot" /> 360° MICRO-LIDAR RADAR &amp; AUTONOMY
                 </h3>
                 <span style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>
                   Opponent Bot Detection · Ballistic Vector Intercept · Auto-Ram
@@ -892,7 +1957,7 @@ export function Lab() {
             <div style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '16px', alignItems: 'center' }}>
               {/* Radar PPI Canvas */}
               <div style={{ width: '160px', height: '160px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(0, 240, 255, 0.4)', margin: '0 auto' }}>
-                <canvas ref={radarCanvasRef} width={160} height={160} style={{ width: '100%', height: '100%', display: 'block' }} />
+                <canvas ref={radarCanvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
               </div>
 
               {/* Target Selector & Radar Feed */}
@@ -914,6 +1979,7 @@ export function Lab() {
                         background: selectedOpponent === opp.id ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)',
                         border: selectedOpponent === opp.id ? '1px solid var(--neon-cyan)' : '1px solid rgba(255, 255, 255, 0.06)',
                         cursor: 'pointer',
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -949,7 +2015,7 @@ export function Lab() {
             </div>
 
             <div style={{ width: '100%', height: '110px', background: '#04070e', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255, 170, 0, 0.2)' }}>
-              <canvas ref={accelCanvasRef} width={500} height={110} style={{ width: '100%', height: '100%', display: 'block' }} />
+              <canvas ref={accelCanvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
             </div>
           </div>
 
@@ -1009,7 +2075,10 @@ export function Lab() {
                   max="1"
                   step="0.01"
                   value={throttle}
-                  onChange={(e) => setThrottle(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    soundEngine.init();
+                    setThrottle(parseFloat(e.target.value));
+                  }}
                   style={{ width: '100px', accentColor: '#00f0ff' }}
                 />
                 <span style={{ fontSize: '11px', color: 'var(--neon-cyan)', fontFamily: 'monospace' }}>
@@ -1039,7 +2108,7 @@ export function Lab() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>RPM: {currentRpm.toString().padStart(4, ' ')}</span>
-                  <span>COR: ±25mm</span>
+                  <span>ENERGY: {kineticJoules.toString().padStart(3, ' ')}J</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>G-FORCE: {currentGs.padStart(5, ' ')}G</span>
@@ -1103,12 +2172,15 @@ export function Lab() {
               </div>
             </div>
 
-            {/* Quick Tactical Switches: SA (Arm), SB (Mode), SF (Kill) */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px' }}>
+            {/* Quick Tactical Switches: SA (Arm), SB (Mode), SF (Kill), Audio */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px', flexWrap: 'wrap' }}>
               <button
                 className={`cyber-btn ${armed ? 'danger' : 'primary'}`}
                 style={{ padding: '6px 14px', fontSize: '11px' }}
-                onClick={() => setArmed(!armed)}
+                onClick={() => {
+                  soundEngine.init();
+                  setArmed(!armed);
+                }}
               >
                 SWITCH SA: {armed ? 'ARMED (3-POS DOWN)' : 'DISARMED (UP)'}
               </button>

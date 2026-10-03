@@ -3,7 +3,7 @@ import { Link, Routes, Route } from 'react-router';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 
-const Build = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Build })));
+const Build = lazy(() => import('./pages/BuildGuide').then((m) => ({ default: m.BuildGuide })));
 const Onshape = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Onshape })));
 const Pcbway = lazy(() => import('./pages/Pages').then((m) => ({ default: m.Pcbway })));
 const Printing = lazy(() => import('./pages/Printing').then((m) => ({ default: m.Printing })));
@@ -39,6 +39,7 @@ export function App() {
           <Route path="studio" element={<Studio />} />
           <Route path="explorer" element={<Explorer />} />
           <Route path="build" element={<Build />} />
+          <Route path="build-guide" element={<Build />} />
           <Route path="onshape" element={<Onshape />} />
           <Route path="pcbway" element={<Pcbway />} />
           <Route path="printing" element={<Printing />} />

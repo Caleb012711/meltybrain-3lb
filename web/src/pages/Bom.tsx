@@ -1,193 +1,18 @@
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
-import { cadHref, cadModels, costRows, sparesRows, type CostRow } from '../data/content';
+import '../cyber-combat.css';
+import { cadHref, cadModels } from '../data/content';
+import {
+  combatPartsCatalog,
+  vendorShippingRules,
+  NHRL_WEIGHT_LIMIT_GRAMS,
+  TARGET_WEIGHT_GRAMS,
+  type SubsystemCategory,
+} from '../data/partsData';
 
-function formatUsd(n: number | null): string {
-  if (n === null) return '—';
-  return `$${n.toFixed(n % 1 === 0 ? 0 : 2)}`;
-}
-
-function CostTable({ rows, caption }: { rows: CostRow[]; caption: string }) {
-  const total = rows.reduce((s, r) => s + (r.lineUsd ?? 0), 0);
-  return (
-    <div className="table-wrap">
-      <table>
-        <caption className="meta" style={{ textAlign: 'left', padding: '8px 12px' }}>
-          {caption}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Item</th>
-            <th scope="col">Spec</th>
-            <th scope="col">Qty</th>
-            <th scope="col">Unit</th>
-            <th scope="col">Line</th>
-            <th scope="col">Vendor hint</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.item + r.spec}>
-              <td>
-                <b>{r.item}</b>{' '}
-                <span className={`stamp ${r.verified ? 'ok' : 'todo'}`}>
-                  {r.verified ? 'Priced' : 'Range'}
-                </span>
-              </td>
-              <td>{r.spec}</td>
-              <td className="mono">{r.qty}</td>
-              <td className="mono">{formatUsd(r.unitUsd)}</td>
-              <td className="mono">{formatUsd(r.lineUsd)}</td>
-              <td>{r.vendor}</td>
-            </tr>
-          ))}
-          <tr>
-            <td colSpan={4}>
-              <b>Subtotal</b>
-            </td>
-            <td className="mono">
-              <b>{formatUsd(total)}</b>
-            </td>
-            <td />
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export function Bom() {
-  const buildTotal = costRows.reduce((s, r) => s + (r.lineUsd ?? 0), 0);
-  const sparesTotal = sparesRows.reduce((s, r) => s + (r.lineUsd ?? 0), 0);
-  return (
-    <div className="page">
-      <p className="spec-plate">
-        <span>EYELINER-3LB / REV9 / SHEET BOM-01</span>
-        <span>BOM — locked + costed</span>
-      </p>
-      <h1>BOM and cost</h1>
-      <p className="lede">
-        Complete procurement bill of materials with 2026 US street-price estimates.
-        Every component is locked to LiftOff Rev9 competition geometry.
-        Priced rows represent verified supplier listings; range rows reflect fabrication quotes.
-      </p>
-
-      {/* Executive KPI summary */}
-      <div className="proof" aria-label="BOM key metrics summary">
-        <div>
-          <b>{formatUsd(buildTotal)}</b>
-          <span>Build Total (w/ Handset)</span>
-        </div>
-        <div>
-          <b>{formatUsd(sparesTotal)}</b>
-          <span>Spares Budget</span>
-        </div>
-        <div>
-          <b>≤1310 <span style={{ fontSize: '15px', color: 'var(--steel)' }}>g</span></b>
-          <span>Design Weight Target</span>
-        </div>
-        <div>
-          <b className="ok-text">+50.8 <span style={{ fontSize: '15px', color: 'var(--steel)' }}>g</span></b>
-          <span>Safety Margin to 1360.8g</span>
-        </div>
-      </div>
-
-      <CostTable rows={costRows} caption="Fight build — one bot plus two flight battery sets" />
-      <div className="step">
-        <h2>
-          Build total <span className="mono">{formatUsd(buildTotal)}</span> <span className="stamp todo">Estimate</span>
-        </h2>
-        <p className="muted">
-          About $590 excluding the handset ($662 with it) at listed prices; fab variance runs $592–737 plus tax and ship. Add spares near $161. Priced = listing checked Sep 2026; Range = fab quote moves — verify before ordering.
-        </p>
-      </div>
-
-      <h2>Spares keep you in the event</h2>
-      <CostTable rows={sparesRows} caption="Recommended spares — motors and ESCs die in meltybrains" />
-      <div className="step">
-        <h2>
-          Spares total <span className="mono">{formatUsd(sparesTotal)}</span>{' '}
-          <span className="stamp todo">Estimate</span>
-        </h2>
-        <p className="muted">
-          Add a full spare armor lot ($100–180) if budget allows. Bring a calibrated scale,
-          a lightening plan, and a backup 450 mAh pack option for weigh-in day.
-        </p>
-      </div>
-
-      <h2>Weight budget — 1360.8 g (3.0 lb) legal cap</h2>
-      <div style={{ margin: '14px 0', padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--line-strong)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '13px', fontWeight: 600 }}>
-          <span>Subsystem Allocation (1310 g Target)</span>
-          <span className="mono ok-text">+50.8 g Legal Margin</span>
-        </div>
-        <div style={{ display: 'flex', height: 16, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line-strong)' }} title="Weight allocation breakdown">
-          <div style={{ width: '19%', background: '#b23600' }} title="Weapon (Ti): 246g (19%)" />
-          <div style={{ width: '27%', background: '#3f4752' }} title="Plates & Structure: 350g (27%)" />
-          <div style={{ width: '23%', background: '#12b76a' }} title="Motors & Pods: 300g (23%)" />
-          <div style={{ width: '19%', background: '#0284c7' }} title="Electronics & Wiring: 250g (19%)" />
-          <div style={{ width: '9%', background: '#f59e0b' }} title="Flight Battery: 120g (9%)" />
-          <div style={{ width: '3%', background: '#bbf7d0' }} title="Buffer: 50.8g (3%)" />
-        </div>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, fontSize: '11.5px', color: 'var(--steel)' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#b23600' }} /> Weapon (~246g)</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3f4752' }} /> Plates (300-400g)</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#12b76a' }} /> Drive (~300g)</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0284c7' }} /> Avionics (~250g)</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} /> Battery (~120g)</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#bbf7d0' }} /> Margin (50.8g)</span>
-        </div>
-      </div>
-
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Subsystem</th>
-              <th scope="col">Target (estimate — weigh yours)</th>
-              <th scope="col">Yours</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Weapon (teeth pair, 55.63 cm³)</td><td className="mono">~246 g (steel pair = 437 g flies at ~1245 g with ~65 g margin — legal but tight; Ti (~1055 g) is comfortable)</td><td className="mono">___ g</td></tr>
-            <tr><td>Plates + structure (alu)</td><td className="mono">300–400 g</td><td className="mono">___ g</td></tr>
-            <tr><td>Shell + cradle (TPU)</td><td className="mono">80–120 g</td><td className="mono">___ g</td></tr>
-            <tr><td>Pods (hubs + cleats)</td><td className="mono">~50 g</td><td className="mono">___ g</td></tr>
-            <tr><td>Motors + ESCs + wiring</td><td className="mono">~250 g</td><td className="mono">___ g</td></tr>
-            <tr><td>Battery (1 flight set)</td><td className="mono">~120 g</td><td className="mono">___ g</td></tr>
-            <tr><td>Pi + cam + BEC</td><td className="mono">35–50 g</td><td className="mono">___ g</td></tr>
-            <tr><td><b>Total (cap 1360.8 g, target ≤ 1310 g)</b></td><td className="mono">1000–1250 g</td><td className="mono">___ g</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2>Locked spec — LiftOff Rev9, don't freestyle</h2>
-      <p className="lede">
-        One bot, one spec. Every row below is the locked part — the costed tables
-        above are what it costs. Merged here from the old Parts page so the whole
-        buy lives in one place.
-      </p>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th scope="col">Item</th><th scope="col">Spec</th><th scope="col">Qty</th></tr></thead>
-          <tbody>
-            <tr><td><b>Motors</b></td><td>PROPDRIVE v2 2836 1200KV, 82 g, 48 A max, 3–4S. Hubmotor build: 6 mm dead axle, two 626 bearings, aluminum hubs.</td><td className="mono">2 + 1 spare</td></tr>
-            <tr><td><b>ESCs</b></td><td>AM32 55 A board, DShot600 bidirectional with eRPM telemetry. Not SimonK.</td><td className="mono">1 + spare</td></tr>
-            <tr><td><b>MCU</b></td><td>Teensy 4.0 lockable without pins. Cortex-M7 at 600 MHz, soldered direct.</td><td className="mono">1 + 1 spare</td></tr>
-            <tr><td><b>Accelerometers</b></td><td>H3LIS331DLTR at ±400 g. Two Adafruit 4627 breakouts to learn, two bare chips opposed at 45° on the final PCB.</td><td className="mono">2 + 2</td></tr>
-            <tr><td><b>Radio</b></td><td>ELRS receiver plus handset over CRSF into Teensy UART. FHSS link, failsafe throttle-cut, filmed.</td><td className="mono">1</td></tr>
-            <tr><td><b>Battery</b></td><td>Two 4S 550 mAh in parallel (XT30 packs) → XT60 mains harness, 16–20 AWG silicone, removable link under 60 s, strapped in TPU so packs cannot shift.</td><td className="mono">2+ sets</td></tr>
-            <tr><td><b>Weapon</b></td><td>0.25 in AR500 teeth, symmetric 2-tooth, no holes. Liftoff tapered precedent 241–326 g; Eyeliner as-drawn 55.63 cm³ ≈ 437 g steel / 246 g Ti — taper mid-span toward precedent or Ti-swap.</td><td className="mono">1 + spares</td></tr>
-            <tr><td><b>Wheels</b></td><td>Rubber set to learn, 1.55 in titanium cleats to fight.</td><td className="mono">2 + spares</td></tr>
-            <tr><td><b>AI kit</b></td><td>Onboard Pi Zero 2W plus wide camera on an isolated BEC (about 40 g). Pit overhead camera plus laptop YOLO and cloud hints.</td><td className="mono">1 set</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="btn-row">
-        <Link className="btn primary" to="/explorer">Inspect parts in 3D</Link>
-        <Link className="btn" to="/build">Build guide</Link>
-      </div>
-    </div>
-  );
+function formatUsd(n: number | null | undefined): string {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return `$${n.toFixed(2)}`;
 }
 
 export function DownloadCards({ modelId }: { modelId: string }) {
@@ -264,6 +89,860 @@ export function DownloadCards({ modelId }: { modelId: string }) {
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function Bom() {
+  // Quantities state indexed by part id
+  const [quantities, setQuantities] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const part of combatPartsCatalog) {
+      initial[part.id] = part.defaultQty;
+    }
+    return initial;
+  });
+
+  // Search & Filtering
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'All' | SubsystemCategory>('All');
+
+  // Checklist & modal state
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  // Quick preset handlers
+  const handleSetPreset = (preset: 'default' | 'spares' | 'barebones') => {
+    const next: Record<string, number> = {};
+    for (const part of combatPartsCatalog) {
+      if (preset === 'default') {
+        next[part.id] = part.defaultQty;
+      } else if (preset === 'spares') {
+        next[part.id] = part.defaultQty + (part.recommendedSpares ?? 0);
+      } else if (preset === 'barebones') {
+        next[part.id] = part.isPitEquipment ? 0 : part.defaultQty;
+      }
+    }
+    setQuantities(next);
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setQuantities((prev) => {
+      const current = prev[id] ?? 0;
+      const updated = Math.max(0, current + delta);
+      return { ...prev, [id]: updated };
+    });
+  };
+
+  const setDirectQuantity = (id: string, value: string) => {
+    const parsed = parseInt(value, 10);
+    const valid = isNaN(parsed) ? 0 : Math.max(0, parsed);
+    setQuantities((prev) => ({ ...prev, [id]: valid }));
+  };
+
+  // Filtered catalog
+  const filteredCatalog = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return combatPartsCatalog.filter((part) => {
+      const matchesTab = activeTab === 'All' || part.subsystem === activeTab;
+      if (!matchesTab) return false;
+      if (!q) return true;
+      return (
+        part.name.toLowerCase().includes(q) ||
+        part.spec.toLowerCase().includes(q) ||
+        part.partNumber.toLowerCase().includes(q) ||
+        part.vendor.toLowerCase().includes(q) ||
+        part.notes.toLowerCase().includes(q)
+      );
+    });
+  }, [searchQuery, activeTab]);
+
+  // Mass Rollup Calculations
+  const massRollup = useMemo(() => {
+    let combatMass = 0;
+    let pitMass = 0;
+    const subsystemMasses: Record<SubsystemCategory, number> = {
+      'Chassis & Armor': 0,
+      'Drivetrain': 0,
+      'Sensors & Compute': 0,
+      'Power': 0,
+      'Fasteners': 0,
+      'Radio & Pit': 0,
+    };
+
+    for (const part of combatPartsCatalog) {
+      const qty = quantities[part.id] ?? 0;
+      const partTotalMass = qty * part.unitMassGrams;
+      if (part.isPitEquipment) {
+        pitMass += partTotalMass;
+      } else {
+        combatMass += partTotalMass;
+        subsystemMasses[part.subsystem] += partTotalMass;
+      }
+    }
+
+    const marginToCap = NHRL_WEIGHT_LIMIT_GRAMS - combatMass;
+    const marginToTarget = TARGET_WEIGHT_GRAMS - combatMass;
+    const percentOfCap = (combatMass / NHRL_WEIGHT_LIMIT_GRAMS) * 100;
+    const isOverweight = combatMass > NHRL_WEIGHT_LIMIT_GRAMS;
+    const isTightMargin = !isOverweight && combatMass > TARGET_WEIGHT_GRAMS;
+    const isOptimal = combatMass <= TARGET_WEIGHT_GRAMS;
+
+    return {
+      combatMass,
+      pitMass,
+      subsystemMasses,
+      marginToCap,
+      marginToTarget,
+      percentOfCap,
+      isOverweight,
+      isTightMargin,
+      isOptimal,
+    };
+  }, [quantities]);
+
+  // Cost Rollup Calculations
+  const costRollup = useMemo(() => {
+    let combatSubtotal = 0;
+    let pitSubtotal = 0;
+    const vendorTotals: Record<string, number> = {};
+
+    for (const part of combatPartsCatalog) {
+      const qty = quantities[part.id] ?? 0;
+      const lineCost = qty * part.unitPriceUsd;
+
+      if (part.isPitEquipment) {
+        pitSubtotal += lineCost;
+      } else {
+        combatSubtotal += lineCost;
+      }
+
+      if (qty > 0) {
+        vendorTotals[part.vendor] = (vendorTotals[part.vendor] ?? 0) + lineCost;
+      }
+    }
+
+    const grossTotal = combatSubtotal + pitSubtotal;
+
+    // Bulk discount calculation: 10% on orders > $500, 5% on orders > $250
+    let bulkDiscount = 0;
+    let discountRate = 0;
+    if (grossTotal >= 500) {
+      discountRate = 0.10;
+      bulkDiscount = grossTotal * 0.10;
+    } else if (grossTotal >= 250) {
+      discountRate = 0.05;
+      bulkDiscount = grossTotal * 0.05;
+    }
+
+    // Consolidated shipping calculation
+    let totalShipping = 0;
+    const shippingDetails: { vendor: string; spent: number; shippingCost: number; isFree: boolean }[] = [];
+
+    for (const [vendor, spent] of Object.entries(vendorTotals)) {
+      const rule = vendorShippingRules[vendor] ?? { vendor, freeShippingThreshold: 9999, flatRateUsd: 8.0 };
+      const isFree = spent >= rule.freeShippingThreshold;
+      const cost = isFree ? 0 : rule.flatRateUsd;
+      totalShipping += cost;
+      shippingDetails.push({ vendor, spent, shippingCost: cost, isFree });
+    }
+
+    const netEstimatedTotal = grossTotal - bulkDiscount + totalShipping;
+
+    return {
+      combatSubtotal,
+      pitSubtotal,
+      grossTotal,
+      bulkDiscount,
+      discountRate,
+      totalShipping,
+      shippingDetails,
+      netEstimatedTotal,
+      vendorTotals,
+    };
+  }, [quantities]);
+
+  // CSV Export handler
+  const handleExportCsv = () => {
+    const headers = [
+      'Subsystem',
+      'Part Name',
+      'Part Number',
+      'Vendor',
+      'Specification',
+      'Unit Price (USD)',
+      'Unit Mass (g)',
+      'Selected Qty',
+      'Line Total (USD)',
+      'Line Mass (g)',
+      'Combat Weight Item',
+      'Supplier URL',
+      'Engineering Notes',
+    ];
+
+    const rows = combatPartsCatalog.map((part) => {
+      const qty = quantities[part.id] ?? 0;
+      const lineCost = qty * part.unitPriceUsd;
+      const lineMass = qty * part.unitMassGrams;
+      return [
+        `"${part.subsystem}"`,
+        `"${part.name.replace(/"/g, '""')}"`,
+        `"${part.partNumber}"`,
+        `"${part.vendor}"`,
+        `"${part.spec.replace(/"/g, '""')}"`,
+        part.unitPriceUsd.toFixed(2),
+        part.unitMassGrams.toFixed(1),
+        qty,
+        lineCost.toFixed(2),
+        lineMass.toFixed(1),
+        part.isPitEquipment ? 'No (Pit Gear)' : 'Yes (In-Bot)',
+        `"${part.vendorUrl}"`,
+        `"${part.notes.replace(/"/g, '""')}"`,
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Eyeliner-3lb-Combat-BOM-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Workshop checklist copy
+  const handleCopyChecklist = () => {
+    const lines = [
+      '# EYELINER 3LB MELTYBRAIN // WORKSHOP PROCUREMENT & BUILD CHECKLIST',
+      `Generated: ${new Date().toLocaleDateString()} | Target Weight: ≤1310g | NHRL Limit: 1360.8g`,
+      `Current In-Bot Mass: ${massRollup.combatMass.toFixed(1)}g (Margin: ${massRollup.marginToCap >= 0 ? '+' : ''}${massRollup.marginToCap.toFixed(1)}g)`,
+      `Total Estimated Cost: ${formatUsd(costRollup.netEstimatedTotal)}`,
+      '',
+    ];
+
+    const categories: SubsystemCategory[] = [
+      'Chassis & Armor',
+      'Drivetrain',
+      'Sensors & Compute',
+      'Power',
+      'Fasteners',
+      'Radio & Pit',
+    ];
+
+    for (const cat of categories) {
+      lines.push(`## [ ] ${cat.toUpperCase()}`);
+      const catParts = combatPartsCatalog.filter((p) => p.subsystem === cat);
+      for (const p of catParts) {
+        const qty = quantities[p.id] ?? 0;
+        if (qty > 0) {
+          lines.push(`- [ ] ${p.name} (x${qty}) [P/N: ${p.partNumber}] — ${p.vendor} (${formatUsd(qty * p.unitPriceUsd)})`);
+          lines.push(`      Spec: ${p.spec}`);
+          lines.push(`      Mass: ${(qty * p.unitMassGrams).toFixed(1)}g | Link: ${p.vendorUrl}`);
+        }
+      }
+      lines.push('');
+    }
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setCopyFeedback('Checklist copied to clipboard!');
+      setTimeout(() => setCopyFeedback(null), 3000);
+    });
+  };
+
+  const toggleCheck = (id: string) => {
+    setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const categories: ('All' | SubsystemCategory)[] = [
+    'All',
+    'Chassis & Armor',
+    'Drivetrain',
+    'Sensors & Compute',
+    'Power',
+    'Fasteners',
+    'Radio & Pit',
+  ];
+
+  return (
+    <div className="page cyberdeck-page cyber-container" style={{ padding: '24px 20px 80px', maxWidth: '1440px', margin: '0 auto' }}>
+      {/* Top Header Breadcrumb & Status */}
+      <div className="overview-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span className="cyber-badge">EYELINER-3LB // REV9</span>
+          <span className="cyber-badge green">AUTHENTIC 2026 BOM</span>
+          <span className={`cyber-badge ${massRollup.isOverweight ? 'crimson' : massRollup.isTightMargin ? 'amber' : 'green'}`}>
+            <span className="cyber-dot" />
+            {massRollup.isOverweight
+              ? `OVERWEIGHT: ${massRollup.combatMass.toFixed(1)}g / 1360.8g`
+              : `LEGAL: ${massRollup.combatMass.toFixed(1)}g / 1360.8g`}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={handleExportCsv} className="cyber-btn" title="Export complete parts list to CSV">
+            📥 EXPORT CSV
+          </button>
+          <button onClick={() => setShowChecklistModal(true)} className="cyber-btn primary">
+            📋 WORKSHOP CHECKLIST
+          </button>
+          <Link to="/explorer" className="cyber-btn">
+            3D EXPLORER ↗
+          </Link>
+        </div>
+      </div>
+
+      {/* Hero Title & Description */}
+      <div style={{ marginTop: '20px', marginBottom: '24px' }}>
+        <h1 style={{ fontSize: 'clamp(28px, 4vw, 44px)', margin: '0 0 8px', letterSpacing: '-0.04em', color: '#fff' }}>
+          Combat Bill of Materials &amp; Parts Architecture
+        </h1>
+        <p style={{ color: 'var(--cyber-text-muted)', fontSize: '15px', maxWidth: '90ch', margin: 0, lineHeight: 1.6 }}>
+          Comprehensive engineering procurement specification for the 3.00 lb Eyeliner Meltybrain.
+          Verified 2026 street pricing, authentic part numbers, and direct supplier links.
+          Use the interactive mass rollup to tune tooth density, armor options, and battery sizing against the strict NHRL 1360.8 g weigh-in limit.
+        </p>
+      </div>
+
+      {/* Preset Buttons & Quick Stats Toolbar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', color: 'var(--cyber-text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Configuration Presets:
+          </span>
+          <button className="cyber-btn" style={{ padding: '5px 12px', fontSize: '12px' }} onClick={() => handleSetPreset('default')}>
+            🎯 Single Fight Build
+          </button>
+          <button className="cyber-btn" style={{ padding: '5px 12px', fontSize: '12px' }} onClick={() => handleSetPreset('spares')}>
+            🎒 Full Event Kit (+ Spares)
+          </button>
+          <button className="cyber-btn" style={{ padding: '5px 12px', fontSize: '12px' }} onClick={() => handleSetPreset('barebones')}>
+            ⚡ Bot Core Only (No Pit)
+          </button>
+        </div>
+        {copyFeedback && (
+          <span className="cyber-badge green" style={{ animation: 'fadeIn 0.3s' }}>
+            ✓ {copyFeedback}
+          </span>
+        )}
+      </div>
+
+      {/* DYNAMIC COMBAT MASS & COST ROLLUP HUD */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.4fr) minmax(280px, 1fr)', gap: '20px', marginBottom: '28px' }}>
+        {/* MASS ROLLUP GAUGE */}
+        <div className="glass-panel hud-corner" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h2 style={{ fontSize: '16px', margin: 0, color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span className="cyber-dot" /> Live Combat Mass Rollup Gauge
+            </h2>
+            <span
+              className={`cyber-badge ${
+                massRollup.isOverweight ? 'crimson' : massRollup.isTightMargin ? 'amber' : 'green'
+              }`}
+            >
+              {massRollup.isOverweight ? 'DISQUALIFIED: OVERWEIGHT' : massRollup.isTightMargin ? 'TIGHT MARGIN' : 'LEGAL: NHRL READY'}
+            </span>
+          </div>
+
+          {/* Mass Stat Readouts */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', margin: '14px 0' }}>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>In-Bot Mass</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: massRollup.isOverweight ? 'var(--neon-crimson)' : '#fff', fontFamily: 'var(--cyber-mono)' }}>
+                {massRollup.combatMass.toFixed(1)} <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--cyber-text-dim)' }}>g</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>NHRL 3lb Ceiling</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', fontFamily: 'var(--cyber-mono)' }}>
+                1360.8 <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--cyber-text-dim)' }}>g</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Safety Margin</div>
+              <div
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  color: massRollup.marginToCap >= 0 ? 'var(--neon-green)' : 'var(--neon-crimson)',
+                  fontFamily: 'var(--cyber-mono)',
+                }}
+              >
+                {massRollup.marginToCap >= 0 ? `+${massRollup.marginToCap.toFixed(1)}` : massRollup.marginToCap.toFixed(1)}{' '}
+                <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--cyber-text-dim)' }}>g</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Pit Equipment</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--cyber-text-muted)', fontFamily: 'var(--cyber-mono)' }}>
+                {(massRollup.pitMass / 1000).toFixed(2)} <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--cyber-text-dim)' }}>kg</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Graphical Allocation Progress Bar */}
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+              <span style={{ color: 'var(--cyber-text-muted)' }}>Mass Budget Utilization ({massRollup.percentOfCap.toFixed(1)}%)</span>
+              <span className="mono" style={{ color: massRollup.marginToCap >= 0 ? 'var(--neon-green)' : 'var(--neon-crimson)' }}>
+                {massRollup.marginToCap >= 0 ? `${massRollup.marginToCap.toFixed(1)}g available buffer` : 'OVER LIMIT BY ' + Math.abs(massRollup.marginToCap).toFixed(1) + 'g'}
+              </span>
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                height: '20px',
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                border: '1px solid var(--cyber-border)',
+                display: 'flex',
+              }}
+              title="Subsystem mass rollup breakdown"
+            >
+              {/* Stacked Subsystem Segments */}
+              {massRollup.combatMass > 0 && (
+                <>
+                  <div
+                    style={{
+                      width: `${(massRollup.subsystemMasses['Chassis & Armor'] / NHRL_WEIGHT_LIMIT_GRAMS) * 100}%`,
+                      background: '#ef4444',
+                    }}
+                    title={`Chassis & Armor: ${massRollup.subsystemMasses['Chassis & Armor'].toFixed(1)}g`}
+                  />
+                  <div
+                    style={{
+                      width: `${(massRollup.subsystemMasses['Drivetrain'] / NHRL_WEIGHT_LIMIT_GRAMS) * 100}%`,
+                      background: '#06b6d4',
+                    }}
+                    title={`Drivetrain: ${massRollup.subsystemMasses['Drivetrain'].toFixed(1)}g`}
+                  />
+                  <div
+                    style={{
+                      width: `${(massRollup.subsystemMasses['Sensors & Compute'] / NHRL_WEIGHT_LIMIT_GRAMS) * 100}%`,
+                      background: '#a855f7',
+                    }}
+                    title={`Sensors & Compute: ${massRollup.subsystemMasses['Sensors & Compute'].toFixed(1)}g`}
+                  />
+                  <div
+                    style={{
+                      width: `${(massRollup.subsystemMasses['Power'] / NHRL_WEIGHT_LIMIT_GRAMS) * 100}%`,
+                      background: '#eab308',
+                    }}
+                    title={`Power: ${massRollup.subsystemMasses['Power'].toFixed(1)}g`}
+                  />
+                  <div
+                    style={{
+                      width: `${(massRollup.subsystemMasses['Fasteners'] / NHRL_WEIGHT_LIMIT_GRAMS) * 100}%`,
+                      background: '#10b981',
+                    }}
+                    title={`Fasteners: ${massRollup.subsystemMasses['Fasteners'].toFixed(1)}g`}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Subsystem Legend */}
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '10px', fontSize: '11.5px', color: 'var(--cyber-text-dim)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} /> Chassis &amp; Armor ({massRollup.subsystemMasses['Chassis & Armor'].toFixed(0)}g)
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#06b6d4' }} /> Drivetrain ({massRollup.subsystemMasses['Drivetrain'].toFixed(0)}g)
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a855f7' }} /> Avionics ({massRollup.subsystemMasses['Sensors & Compute'].toFixed(0)}g)
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#eab308' }} /> Power ({massRollup.subsystemMasses['Power'].toFixed(0)}g)
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} /> Fasteners ({massRollup.subsystemMasses['Fasteners'].toFixed(0)}g)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* COST ROLLUP CALCULATOR */}
+        <div className="glass-panel hud-corner" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h2 style={{ fontSize: '16px', margin: 0, color: 'var(--neon-amber)', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span className="cyber-dot" /> Cost Rollup &amp; Procurement
+            </h2>
+            <span className="cyber-badge amber">STREET ESTIMATE 2026</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', color: 'var(--cyber-text-muted)' }}>
+              <span>Combat Robot Hardware:</span>
+              <span className="mono" style={{ color: '#fff', fontWeight: 600 }}>{formatUsd(costRollup.combatSubtotal)}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', color: 'var(--cyber-text-muted)' }}>
+              <span>Pit Gear &amp; Transmitter:</span>
+              <span className="mono" style={{ color: '#fff' }}>{formatUsd(costRollup.pitSubtotal)}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', color: 'var(--cyber-text-muted)' }}>
+              <span>Items Gross Subtotal:</span>
+              <span className="mono" style={{ color: '#fff' }}>{formatUsd(costRollup.grossTotal)}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', color: 'var(--neon-green)' }}>
+              <span>
+                Tiered Bulk Discount {costRollup.discountRate > 0 ? `(${(costRollup.discountRate * 100).toFixed(0)}%)` : '(None)'}:
+              </span>
+              <span className="mono">-{formatUsd(costRollup.bulkDiscount)}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', color: 'var(--cyber-text-muted)' }}>
+              <span>Consolidated Shipping ({Object.keys(costRollup.vendorTotals).length} vendors):</span>
+              <span className="mono" style={{ color: '#fff' }}>{formatUsd(costRollup.totalShipping)}</span>
+            </div>
+
+            <div style={{ height: '1px', background: 'var(--cyber-border)', margin: '4px 0' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>Total Estimated Outlay:</span>
+              <span style={{ fontSize: '26px', fontWeight: 800, color: 'var(--neon-amber)', fontFamily: 'var(--cyber-mono)' }}>
+                {formatUsd(costRollup.netEstimatedTotal)}
+              </span>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textAlign: 'right' }}>
+              Includes verified 2026 pricing across SendCutSend, McMaster, HobbyKing, DigiKey, and Amazon
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER TABS & SEARCH BAR */}
+      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+          {/* Subsystem Tabs */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                className={`cyber-btn ${activeTab === cat ? 'primary' : ''}`}
+                style={{ padding: '6px 14px', fontSize: '12px' }}
+                onClick={() => setActiveTab(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '280px' }}>
+            <input
+              type="text"
+              placeholder="Search parts, specs, vendors, P/N..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 14px',
+                borderRadius: '6px',
+                border: '1px solid var(--cyber-border)',
+                background: 'rgba(0,0,0,0.4)',
+                color: '#fff',
+                fontSize: '13px',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                className="cyber-btn"
+                style={{ padding: '6px 10px', fontSize: '11px' }}
+                onClick={() => setSearchQuery('')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN INTERACTIVE PARTS CATALOG TABLE */}
+      <div className="table-wrap glass-panel" style={{ padding: '4px', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--cyber-border)', background: 'rgba(0,0,0,0.3)' }}>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Subsystem</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Part Name &amp; Spec</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>P/N &amp; Vendor</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', textAlign: 'center' }}>Qty</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', textAlign: 'right' }}>Unit Mass</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', textAlign: 'right' }}>Line Mass</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', textAlign: 'right' }}>Unit Price</th>
+              <th style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', textAlign: 'right' }}>Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCatalog.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: 'var(--cyber-text-muted)' }}>
+                  No components match the current query &ldquo;{searchQuery}&rdquo;. Try another filter tab or search term.
+                </td>
+              </tr>
+            ) : (
+              filteredCatalog.map((part) => {
+                const qty = quantities[part.id] ?? 0;
+                const linePrice = qty * part.unitPriceUsd;
+                const lineMass = qty * part.unitMassGrams;
+
+                return (
+                  <tr
+                    key={part.id}
+                    style={{
+                      borderBottom: '1px solid var(--cyber-border-faint)',
+                      transition: 'background 0.15s ease',
+                      opacity: qty === 0 ? 0.45 : 1,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 240, 255, 0.04)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {/* Subsystem & Badge */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                      <span className="cyber-badge" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                        {part.subsystem}
+                      </span>
+                      {part.isPitEquipment && (
+                        <div style={{ marginTop: '4px' }}>
+                          <span className="cyber-badge amber" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            Pit Gear
+                          </span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Part Name & Spec */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', maxWidth: '380px' }}>
+                      <div style={{ fontWeight: 600, color: '#fff', fontSize: '14px', marginBottom: '3px' }}>
+                        {part.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', lineHeight: 1.4 }}>
+                        {part.spec}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', marginTop: '4px', fontStyle: 'italic' }}>
+                        {part.notes}
+                      </div>
+                    </td>
+
+                    {/* P/N & Vendor with direct link */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', minWidth: '160px' }}>
+                      <div style={{ fontFamily: 'var(--cyber-mono)', fontSize: '12px', color: 'var(--neon-cyan)', marginBottom: '2px' }}>
+                        {part.partNumber}
+                      </div>
+                      <div>
+                        <a
+                          href={part.vendorUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: 'var(--neon-amber)',
+                            fontSize: '12px',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {part.vendor} ↗
+                        </a>
+                      </div>
+                      {part.leadTimeDays && (
+                        <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '2px' }}>
+                          Lead: ~{part.leadTimeDays}d
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Quantity modifier controls */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          className="cyber-btn"
+                          style={{ padding: '3px 8px', fontSize: '12px', minWidth: '26px' }}
+                          onClick={() => updateQuantity(part.id, -1)}
+                          title="Decrease quantity"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={qty}
+                          onChange={(e) => setDirectQuantity(part.id, e.target.value)}
+                          style={{
+                            width: '42px',
+                            textAlign: 'center',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--cyber-border)',
+                            background: 'rgba(0,0,0,0.5)',
+                            color: '#fff',
+                            fontSize: '13px',
+                            fontFamily: 'var(--cyber-mono)',
+                          }}
+                        />
+                        <button
+                          className="cyber-btn"
+                          style={{ padding: '3px 8px', fontSize: '12px', minWidth: '26px' }}
+                          onClick={() => updateQuantity(part.id, 1)}
+                          title="Increase quantity"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* Unit Mass */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', textAlign: 'right', fontFamily: 'var(--cyber-mono)', fontSize: '13px' }}>
+                      {part.unitMassGrams.toFixed(1)} g
+                    </td>
+
+                    {/* Line Mass */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', textAlign: 'right', fontFamily: 'var(--cyber-mono)', fontSize: '13px', color: part.isPitEquipment ? 'var(--cyber-text-dim)' : 'var(--neon-green)' }}>
+                      {lineMass.toFixed(1)} g
+                    </td>
+
+                    {/* Unit Price */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', textAlign: 'right', fontFamily: 'var(--cyber-mono)', fontSize: '13px' }}>
+                      {formatUsd(part.unitPriceUsd)}
+                    </td>
+
+                    {/* Line Total */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', textAlign: 'right', fontFamily: 'var(--cyber-mono)', fontSize: '13px', fontWeight: 600, color: 'var(--neon-amber)' }}>
+                      {formatUsd(linePrice)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* DOWNLOADABLE CAD & SPECIFICATION EXPORTS */}
+      <div style={{ marginTop: '48px' }}>
+        <h2 style={{ fontSize: '22px', color: '#fff', marginBottom: '8px' }}>
+          Fabrication &amp; Manufacturing Release Packages
+        </h2>
+        <p style={{ color: 'var(--cyber-text-muted)', fontSize: '14px', marginBottom: '20px' }}>
+          Direct CAD sources for waterjet cutting (SendCutSend), CNC turning (PCBWay), and additive manufacturing (TPU 95A).
+        </p>
+        <DownloadCards modelId="full" />
+      </div>
+
+      {/* INTERACTIVE WORKSHOP CHECKLIST MODAL */}
+      {showChecklistModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+          }}
+          onClick={() => setShowChecklistModal(false)}
+        >
+          <div
+            className="glass-panel hud-corner"
+            style={{
+              background: 'var(--cyber-panel-solid)',
+              width: '100%',
+              maxWidth: '850px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              border: '1px solid var(--cyber-border-strong)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '14px', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--neon-cyan)' }}>
+                  📋 Workshop &amp; Procurement Checklist
+                </h2>
+                <div style={{ fontSize: '12px', color: 'var(--cyber-text-muted)', marginTop: '4px' }}>
+                  Printable bench tracking sheet with parts, quantities, and inspection status.
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="cyber-btn" onClick={handleCopyChecklist}>
+                  📄 COPY MARKDOWN
+                </button>
+                <button className="cyber-btn primary" onClick={() => window.print()}>
+                  🖨️ PRINT
+                </button>
+                <button className="cyber-btn" onClick={() => setShowChecklistModal(false)}>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Checklist items by subsystem */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {categories.filter((c) => c !== 'All').map((cat) => {
+                const partsInCat = combatPartsCatalog.filter((p) => p.subsystem === cat);
+                return (
+                  <div key={cat} style={{ background: 'rgba(0,0,0,0.25)', padding: '14px 18px', borderRadius: '8px', border: '1px solid var(--cyber-border-faint)' }}>
+                    <h3 style={{ margin: '0 0 10px', fontSize: '14px', color: 'var(--neon-amber)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {cat}
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {partsInCat.map((p) => {
+                        const qty = quantities[p.id] ?? 0;
+                        const isChecked = checkedItems[p.id] ?? false;
+                        return (
+                          <label
+                            key={p.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '10px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              color: isChecked ? 'var(--cyber-text-dim)' : 'var(--cyber-text)',
+                              textDecoration: isChecked ? 'line-through' : 'none',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleCheck(p.id)}
+                              style={{ marginTop: '3px' }}
+                            />
+                            <div>
+                              <strong>{p.name}</strong> <span className="mono" style={{ color: 'var(--neon-cyan)' }}>x{qty}</span> — {p.vendor} ({formatUsd(qty * p.unitPriceUsd)})
+                              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)' }}>
+                                P/N: {p.partNumber} · Mass: {(qty * p.unitMassGrams).toFixed(1)}g
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

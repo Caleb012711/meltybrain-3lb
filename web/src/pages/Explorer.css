@@ -68,3 +68,269 @@
 
 .explorer-page .viewer-fallback { min-height: 360px; padding: 24px; text-align: center; color: var(--muted); background: var(--inset); }
 .explorer-page .viewer-fallback img { max-height: 340px; width: 100%; object-fit: contain; }
+
+/* Rev 5 Interactive 3D Model Showcase Styles */
+.rev5-controls-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.rev5-presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rev5-presets-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.rev5-preset-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.rev5-preset-btn:hover {
+  background: var(--accent-wash);
+  border-color: var(--accent-graphic);
+}
+
+.rev5-preset-btn.active {
+  background: var(--accent-wash);
+  border-color: var(--accent-graphic);
+  color: var(--accent-graphic);
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+}
+
+.rev5-sliders-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rev5-slider-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.rev5-slider-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.rev5-slider-val {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: var(--accent-graphic);
+  background: var(--inset);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  min-width: 38px;
+  text-align: center;
+}
+
+.rev5-slider-input {
+  flex: 1;
+  accent-color: var(--accent-graphic);
+  cursor: pointer;
+}
+
+.rev5-action-toggles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rev5-spin-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.rev5-spin-btn.active {
+  background: rgba(0, 255, 102, 0.12);
+  border-color: #00ff66;
+  color: #00ff66;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+}
+
+.rev5-spin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #666;
+}
+
+.rev5-spin-btn.active .rev5-spin-dot {
+  background: #00ff66;
+  box-shadow: 0 0 6px #00ff66;
+  animation: pulse-spin 0.8s infinite alternate;
+}
+
+@keyframes pulse-spin {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+.rev5-hud-overlay {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.rev5-hud-badge {
+  background: rgba(18, 22, 28, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-left: 3px solid var(--accent-graphic);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rev5-hud-badge .rpm-val {
+  color: var(--accent-graphic);
+  font-weight: bold;
+}
+
+/* Engineering Inspector Spec Card */
+.rev5-inspector-card {
+  padding: 18px;
+  background: var(--inset);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rev5-inspector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.rev5-subsystem-tag {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.rev5-part-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.rev5-specs-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.rev5-specs-table tr {
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.rev5-specs-table td {
+  padding: 6px 4px;
+  vertical-align: top;
+}
+
+.rev5-specs-table .spec-lbl {
+  color: var(--muted);
+  width: 32%;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.rev5-specs-table .spec-val {
+  color: var(--ink);
+  font-size: 11.5px;
+}
+
+.rev5-download-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent-graphic);
+  color: #000;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 9px 14px;
+  border-radius: 4px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 240, 255, 0.35);
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.rev5-download-cta:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  color: #000;
+}
+
+.rev5-part-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
