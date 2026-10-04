@@ -334,3 +334,382 @@
   flex-wrap: wrap;
 }
 
+/* =========================================================================
+   STUDIO LIGHTING PRESETS STYLES
+   ========================================================================= */
+
+.rev5-lighting-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rev5-lighting-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.rev5-lighting-btn .preset-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.rev5-lighting-btn:hover {
+  background: var(--accent-wash);
+  border-color: var(--accent-graphic);
+}
+
+.rev5-lighting-btn.active {
+  background: var(--accent-wash);
+  border-color: var(--accent-graphic);
+  color: var(--accent-graphic);
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+}
+
+/* =========================================================================
+   CINEMATIC VIDEO TURNTABLE CONTROLS SUITE
+   ========================================================================= */
+
+.rev5-cinematic-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  border-left: 3px solid #ff1744;
+  border-radius: 4px;
+}
+
+.rev5-cinematic-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rev5-reel-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rev5-reel-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.rev5-reel-btn:hover {
+  border-color: var(--accent-graphic);
+  background: var(--accent-wash);
+}
+
+.rev5-reel-btn.active {
+  background: rgba(255, 23, 68, 0.15);
+  border-color: #ff1744;
+  color: #ff3355;
+  font-weight: 600;
+  box-shadow: 0 0 6px rgba(255, 23, 68, 0.25);
+}
+
+.rev5-cinematic-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rev5-preview-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rev5-preview-btn:hover:not(:disabled) {
+  border-color: var(--accent-graphic);
+  color: var(--accent-graphic);
+}
+
+.rev5-preview-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rev5-record-cta {
+  background: linear-gradient(135deg, #ff1744 0%, #d50000 100%);
+  color: #fff;
+  border: 1px solid #ff5252;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(255, 23, 68, 0.4);
+  transition: all 0.15s ease;
+}
+
+.rev5-record-cta:hover:not(:disabled) {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 23, 68, 0.55);
+}
+
+.rev5-record-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.rev5-record-cta .record-circle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px #fff;
+  animation: pulse-rec 1.2s infinite alternate;
+}
+
+@keyframes pulse-rec {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+/* =========================================================================
+   LIVE RECORDING & PREVIEW HUD OVERLAY
+   ========================================================================= */
+
+.rev5-recording-hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  background: rgba(12, 14, 18, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 23, 68, 0.45);
+  border-left: 4px solid #ff1744;
+  border-radius: 4px;
+  padding: 10px 14px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+.rev5-recording-hud.preview {
+  border-color: rgba(0, 240, 255, 0.4);
+  border-left-color: var(--accent-graphic);
+}
+
+.rev5-recording-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rev5-rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: #ff1744;
+  letter-spacing: 0.08em;
+}
+
+.rev5-rec-badge.preview {
+  color: var(--accent-graphic);
+}
+
+.rev5-rec-badge .rec-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff1744;
+  box-shadow: 0 0 8px #ff1744;
+  animation: pulse-rec 0.8s infinite alternate;
+}
+
+.rev5-recording-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  flex: 1;
+  text-align: left;
+}
+
+.rev5-recording-bar-container {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rev5-recording-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff1744, #ff5252);
+  transition: width 0.08s linear;
+  box-shadow: 0 0 8px #ff1744;
+}
+
+.rev5-recording-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #9aa2ac;
+  font-family: var(--mono, monospace);
+}
+
+.rev5-recording-timer {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* =========================================================================
+   CINEMATIC VIDEO MODAL
+   ========================================================================= */
+
+.rev5-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rev5-modal-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.rev5-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.rev5-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.rev5-modal-video-box {
+  width: 100%;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rev5-modal-video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+}
+
+.rev5-modal-specs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.rev5-spec-pill {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rev5-spec-pill .spec-name {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rev5-spec-pill .spec-val {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--mono, monospace);
+  color: var(--ink);
+}
+
+.rev5-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+

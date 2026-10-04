@@ -567,10 +567,12 @@ export function CameraPresetRig({
 /** Spin Up Animation Controller with Meltybrain Heading LED Beacon */
 export function SpinUpGroup({
   spinUp,
+  forcedRpm,
   children,
   onRpmUpdate,
 }: {
   spinUp: boolean;
+  forcedRpm?: number;
   children: React.ReactNode;
   onRpmUpdate?: (rpm: number) => void;
 }) {
@@ -580,36 +582,44 @@ export function SpinUpGroup({
   const currentAngle = useRef(0);
 
   useFrame((_, delta) => {
-    const targetSpeed = spinUp ? 18.0 : 0.0; // ~3,500 RPM visually scaled
-    currentSpeed.current = THREE.MathUtils.lerp(currentSpeed.current, targetSpeed, delta * 2.5);
+    let targetSpeed = spinUp ? 18.0 : 0.0;
+    if (forcedRpm !== undefined) {
+      targetSpeed = (forcedRpm / 3500) * 18.0;
+      currentSpeed.current = targetSpeed;
+    } else {
+      currentSpeed.current = THREE.MathUtils.lerp(currentSpeed.current, targetSpeed, delta * 2.5);
+    }
 
-    if (groupRef.current && currentSpeed.current > 0.001) {
+    const effectiveRpm =
+      forcedRpm !== undefined ? forcedRpm : Math.round((currentSpeed.current / 18.0) * 3500);
+
+    if (groupRef.current && (currentSpeed.current > 0.001 || effectiveRpm > 0)) {
       currentAngle.current += currentSpeed.current * delta;
       groupRef.current.rotation.y = currentAngle.current;
 
       // Optical Heading Beacon strobe: pulses bright once per revolution as heading passes forward (angle ~ 0)
       if (beaconRef.current) {
         const normAngle = ((currentAngle.current % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-        // Strobe window around 0 rad (+/- 0.3 rad)
         const inStrobeWindow = normAngle < 0.35 || normAngle > Math.PI * 2 - 0.35;
-        beaconRef.current.intensity = inStrobeWindow && spinUp ? 3.5 : 0.2;
+        beaconRef.current.intensity = inStrobeWindow && (spinUp || effectiveRpm > 200) ? 3.8 : 0.2;
       }
 
       if (onRpmUpdate) {
-        const displayRpm = Math.round((currentSpeed.current / 18.0) * 3500);
-        onRpmUpdate(displayRpm);
+        onRpmUpdate(effectiveRpm);
       }
     } else if (onRpmUpdate && currentSpeed.current <= 0.001) {
       onRpmUpdate(0);
     }
   });
 
+  const showCone = spinUp || (forcedRpm !== undefined && forcedRpm > 200);
+
   return (
     <group ref={groupRef}>
       {children}
       {/* Meltybrain Forward Heading LED Beacon */}
       <pointLight ref={beaconRef} position={[0, 16, -60]} color="#00ff66" distance={120} intensity={0.4} />
-      {spinUp && (
+      {showCone && (
         <mesh position={[0, 15, -62]} rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[12, 45, 16, 1, true]} />
           <meshBasicMaterial color="#00ff66" transparent opacity={0.35} side={THREE.DoubleSide} />
@@ -665,3 +675,611 @@ export function Rev5Model({
     </group>
   );
 }
+
+/* =========================================================================
+   DYNAMIC LIGHTING STUDIO PRESETS
+   ========================================================================= */
+
+export type StudioLightingPreset =
+  | 'combatArena'
+  | 'neonCyberpunk'
+  | 'industrialClean'
+  | 'tacticalStealth';
+
+export interface StudioLightingConfig {
+  id: StudioLightingPreset;
+  name: string;
+  badge: string;
+  dotColor: string;
+  description: string;
+  bgColor: string;
+  gridColors: [string, string];
+  ambientColor: string;
+  ambientIntensity: number;
+  lights: Array<{
+    type: 'directional' | 'point';
+    color: string;
+    intensity: number;
+    position: [number, number, number];
+    castShadow?: boolean;
+    distance?: number;
+  }>;
+}
+
+export const STUDIO_LIGHTING_PRESETS: Record<StudioLightingPreset, StudioLightingConfig> = {
+  combatArena: {
+    id: 'combatArena',
+    name: 'Combat Arena Red Alert',
+    badge: 'RED ALERT',
+    dotColor: '#ff1744',
+    description: 'High-contrast red & cyan rim lights with intense battle arena atmosphere',
+    bgColor: '#0c0508',
+    gridColors: ['#ff1744', '#2d080f'],
+    ambientColor: '#ff2244',
+    ambientIntensity: 0.45,
+    lights: [
+      { type: 'directional', position: [150, 120, 100], color: '#ff1744', intensity: 3.2, castShadow: true },
+      { type: 'directional', position: [-140, -40, -110], color: '#00e5ff', intensity: 2.4 },
+      { type: 'directional', position: [0, 180, 0], color: '#ff5252', intensity: 1.8 },
+      { type: 'directional', position: [0, -120, 40], color: '#00b0ff', intensity: 1.0 },
+      { type: 'point', position: [0, 60, -30], color: '#ff1744', intensity: 2.0, distance: 180 },
+    ],
+  },
+  neonCyberpunk: {
+    id: 'neonCyberpunk',
+    name: 'Neon Cyberpunk',
+    badge: 'CYBERPUNK',
+    dotColor: '#ff007f',
+    description: 'Vibrant magenta and neon cyan rim lights with deep synthwave contrast',
+    bgColor: '#090514',
+    gridColors: ['#ff007f', '#1b0f38'],
+    ambientColor: '#9900ff',
+    ambientIntensity: 0.5,
+    lights: [
+      { type: 'directional', position: [130, 140, 100], color: '#ff007f', intensity: 3.0, castShadow: true },
+      { type: 'directional', position: [-130, -50, -100], color: '#00f0ff', intensity: 2.6 },
+      { type: 'directional', position: [0, 160, -60], color: '#bd00ff', intensity: 1.6 },
+      { type: 'directional', position: [70, -100, -70], color: '#00ffff', intensity: 1.2 },
+      { type: 'point', position: [0, 80, 50], color: '#ff0099', intensity: 2.2, distance: 160 },
+    ],
+  },
+  industrialClean: {
+    id: 'industrialClean',
+    name: 'Industrial Cleanroom',
+    badge: '6500K SHOWROOM',
+    dotColor: '#e0e8f0',
+    description: 'Neutral 6500K bright white showroom with studio grade shadow diffusion',
+    bgColor: '#16191d',
+    gridColors: ['#7d899b', '#2e353f'],
+    ambientColor: '#ffffff',
+    ambientIntensity: 1.05,
+    lights: [
+      { type: 'directional', position: [120, 160, 110], color: '#fafdff', intensity: 2.4, castShadow: true },
+      { type: 'directional', position: [-120, 80, -100], color: '#e8f0fe', intensity: 1.4 },
+      { type: 'directional', position: [0, -140, 0], color: '#ffffff', intensity: 0.9 },
+      { type: 'directional', position: [0, 100, -130], color: '#f0f6ff', intensity: 1.2 },
+      { type: 'point', position: [0, 110, 0], color: '#ffffff', intensity: 1.5, distance: 220 },
+    ],
+  },
+  tacticalStealth: {
+    id: 'tacticalStealth',
+    name: 'Tactical Stealth',
+    badge: 'STEALTH GOLD',
+    dotColor: '#e5b842',
+    description: 'Dark matte aesthetic with brushed titanium and warm gold accents',
+    bgColor: '#0a0b0d',
+    gridColors: ['#e5b842', '#211d13'],
+    ambientColor: '#181b20',
+    ambientIntensity: 0.4,
+    lights: [
+      { type: 'directional', position: [140, 120, 110], color: '#e5b842', intensity: 2.8, castShadow: true },
+      { type: 'directional', position: [-130, -30, -110], color: '#4a5868', intensity: 0.9 },
+      { type: 'directional', position: [-50, 130, -120], color: '#ffd700', intensity: 1.6 },
+      { type: 'directional', position: [0, -90, 60], color: '#b38f28', intensity: 0.8 },
+      { type: 'point', position: [-50, 40, 30], color: '#fff0b3', intensity: 2.0, distance: 150 },
+    ],
+  },
+};
+
+/** Dynamic Studio Lighting Rig */
+export function Rev5StudioLighting({ presetId }: { presetId: StudioLightingPreset }) {
+  const config = STUDIO_LIGHTING_PRESETS[presetId] ?? STUDIO_LIGHTING_PRESETS.industrialClean;
+
+  return (
+    <group>
+      <ambientLight color={config.ambientColor} intensity={config.ambientIntensity} />
+      {config.lights.map((l, idx) =>
+        l.type === 'directional' ? (
+          <directionalLight
+            key={idx}
+            position={l.position}
+            color={l.color}
+            intensity={l.intensity}
+            castShadow={l.castShadow}
+          />
+        ) : (
+          <pointLight
+            key={idx}
+            position={l.position}
+            color={l.color}
+            intensity={l.intensity}
+            distance={l.distance}
+          />
+        )
+      )}
+    </group>
+  );
+}
+
+/* =========================================================================
+   CINEMATIC CAMERA TRACKS & TURNTABLE ANIMATION
+   ========================================================================= */
+
+function smoothstep(min: number, max: number, value: number): number {
+  const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  return x * x * (3 - 2 * x);
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function lerpVec3(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number
+): [number, number, number] {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+}
+
+export type CinematicTrackId = 'orbit360' | 'explodedReel' | 'spinUpReel' | 'cleatMacro';
+
+export interface CinematicTrackFrame {
+  pos: [number, number, number];
+  target: [number, number, number];
+  explode?: number;
+  spinUp?: boolean;
+  rpm?: number;
+}
+
+export interface CinematicTrackConfig {
+  id: CinematicTrackId;
+  name: string;
+  shortLabel: string;
+  badge: string;
+  description: string;
+  durationSec: number;
+  evaluate: (u: number) => CinematicTrackFrame;
+}
+
+export const CINEMATIC_TRACKS: Record<CinematicTrackId, CinematicTrackConfig> = {
+  orbit360: {
+    id: 'orbit360',
+    name: '360° Studio Turntable Orbit',
+    shortLabel: '360° Orbit',
+    badge: 'STUDIO TURNTABLE',
+    description: 'Smooth continuous 360° rotation around the unibody chassis with dynamic elevation',
+    durationSec: 6.5,
+    evaluate: (u: number) => {
+      const angle = u * Math.PI * 2 - Math.PI * 0.25;
+      const radius = 195;
+      const y = 100 + 18 * Math.sin(u * Math.PI * 2);
+      return {
+        pos: [radius * Math.sin(angle), y, radius * Math.cos(angle)],
+        target: [0, 0, 0],
+        explode: 0,
+        spinUp: false,
+        rpm: 0,
+      };
+    },
+  },
+  explodedReel: {
+    id: 'explodedReel',
+    name: 'Exploded Assembly Reel',
+    shortLabel: 'Exploded Reel',
+    badge: 'EXPLODED REEL',
+    description: 'Animates explode slider 0% to 100% and back while orbiting all layers',
+    durationSec: 7.5,
+    evaluate: (u: number) => {
+      const angle = 0.5 + u * Math.PI * 1.5;
+      const radius = 215;
+      const y = 115 + 22 * Math.cos(u * Math.PI);
+
+      let explode = 0;
+      if (u < 0.12) {
+        explode = 0;
+      } else if (u < 0.55) {
+        explode = smoothstep(0.12, 0.55, u);
+      } else if (u < 0.78) {
+        explode = 1.0;
+      } else {
+        explode = 1.0 - smoothstep(0.78, 1.0, u) * 0.65;
+      }
+
+      return {
+        pos: [radius * Math.sin(angle), y, radius * Math.cos(angle)],
+        target: [0, 5, 0],
+        explode,
+        spinUp: false,
+        rpm: 0,
+      };
+    },
+  },
+  spinUpReel: {
+    id: 'spinUpReel',
+    name: '3,500 RPM Weapon Spin-Up Reel',
+    shortLabel: '3,500 RPM Reel',
+    badge: 'WEAPON SPIN-UP',
+    description: 'Accelerates from 0 to 3,500 RPM with synchronized optical strobe beam',
+    durationSec: 6.5,
+    evaluate: (u: number) => {
+      let pos: [number, number, number];
+      let target: [number, number, number];
+
+      if (u < 0.35) {
+        const t = smoothstep(0, 0.35, u);
+        pos = lerpVec3([100, 22, 115], [120, 55, 95], t);
+        target = [0, 4, 0];
+      } else if (u < 0.75) {
+        const t = smoothstep(0.35, 0.75, u);
+        const phi = -t * Math.PI * 0.8;
+        const r = 175;
+        pos = [r * Math.sin(phi + 0.9), 55 + 75 * t, r * Math.cos(phi + 0.9)];
+        target = [0, 0, 0];
+      } else {
+        const t = smoothstep(0.75, 1.0, u);
+        pos = lerpVec3([-95, 130, 95], [0, 185, 45], t);
+        target = [0, 0, 0];
+      }
+
+      let rpm = 0;
+      if (u < 0.15) {
+        rpm = Math.round(smoothstep(0, 0.15, u) * 700);
+      } else if (u < 0.65) {
+        rpm = Math.round(700 + smoothstep(0.15, 0.65, u) * 2800);
+      } else {
+        rpm = 3500;
+      }
+
+      return {
+        pos,
+        target,
+        explode: 0,
+        spinUp: true,
+        rpm,
+      };
+    },
+  },
+  cleatMacro: {
+    id: 'cleatMacro',
+    name: 'High-detail Macro Cleat & Weapon Zoom',
+    shortLabel: 'Cleat & Weapon Macro',
+    badge: 'MACRO CLEAT ZOOM',
+    description: 'Macro zoom on Ti-6Al-4V cleat teeth, motor bearings, and weapon unibody',
+    durationSec: 7.0,
+    evaluate: (u: number) => {
+      let pos: [number, number, number];
+      let target: [number, number, number];
+
+      if (u < 0.35) {
+        const t = smoothstep(0, 0.35, u);
+        pos = lerpVec3([-82, 16, 24], [-70, 22, 28], t);
+        target = [-54, -2, 0];
+      } else if (u < 0.70) {
+        const t = smoothstep(0.35, 0.70, u);
+        pos = lerpVec3([-70, 22, 28], [25, 52, 60], t);
+        target = lerpVec3([-54, -2, 0], [0, 6, 0], t);
+      } else {
+        const t = smoothstep(0.70, 1.0, u);
+        pos = lerpVec3([25, 52, 60], [140, 105, 140], t);
+        target = [0, 0, 0];
+      }
+
+      return {
+        pos,
+        target,
+        explode: 0.08,
+        spinUp: false,
+        rpm: 0,
+      };
+    },
+  },
+};
+
+/* =========================================================================
+   3D VIDEO TURNTABLE CAPTURE & DIRECTOR
+   ========================================================================= */
+
+export interface VideoRecordingResult {
+  blob: Blob;
+  url: string;
+  mimeType: string;
+  fileExtension: string;
+  durationSec: number;
+  trackId: CinematicTrackId;
+  trackName: string;
+  presetName: string;
+  sizeBytes: number;
+}
+
+export function getBestVideoMimeType(): { mimeType: string; extension: string } {
+  const candidates: Array<{ mime: string; ext: string }> = [
+    { mime: 'video/webm;codecs=vp9,opus', ext: 'webm' },
+    { mime: 'video/webm;codecs=vp9', ext: 'webm' },
+    { mime: 'video/webm;codecs=vp8', ext: 'webm' },
+    { mime: 'video/webm', ext: 'webm' },
+    { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
+    { mime: 'video/mp4', ext: 'mp4' },
+  ];
+
+  if (typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined') {
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c.mime)) {
+        return { mimeType: c.mime, extension: c.ext };
+      }
+    }
+  }
+  return { mimeType: 'video/webm', extension: 'webm' };
+}
+
+/** Cinematic Director Component running inside Three.js Canvas */
+export function Rev5CinematicDirector({
+  activeTrack,
+  presetId,
+  isRunning,
+  isRecording,
+  onProgress,
+  onExplodeUpdate,
+  onSpinUpdate,
+  onComplete,
+}: {
+  activeTrack: CinematicTrackId;
+  presetId: StudioLightingPreset;
+  isRunning: boolean;
+  isRecording: boolean;
+  onProgress: (percent: number, elapsedSec: number, totalSec: number) => void;
+  onExplodeUpdate?: (explode: number) => void;
+  onSpinUpdate?: (spin: boolean, rpm: number) => void;
+  onComplete: (videoResult: VideoRecordingResult | null) => void;
+}) {
+  const { gl, camera } = useThree();
+  const controlsRef = useThree((state) => state.controls) as any;
+  const elapsedRef = useRef(0);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const isRunningRef = useRef(isRunning);
+  const isRecordingRef = useRef(isRecording);
+  const activeTrackRef = useRef(activeTrack);
+  const presetIdRef = useRef(presetId);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+    isRecordingRef.current = isRecording;
+    activeTrackRef.current = activeTrack;
+    presetIdRef.current = presetId;
+  }, [isRunning, isRecording, activeTrack, presetId]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        try {
+          recorderRef.current.stop();
+        } catch (e) {
+          console.warn('Error stopping MediaRecorder:', e);
+        }
+      }
+      elapsedRef.current = 0;
+      return;
+    }
+
+    elapsedRef.current = 0;
+    chunksRef.current = [];
+
+    if (isRecording) {
+      const canvas = gl.domElement as HTMLCanvasElement & {
+        captureStream?: (fps?: number) => MediaStream;
+      };
+
+      if (typeof canvas.captureStream === 'function' && typeof MediaRecorder !== 'undefined') {
+        try {
+          const stream = canvas.captureStream(60);
+          const { mimeType, extension } = getBestVideoMimeType();
+          const recorder = new MediaRecorder(stream, {
+            mimeType,
+            videoBitsPerSecond: 10000000,
+          });
+
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              chunksRef.current.push(e.data);
+            }
+          };
+
+          recorder.onstop = () => {
+            if (chunksRef.current.length > 0) {
+              const blob = new Blob(chunksRef.current, { type: mimeType });
+              const url = URL.createObjectURL(blob);
+              const track = CINEMATIC_TRACKS[activeTrackRef.current];
+              const preset = STUDIO_LIGHTING_PRESETS[presetIdRef.current];
+              onComplete({
+                blob,
+                url,
+                mimeType,
+                fileExtension: extension,
+                durationSec: track.durationSec,
+                trackId: activeTrackRef.current,
+                trackName: track.name,
+                presetName: preset.name,
+                sizeBytes: blob.size,
+              });
+            } else {
+              onComplete(null);
+            }
+          };
+
+          recorder.start(100);
+          recorderRef.current = recorder;
+        } catch (err) {
+          console.error('Failed to initialize MediaRecorder on 3D canvas:', err);
+          onComplete(null);
+        }
+      } else {
+        console.warn('MediaRecorder or canvas.captureStream not supported in this environment');
+      }
+    }
+  }, [isRunning, isRecording, gl, onComplete]);
+
+  useFrame((_, delta) => {
+    if (!isRunning) return;
+
+    const track = CINEMATIC_TRACKS[activeTrack];
+    elapsedRef.current += delta;
+    const u = Math.min(1.0, elapsedRef.current / track.durationSec);
+
+    const frame = track.evaluate(u);
+
+    camera.position.set(frame.pos[0], frame.pos[1], frame.pos[2]);
+
+    if (controlsRef && controlsRef.target) {
+      controlsRef.target.set(frame.target[0], frame.target[1], frame.target[2]);
+      controlsRef.update();
+    } else {
+      camera.lookAt(frame.target[0], frame.target[1], frame.target[2]);
+    }
+
+    if (frame.explode !== undefined && onExplodeUpdate) {
+      onExplodeUpdate(frame.explode);
+    }
+
+    if (onSpinUpdate) {
+      onSpinUpdate(frame.spinUp ?? false, frame.rpm ?? 0);
+    }
+
+    const percent = Math.min(100, Math.round(u * 100));
+    onProgress(percent, elapsedRef.current, track.durationSec);
+
+    if (u >= 1.0) {
+      if (isRecording && recorderRef.current && recorderRef.current.state === 'recording') {
+        try {
+          recorderRef.current.stop();
+        } catch (e) {
+          console.error('Error stopping MediaRecorder:', e);
+        }
+      } else if (!isRecording) {
+        onComplete(null);
+      }
+    }
+  });
+
+  return null;
+}
+
+/* =========================================================================
+   CINEMATIC VIDEO SHOWCASE PREVIEW MODAL
+   ========================================================================= */
+
+export function Rev5VideoModal({
+  videoResult,
+  onClose,
+  onRecordAgain,
+}: {
+  videoResult: VideoRecordingResult;
+  onClose: () => void;
+  onRecordAgain: () => void;
+}) {
+  const downloadFilename = useMemo(
+    () => `eyeliner_rev5_${videoResult.trackId}_${Date.now()}.${videoResult.fileExtension}`,
+    [videoResult]
+  );
+
+  return (
+    <div className="rev5-modal-backdrop" role="dialog" aria-modal="true" aria-label="3D Video Preview">
+      <div className="rev5-modal-card">
+        <div className="rev5-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="cyber-dot" style={{ background: '#ff1744', width: 9, height: 9 }} />
+            <h2 className="rev5-modal-title">3D Turntable Video Rendered</h2>
+          </div>
+          <button
+            type="button"
+            className="mini"
+            onClick={onClose}
+            aria-label="Close modal"
+            style={{ padding: '4px 10px', fontSize: 13 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="rev5-modal-video-box">
+          <video
+            src={videoResult.url}
+            controls
+            autoPlay
+            loop
+            playsInline
+            className="rev5-modal-video"
+          />
+        </div>
+
+        <div className="rev5-modal-specs">
+          <div className="rev5-spec-pill">
+            <span className="spec-name">Sequence Track:</span>
+            <span className="spec-val">{videoResult.trackName}</span>
+          </div>
+          <div className="rev5-spec-pill">
+            <span className="spec-name">Studio Lighting:</span>
+            <span className="spec-val">{videoResult.presetName}</span>
+          </div>
+          <div className="rev5-spec-pill">
+            <span className="spec-name">Capture Rate:</span>
+            <span className="spec-val">60 FPS WebGL</span>
+          </div>
+          <div className="rev5-spec-pill">
+            <span className="spec-name">Format:</span>
+            <span className="spec-val">{videoResult.fileExtension.toUpperCase()}</span>
+          </div>
+          <div className="rev5-spec-pill">
+            <span className="spec-name">Duration:</span>
+            <span className="spec-val">{videoResult.durationSec.toFixed(1)}s</span>
+          </div>
+          <div className="rev5-spec-pill">
+            <span className="spec-name">File Size:</span>
+            <span className="spec-val">{(videoResult.sizeBytes / (1024 * 1024)).toFixed(2)} MB</span>
+          </div>
+        </div>
+
+        <div className="rev5-modal-actions">
+          <a
+            href={videoResult.url}
+            download={downloadFilename}
+            className="rev5-download-cta"
+            style={{ flex: 1, padding: '12px 18px', fontSize: 13 }}
+          >
+            <span>⤓ DOWNLOAD {videoResult.fileExtension.toUpperCase()} CLIP</span>
+            <span style={{ opacity: 0.8, fontSize: '11px' }}>
+              ({(videoResult.sizeBytes / (1024 * 1024)).toFixed(2)} MB)
+            </span>
+          </a>
+          <button
+            type="button"
+            className="btn"
+            onClick={onRecordAgain}
+            style={{ minHeight: 44, padding: '0 16px', fontSize: 12 }}
+          >
+            🎬 Record Another
+          </button>
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={onClose}
+            style={{ minHeight: 44, padding: '0 16px', fontSize: 12 }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

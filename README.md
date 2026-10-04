@@ -50,9 +50,10 @@
 8. [Tactical Cyberdeck Base Station](#tactical-cyberdeck-base-station)
 9. [3D Printing & Manufacturing Matrix](#3d-printing--manufacturing-matrix)
 10. [Interactive Web Frontend & Test Lab](#interactive-web-frontend--test-lab)
-11. [Bill of Materials (BOM)](#bill-of-materials-bom)
-12. [Safety, Arming & Pit Rituals](#safety-arming--pit-rituals)
-13. [Repository Directory Map](#repository-directory-map)
+11. [Combat Video Studio & Media Pipeline](#combat-video-studio--media-pipeline)
+12. [Bill of Materials (BOM)](#bill-of-materials-bom)
+13. [Safety, Arming & Pit Rituals](#safety-arming--pit-rituals)
+14. [Repository Directory Map](#repository-directory-map)
 
 ---
 
@@ -335,8 +336,9 @@ The repository includes a modern, responsive web application located in [`web/`]
 </div>
 
 ### Key Features & Tactical Web Stations
-- **⚡ Melty Combat Driving Simulator (`/lab`):** Real-time Canvas physics simulator featuring virtual RadioMaster joystick controls, centrifugal spin-up up to 3,500 RPM, translational throttle modulation, live 360° LiDAR radar sweeps, and autonomous opponent auto-ramming!
-- **🔍 3D CAD Explorer (`/explorer`):** Real-time Three.js WebGL orbit, sectioning, and exploded view inspection of the master CAD assembly, titanium cleat drive pods, and electronics bay.
+- **🎥 Combat Video Studio & Battle Reels (`/video`):** High-speed combat telemetry breakdown station featuring 4 multi-phase battle reels, synchronized 4-channel oscillographs (RPM, centripetal Gs, battery voltage, translational throttle bias), timeline scrubber, collision bookmarks, and 0.25x slow-mo playback.
+- **⚡ Melty Combat Driving Simulator & Arena Video Recorder (`/lab`):** Real-time 60 FPS Canvas physics simulator featuring virtual RadioMaster joystick controls, centrifugal spin-up up to 3,500 RPM, translational throttle modulation, live 360° LiDAR radar sweeps, in-browser video recording with Web Audio API sound capture, and automatic >150G Slow-Mo Killcam replay!
+- **🔍 3D CAD Explorer & Turntable Capture (`/explorer`):** Real-time Three.js WebGL orbit, sectioning, and exploded view inspection of the master CAD assembly, with an in-browser 3D turntable video recorder, 4 automated cinematic camera tracks, and studio lighting environments.
 - **🛠️ Step-by-Step Build Guide (`/build`):** Comprehensive assembly walkthrough covering mechanical fastener torques, titanium cleat seating, Teensy 4.0 & IMU soldering, and DShot600 ESC calibration.
 - **📋 Interactive Parts & BOM (`/bom`):** Dynamic 3lb weight budget calculator (1,222.0g combat weight vs 1,360.8g legal cap with 138.8g margin), verified vendor links, and live component cost accounting.
 - **💻 Firmware & .ino Studio (`/firmware`):** Live parameter tuning sliders generating copy-pasteable `#define` C configuration headers for the Teensy 4.0 flight sketch.
@@ -351,6 +353,71 @@ npm run dev      # Launch live Vite development server at http://localhost:5173
 npm run build    # Compile production bundle (validated 0 errors)
 npm run preview  # Test production build locally
 ```
+
+---
+
+## Combat Video Studio & Media Pipeline
+
+Eyeliner features a full-stack, browser-native combat media and telemetry recording pipeline designed for high-speed robotic warfare broadcast, engineering debriefs, and automated highlight reels.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   BROWSER-NATIVE COMBAT MEDIA PIPELINE                 │
+├──────────────────────┬────────────────────────┬────────────────────────┤
+│   COMBAT DRIVING LAB │   3D TURNTABLE STUDIO  │    VIDEO HUB REELS     │
+│       (`/lab`)       │     (`/explorer`)      │       (`/video`)       │
+├──────────────────────┼────────────────────────┼────────────────────────┤
+│ • 60 FPS Canvas Strm │ • Three.js WebGL Strm  │ • 4 Synchronized Reels │
+│ • Web Audio Engine   │ • 4 Cinematic Tracks   │ • 4-Channel Telemetry  │
+│   - Motor Whine (RPM)│   - 360° Studio Orbit  │   - 3,500 RPM Track    │
+│   - Metallic Clangs  │   - Exploded Breakdown │   - Centripetal G-Force│
+│ • >150G Impact Trigger│  - Weapon Spin-Up Reel │   - 4S LiPo Sag        │
+│ • 120-Frame Killcam  │   - Cleat Macro Zoom   │   - Throttle Bias      │
+│ • Instant WebM/MP4   │ • 4 Studio Lighting    │ • 0.25x Slow-Mo Scrub  │
+│   Export Modal       │ • Direct WebM Capture  │ • Dual PIP Arena View  │
+└──────────────────────┴────────────────────────┴────────────────────────┘
+```
+
+### 1. In-Browser 60 FPS Arena Video Recorder (`/lab`)
+- **Direct Canvas Stream Capture:** Employs `HTMLCanvasElement.captureStream(60)` coupled with the standard browser `MediaRecorder` API (`video/webm;codecs=vp9,opus` with fallback to `video/webm`).
+- **Dynamic Bitrate Control:** Records high-bitrate combat video up to 5.0 Mbps with zero CPU-GPU transfer overhead, avoiding external OBS or screen capture software.
+- **Instant Video Preview Modal:** Following battle completion or manual stop, renders an immediate modal video player with time scrubber, file size accounting, and a 1-click `Download MP4 / WebM` button.
+
+### 2. Web Audio API Combat Sound Engine
+- **Procedural Motor Commutation Whine:** Uses a continuous Web Audio `OscillatorNode` with audio-rate frequency modulation tied directly to the instantaneous robot spin rate ($\text{Freq} = 80\,\text{Hz} + \frac{\text{RPM}}{3500} \cdot 920\,\text{Hz}$).
+- **Metallic Impact Clang Synthesis:** On tooth-to-armor collision, synthesizes a dual-oscillator resonant metallic strike with randomized detuned harmonics, high-Q bandpass filtering ($1,800\,\text{Hz}$ to $3,200\,\text{Hz}$), and an exponential ring-down decay envelope ($0.45\,\text{s}$).
+- **Audio-Visual Stream Muxing:** Combines synthetic audio output directly into the recorded canvas stream via `AudioContext.createMediaStreamDestination()`.
+
+### 3. Automated High-G (>150G) Slow-Mo Killcam Replay
+- **Circular Ring-Buffer:** Retains the preceding 120 frames ($2.0\,\text{seconds}$) of full-fidelity arena state (robot pose, heading beacon, opponent vectors, spark kinematics, and metal debris).
+- **Threshold Gating:** Impacts producing decelerations exceeding **150G** automatically trip the Killcam detector after a 6-frame follow-through buffer.
+- **0.25x Slow-Motion Playback:** Opens an instant replay overlay rendering the collision at quarter-speed with $2.5\times$ spark cluster magnification, arena scuff persistence, and directional screen-shake physics.
+- **Auto-Director Camera Modes:** Supports 3 camera perspectives:
+  1. *Tactical Top-Down:* Full-arena bird's-eye view with range circles.
+  2. *Dynamic Follow Bot:* Smooth lerp-smoothed tracking locked to Eyeliner's translation vector.
+  3. *Clash Zoom:* Instant $1.6\times$ magnification snap focused on the contact tooth at impact.
+
+### 4. WebGL 3D Turntable Video Generator (`/explorer`)
+- **Direct Three.js WebGL Capture:** Captures high-resolution $1920\times 1080$ showcases directly from the Three.js WebGL canvas buffer (`gl.domElement.captureStream(60)`).
+- **4 Automated Cinematic Camera Tracks:**
+  - `360° Studio Turntable Orbit:` Smooth continuous circular orbit at 20° elevation, perfect for showcase previews.
+  - `Exploded Assembly Reel:` Dynamically animates the explosion offset from $0.0$ to $1.0$, exposing the TPU puck, titanium cleats, and avionics bay.
+  - `3,500 RPM Weapon Spin-Up Reel:` Simulates high-speed rotational spin-up from 0 to 3,500 RPM with dynamic motion blur and optical beacon strobing.
+  - `Macro Cleat Zoom:` Low-angle tight close-up inspecting the 32T Grade 5 Titanium gear-cleats and dead-axle bearing hubs.
+- **Studio Lighting Environments:**
+  - *Combat Arena Red Alert:* High-contrast directional tungsten key with blood-red rim fill.
+  - *Neon Cyberpunk:* Dual-tone cyan/magenta cross-lighting with specular neon highlights.
+  - *Industrial Cleanroom:* Balanced 5,500K daylight white with soft ambient bounce.
+  - *Tactical Stealth:* Moody low-key spotlights emphasizing AR500 steel bevel edges.
+
+### 5. Combat Video & Telemetry Breakdown Hub (`/video`)
+- **Multi-Reel Breakdown Engine:** Features 4 pre-rendered combat scenarios:
+  1. *Kinetic Weapon Strike Dynamics:* 3,500 RPM clash into 3lb steel bar, measuring 1.2 kJ energy transfer.
+  2. *Meltybrain Translational Vectoring:* Directional phase PWM differential pulsing producing $2.4\,\text{m/s}$ lateral transit.
+  3. *360° LiDAR Micro-Ranging & Auto-Hunt:* Spin-scan target acquisition and autonomous lock.
+  4. *Drivetrain Traction & Inversion Cleats:* Floor grip test and upside-down inverted drive recovery.
+- **Synchronized 4-Channel Telemetry HUD:** Live playhead-synchronized oscillograph charts rendering RPM, Centripetal G-force, 4S LiPo voltage sag, and motor pulse throttle bias.
+- **Full Scrubber Controls:** Includes timeline scrubbing, event bookmarks (spin-up, strike, rebound, reset), 0.25x / 0.5x / 1.0x / 2.0x speed selectors, and raw arena camera picture-in-picture overlay.
 
 ---
 

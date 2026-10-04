@@ -16,6 +16,7 @@ const Engineering = lazy(() => import('./pages/Engineering').then((m) => ({ defa
 const Liftoff = lazy(() => import('./pages/Liftoff').then((m) => ({ default: m.Liftoff })));
 const Lab = lazy(() => import('./pages/Lab').then((m) => ({ default: m.Lab })));
 const Cyberdeck = lazy(() => import('./pages/Cyberdeck').then((m) => ({ default: m.Cyberdeck })));
+const VideoHub = lazy(() => import('./pages/VideoHub').then((m) => ({ default: m.VideoHub })));
 
 export function App() {
   return (
@@ -33,6 +34,7 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="video" element={<VideoHub />} />
           <Route path="lab" element={<Lab />} />
           <Route path="cyberdeck" element={<Cyberdeck />} />
           <Route path="radio" element={<Cyberdeck />} />

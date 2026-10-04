@@ -84,12 +84,66 @@ type FloatingCombatText = {
   maxLife: number;
 };
 
+export type CameraMode = 'Tactical Top-Down' | 'Dynamic Follow Bot' | 'Clash Zoom';
+
+export type ReplaySnapshot = {
+  time: number;
+  bot: {
+    x: number;
+    y: number;
+    angle: number;
+    headingAngle: number;
+    vx: number;
+    vy: number;
+    motorBias: number;
+  };
+  opponents: {
+    id: OpponentId;
+    name: string;
+    type: string;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    radius: number;
+    color: string;
+    health: number;
+    maxHealth: number;
+    destroyed: boolean;
+    weaponAngle: number;
+  }[];
+  sparks: Spark[];
+  debris: MetalDebris[];
+  scuffs: FloorScuff[];
+  rpm: number;
+  impactG: number;
+};
+
+export type KillcamModalData = {
+  impactG: number;
+  opponentName: string;
+  snapshots: ReplaySnapshot[];
+  impactIndex: number;
+};
+
+export type RecordedVideo = {
+  blob: Blob;
+  url: string;
+  durationSec: number;
+  mimeType: string;
+  sizeBytes: number;
+  filename: string;
+};
+
 // ============================================================================
 // WEB AUDIO API PROCEDURAL SOUND ENGINE
 // ============================================================================
 class CombatAudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private mixGain: GainNode | null = null;
+  private recordGain: GainNode | null = null;
+  private mediaDest: MediaStreamAudioDestinationNode | null = null;
   private motorGain: GainNode | null = null;
   private motorFundOsc: OscillatorNode | null = null;
   private motorHarmOsc: OscillatorNode | null = null;
@@ -115,16 +169,32 @@ class CombatAudioEngine {
       const ctx = new AudioCtx();
       this.ctx = ctx;
 
-      // Master Output
+      // Master Speaker Output Bus
       const master = ctx.createGain();
       master.gain.setValueAtTime(this.muted ? 0 : 0.7, ctx.currentTime);
       master.connect(ctx.destination);
       this.masterGain = master;
 
+      // Shared Pre-Master Audio Mix Bus
+      const mix = ctx.createGain();
+      mix.gain.setValueAtTime(1.0, ctx.currentTime);
+      mix.connect(master);
+      this.mixGain = mix;
+
+      // Independent Recording Gain Bus (feeds video stream, unaffected by speaker mute)
+      const record = ctx.createGain();
+      record.gain.setValueAtTime(1.0, ctx.currentTime);
+      mix.connect(record);
+      this.recordGain = record;
+
+      if (this.mediaDest) {
+        record.connect(this.mediaDest);
+      }
+
       // 1. Brushless Motor Whine Synthesis
       const motorGain = ctx.createGain();
       motorGain.gain.setValueAtTime(0, ctx.currentTime);
-      motorGain.connect(master);
+      motorGain.connect(mix);
       this.motorGain = motorGain;
 
       // Fundamental electrical whine (14-pole motor: freq = RPM * 7 / 60)
@@ -198,7 +268,7 @@ class CombatAudioEngine {
       scrubSource.loop = true;
       scrubSource.connect(scrubFilter);
       scrubFilter.connect(scrubGain);
-      scrubGain.connect(master);
+      scrubGain.connect(mix);
       scrubSource.start();
 
       this.scrubGain = scrubGain;
@@ -209,6 +279,26 @@ class CombatAudioEngine {
     } catch {
       // AudioContext unavailable or blocked
     }
+  }
+
+  public getMediaStreamDestination(): MediaStreamAudioDestinationNode | null {
+    if (!this.initialized || !this.ctx) {
+      this.init();
+    }
+    if (!this.ctx) return null;
+    if (!this.mediaDest) {
+      try {
+        this.mediaDest = this.ctx.createMediaStreamDestination();
+        if (this.recordGain) {
+          this.recordGain.connect(this.mediaDest);
+        } else if (this.mixGain) {
+          this.mixGain.connect(this.mediaDest);
+        }
+      } catch {
+        return null;
+      }
+    }
+    return this.mediaDest;
   }
 
   public setMuted(muted: boolean) {
@@ -223,7 +313,7 @@ class CombatAudioEngine {
   }
 
   public updateMotor(rpm: number, armed: boolean, throttle: number) {
-    if (!this.initialized || !this.ctx || !this.motorGain || this.muted) return;
+    if (!this.initialized || !this.ctx || !this.motorGain) return;
     const now = this.ctx.currentTime;
     if (!armed || rpm < 40) {
       this.motorGain.gain.setTargetAtTime(0, now, 0.08);
@@ -248,7 +338,7 @@ class CombatAudioEngine {
   }
 
   public updateScrub(lateralVelocityMag: number, rpm: number) {
-    if (!this.initialized || !this.ctx || !this.scrubGain || this.muted) return;
+    if (!this.initialized || !this.ctx || !this.scrubGain) return;
     const now = this.ctx.currentTime;
     if (rpm < 500) {
       this.scrubGain.gain.setTargetAtTime(0, now, 0.06);
@@ -263,7 +353,9 @@ class CombatAudioEngine {
   }
 
   public playImpact(intensity: number, isWall: boolean) {
-    if (!this.initialized || !this.ctx || !this.masterGain || this.muted) return;
+    if (!this.initialized || !this.ctx) return;
+    const targetBus = this.mixGain || this.masterGain;
+    if (!targetBus) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
     const norm = Math.min(1.6, Math.max(0.25, intensity));
@@ -285,7 +377,7 @@ class CombatAudioEngine {
 
       noiseSrc.connect(bpFilter);
       bpFilter.connect(impactGain);
-      impactGain.connect(this.masterGain);
+      impactGain.connect(targetBus);
 
       noiseSrc.start(now);
       noiseSrc.stop(now + 0.38);
@@ -303,7 +395,7 @@ class CombatAudioEngine {
     pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
 
     pingOsc.connect(pingGain);
-    pingGain.connect(this.masterGain);
+    pingGain.connect(targetBus);
     pingOsc.start(now);
     pingOsc.stop(now + 0.26);
 
@@ -318,13 +410,15 @@ class CombatAudioEngine {
     thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
     thudOsc.connect(thudGain);
-    thudGain.connect(this.masterGain);
+    thudGain.connect(targetBus);
     thudOsc.start(now);
     thudOsc.stop(now + 0.16);
   }
 
   public playDestruction() {
-    if (!this.initialized || !this.ctx || !this.masterGain || this.muted) return;
+    if (!this.initialized || !this.ctx) return;
+    const targetBus = this.mixGain || this.masterGain;
+    if (!targetBus) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -342,7 +436,7 @@ class CombatAudioEngine {
 
       src.connect(filter);
       filter.connect(gain);
-      gain.connect(this.masterGain);
+      gain.connect(targetBus);
       src.start(now);
       src.stop(now + 0.75);
     }
@@ -364,6 +458,516 @@ class CombatAudioEngine {
 
 // Global sound engine instance
 const soundEngine = new CombatAudioEngine();
+
+// ============================================================================
+// VIDEO RECORDING & REPLAY HELPERS & MODALS
+// ============================================================================
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.floor((sec % 1) * 10);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms}`;
+}
+
+// ----------------------------------------------------------------------------
+// INSTANT KILLCAM & SLOW-MO REPLAY POPUP (0.25X SPEED + SPARK MAGNIFICATION)
+// ----------------------------------------------------------------------------
+function KillcamReplayModal({
+  data,
+  onClose,
+}: {
+  data: KillcamModalData;
+  onClose: () => void;
+}) {
+  const replayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(0.25);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [currentFrameIdx, setCurrentFrameIdx] = useState<number>(0);
+  const isPlayingRef = useRef(true);
+  const playbackSpeedRef = useRef(0.25);
+  const frameIdxRef = useRef(0);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+
+  // Keyboard shortcut: ESC to dismiss, Space to toggle play/pause
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying((p) => !p);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    let animId: number;
+    let lastTime = performance.now();
+
+    const drawFrame = (now: number) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      if (isPlayingRef.current && data.snapshots.length > 0) {
+        frameIdxRef.current += playbackSpeedRef.current * (dt * 60);
+        if (frameIdxRef.current >= data.snapshots.length) {
+          frameIdxRef.current = 0; // loop replay
+        }
+        setCurrentFrameIdx(Math.floor(frameIdxRef.current));
+      }
+
+      const canvas = replayCanvasRef.current;
+      if (canvas && data.snapshots.length > 0) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const dpr = window.devicePixelRatio || 1;
+          if (canvas.width !== 540 * dpr || canvas.height !== 540 * dpr) {
+            canvas.width = 540 * dpr;
+            canvas.height = 540 * dpr;
+          }
+
+          ctx.save();
+          ctx.scale(dpr, dpr);
+          ctx.clearRect(0, 0, 540, 540);
+
+          // Deep Dark Arena Floor
+          ctx.fillStyle = '#050811';
+          ctx.fillRect(0, 0, 540, 540);
+
+          const snapIdx = Math.min(data.snapshots.length - 1, Math.max(0, Math.floor(frameIdxRef.current)));
+          const snap = data.snapshots[snapIdx];
+
+          // Screen-Shake Effect around impact moment
+          const distToImpact = Math.abs(snapIdx - data.impactIndex);
+          const shakeRatio = Math.max(0, 1 - distToImpact / 28);
+          const shakeAmp = shakeRatio * Math.min(22, data.impactG / 10);
+          const shakeX = (Math.random() - 0.5) * shakeAmp;
+          const shakeY = (Math.random() - 0.5) * shakeAmp;
+
+          // Camera centered smoothly on bot / impact clash
+          const clashCenterX = snap.bot.x;
+          const clashCenterY = snap.bot.y;
+          const zoom = 1.35 + shakeRatio * 0.25;
+
+          ctx.save();
+          ctx.translate(270 + shakeX, 270 + shakeY);
+          ctx.scale(zoom, zoom);
+          ctx.translate(-clashCenterX, -clashCenterY);
+
+          // Arena boundary
+          ctx.beginPath();
+          ctx.arc(ARENA_CENTER.x, ARENA_CENTER.y, ARENA_RADIUS, 0, 2 * Math.PI);
+          ctx.fillStyle = '#09101d';
+          ctx.fill();
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#00f0ff';
+          ctx.stroke();
+
+          // Floor grid
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+          ctx.lineWidth = 1;
+          for (let x = 60; x <= 540; x += 40) {
+            ctx.beginPath();
+            ctx.moveTo(x, 40);
+            ctx.lineTo(x, 560);
+            ctx.stroke();
+          }
+          for (let y = 60; y <= 540; y += 40) {
+            ctx.beginPath();
+            ctx.moveTo(40, y);
+            ctx.lineTo(560, y);
+            ctx.stroke();
+          }
+
+          // Floor Scuffs
+          snap.scuffs.forEach((scuff) => {
+            ctx.fillStyle = scuff.color;
+            ctx.globalAlpha = scuff.alpha;
+            ctx.beginPath();
+            ctx.arc(scuff.x, scuff.y, scuff.radius, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+          ctx.globalAlpha = 1.0;
+
+          // Metal debris shards
+          snap.debris.forEach((deb) => {
+            ctx.save();
+            ctx.translate(deb.x, deb.y);
+            ctx.rotate(deb.angle);
+            ctx.fillStyle = deb.color;
+            ctx.globalAlpha = Math.max(0.2, 1 - deb.life / deb.maxLife);
+            ctx.fillRect(-deb.size, -deb.size, deb.size * 2, deb.size * 2);
+            ctx.restore();
+          });
+          ctx.globalAlpha = 1.0;
+
+          // SPARK MAGNIFICATION (Slow-mo 3.4x intensified bloom sparks with white-hot core)
+          snap.sparks.forEach((sp) => {
+            const alpha = Math.max(0.2, 1 - sp.life / sp.maxLife);
+            const magSize = sp.size * 3.4;
+
+            // Outer Bloom Aura
+            const grad = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, magSize * 2.8);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.25, sp.color);
+            grad.addColorStop(0.65, 'rgba(255, 170, 0, 0.4)');
+            grad.addColorStop(1, 'rgba(255, 42, 85, 0)');
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, magSize * 2.8, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // White-hot core
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, magSize * 0.7, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // High energy particle streak
+            ctx.strokeStyle = sp.color;
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(sp.x, sp.y);
+            ctx.lineTo(sp.x - sp.vx * 0.04, sp.y - sp.vy * 0.04);
+            ctx.stroke();
+          });
+          ctx.globalAlpha = 1.0;
+
+          // Opponent bots
+          snap.opponents.forEach((opp) => {
+            ctx.save();
+            ctx.translate(opp.x, opp.y);
+            if (opp.destroyed) {
+              ctx.fillStyle = '#1e293b';
+              ctx.beginPath();
+              ctx.arc(0, 0, opp.radius, 0, 2 * Math.PI);
+              ctx.fill();
+              ctx.strokeStyle = '#475569';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = opp.color;
+              ctx.beginPath();
+              ctx.arc(0, 0, opp.radius, 0, 2 * Math.PI);
+              ctx.fill();
+              ctx.lineWidth = 2.5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+
+              // Weapon visualization
+              if (opp.id === 'tombstone') {
+                ctx.save();
+                ctx.rotate(opp.weaponAngle);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(-opp.radius - 8, -4, (opp.radius + 8) * 2, 8);
+                ctx.strokeStyle = '#ff2a55';
+                ctx.strokeRect(-opp.radius - 8, -4, (opp.radius + 8) * 2, 8);
+                ctx.restore();
+              }
+            }
+            ctx.restore();
+          });
+
+          // Robot (Eyeliner 3lb Meltybrain)
+          ctx.save();
+          ctx.translate(snap.bot.x, snap.bot.y);
+          ctx.rotate(snap.bot.angle);
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(0, 0, EYELINER_RADIUS, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#00f0ff';
+          ctx.stroke();
+
+          // AR500 teeth
+          ctx.fillStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.moveTo(17, -6);
+          ctx.lineTo(29, 0);
+          ctx.lineTo(17, 6);
+          ctx.moveTo(-17, 6);
+          ctx.lineTo(-29, 0);
+          ctx.lineTo(-17, -6);
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#ffaa00';
+          ctx.stroke();
+
+          ctx.restore();
+
+          // End camera transform
+          ctx.restore();
+
+          // Replay Screen Overlays & Scanline effect
+          if (shakeRatio > 0.05) {
+            ctx.save();
+            const vig = ctx.createRadialGradient(270, 270, 160, 270, 270, 270);
+            vig.addColorStop(0, 'rgba(255, 42, 85, 0)');
+            vig.addColorStop(1, `rgba(255, 42, 85, ${shakeRatio * 0.45})`);
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, 540, 540);
+            ctx.restore();
+          }
+
+          // Scanlines
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+          for (let y = 0; y < 540; y += 4) {
+            ctx.fillRect(0, y, 540, 1.5);
+          }
+
+          // Tactical Replay Badges
+          ctx.fillStyle = '#ff2a55';
+          ctx.font = 'bold 12px monospace';
+          ctx.fillText(`● SLOW-MO REPLAY [${playbackSpeedRef.current}X]`, 20, 32);
+
+          const timeOffset = ((snapIdx - data.impactIndex) / 60).toFixed(2);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText(`T: ${timeOffset}s | FRAME ${snapIdx}/${data.snapshots.length - 1}`, 20, 50);
+
+          if (shakeRatio > 0.2) {
+            ctx.fillStyle = '#ffaa00';
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`💥 CLASH IMPACT: ${data.impactG}G!`, 270, 80);
+          }
+
+          ctx.restore();
+        }
+      }
+
+      animId = requestAnimationFrame(drawFrame);
+    };
+
+    animId = requestAnimationFrame(drawFrame);
+    return () => cancelAnimationFrame(animId);
+  }, [data]);
+
+  return (
+    <div className="cyber-modal-backdrop" onClick={onClose}>
+      <div
+        className="cyber-modal-container killcam-container hud-corner"
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '580px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 42, 85, 0.4)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="rec-pulsing-dot" />
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#ff2a55', letterSpacing: '0.08em', fontWeight: 'bold' }}>
+              INSTANT KILLCAM // SLOW-MO REPLAY
+            </h3>
+            <span className="cyber-badge crimson">{data.impactG}G SHOCK</span>
+          </div>
+          <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '11px' }} onClick={onClose}>
+            ✕ ESC
+          </button>
+        </div>
+
+        <div style={{ fontSize: '12px', color: 'var(--cyber-text-muted)' }}>
+          Massive collision vs <strong style={{ color: '#fff' }}>{data.opponentName}</strong> · Captured at 60 FPS · 0.25x Slow-Motion with Spark Magnification &amp; Screen Shake
+        </div>
+
+        {/* Dedicated Replay Canvas */}
+        <div style={{ width: '100%', aspectRatio: '1/1', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255, 42, 85, 0.5)', position: 'relative' }}>
+          <canvas ref={replayCanvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+        </div>
+
+        {/* Timeline Scrubber */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', fontFamily: 'monospace' }}>0.0s</span>
+          <input
+            type="range"
+            min="0"
+            max={Math.max(1, data.snapshots.length - 1)}
+            value={currentFrameIdx}
+            onChange={(e) => {
+              const f = parseInt(e.target.value);
+              frameIdxRef.current = f;
+              setCurrentFrameIdx(f);
+            }}
+            style={{ flex: 1, accentColor: '#ff2a55' }}
+          />
+          <span style={{ fontSize: '11px', color: '#ff2a55', fontFamily: 'monospace', fontWeight: 'bold' }}>
+            {data.snapshots.length > 0 ? `${(currentFrameIdx / 60).toFixed(2)}s` : '0s'}
+          </span>
+        </div>
+
+        {/* Playback Controls & Speed Selectors */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              className={`cyber-btn ${isPlaying ? 'primary' : ''}`}
+              style={{ padding: '6px 14px', fontSize: '11px' }}
+              onClick={() => setIsPlaying(!isPlaying)}
+            >
+              {isPlaying ? '⏸ PAUSE' : '▶ PLAY'}
+            </button>
+            <button
+              className="cyber-btn"
+              style={{ padding: '6px 12px', fontSize: '11px' }}
+              onClick={() => {
+                frameIdxRef.current = 0;
+                setCurrentFrameIdx(0);
+                setIsPlaying(true);
+              }}
+            >
+              ⏮ RESTART
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>SPEED:</span>
+            {[0.1, 0.25, 0.5, 1.0].map((s) => (
+              <button
+                key={s}
+                className={`cyber-btn ${playbackSpeed === s ? 'danger' : ''}`}
+                style={{ padding: '4px 10px', fontSize: '11px' }}
+                onClick={() => setPlaybackSpeed(s)}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
+
+          <button className="cyber-btn danger" style={{ padding: '6px 16px', fontSize: '11px' }} onClick={onClose}>
+            DISMISS REPLAY
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// VIDEO EXPORT & INSTANT PREVIEW MODAL (1-CLICK DOWNLOAD & COPY)
+// ----------------------------------------------------------------------------
+function VideoExportModal({
+  video,
+  onClose,
+}: {
+  video: RecordedVideo;
+  onClose: () => void;
+}) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+
+  const handleDownload = () => {
+    const a = document.createElement('a');
+    a.href = video.url;
+    a.download = video.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleCopyVideo = async () => {
+    try {
+      const item = new ClipboardItem({ [video.blob.type]: video.blob });
+      await navigator.clipboard.write([item]);
+      setCopyStatus('✓ Video file copied to clipboard!');
+    } catch {
+      try {
+        await navigator.clipboard.writeText(window.location.origin + video.url);
+        setCopyStatus('✓ Video preview URL copied to clipboard (Direct video copy restricted by browser)');
+      } catch {
+        setCopyStatus('Clipboard writing not permitted by browser permissions.');
+      }
+    }
+    setTimeout(() => setCopyStatus(null), 3500);
+  };
+
+  const isMp4 = video.mimeType.toLowerCase().includes('mp4');
+
+  return (
+    <div className="cyber-modal-backdrop" onClick={onClose}>
+      <div
+        className="cyber-modal-container hud-corner"
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '640px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="cyber-dot" style={{ color: 'var(--neon-green)' }} />
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--neon-cyan)', letterSpacing: '0.08em' }}>
+              COMBAT VIDEO RECORDING COMPLETE
+            </h3>
+            <span className="cyber-badge green">60 FPS</span>
+          </div>
+          <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '11px' }} onClick={onClose}>
+            ✕ CLOSE
+          </button>
+        </div>
+
+        {/* Video Player */}
+        <div style={{ width: '100%', background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--cyber-border)' }}>
+          <video
+            src={video.url}
+            controls
+            autoPlay
+            loop
+            style={{ width: '100%', maxHeight: '420px', display: 'block' }}
+          />
+        </div>
+
+        {/* Tactical Metadata Bar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          <div className="glass-panel" style={{ padding: '8px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>DURATION</div>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>{video.durationSec.toFixed(1)}s</div>
+          </div>
+          <div className="glass-panel" style={{ padding: '8px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>FILE SIZE</div>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--neon-cyan)' }}>
+              {(video.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+            </div>
+          </div>
+          <div className="glass-panel" style={{ padding: '8px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>AVG BITRATE</div>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--neon-amber)' }}>
+              {Math.round((video.sizeBytes * 8) / (video.durationSec * 1000))} kbps
+            </div>
+          </div>
+          <div className="glass-panel" style={{ padding: '8px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: 'var(--cyber-text-muted)' }}>CONTAINER</div>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: isMp4 ? 'var(--neon-green)' : 'var(--neon-cyan)' }}>
+              {isMp4 ? 'MP4 / AVC' : 'WEBM / VP9'}
+            </div>
+          </div>
+        </div>
+
+        {/* Copy Feedback Toast */}
+        {copyStatus && (
+          <div style={{ padding: '8px 12px', borderRadius: '6px', background: 'rgba(0, 255, 136, 0.15)', border: '1px solid var(--neon-green)', color: 'var(--neon-green)', fontSize: '12px', textAlign: 'center', fontFamily: 'monospace' }}>
+            {copyStatus}
+          </div>
+        )}
+
+        {/* Action Buttons: 1-click Download & 1-click Copy */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '12px' }}>
+          <button className="cyber-btn" style={{ padding: '8px 16px' }} onClick={onClose}>
+            DISCARD / CLOSE
+          </button>
+          <button className="cyber-btn" style={{ padding: '8px 16px' }} onClick={handleCopyVideo}>
+            📋 COPY VIDEO
+          </button>
+          <button className="cyber-btn primary" style={{ padding: '8px 20px' }} onClick={handleDownload}>
+            ⬇ DOWNLOAD {isMp4 ? 'MP4' : 'WEBM'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // MAIN COMPONENT: LAB
@@ -401,6 +1005,155 @@ export function Lab() {
   useEffect(() => { overdriveRef.current = overdrive; }, [overdrive]);
   useEffect(() => { selectedOpponentRef.current = selectedOpponent; }, [selectedOpponent]);
   useEffect(() => { driveModeRef.current = driveMode; }, [driveMode]);
+
+  // Live Video Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordDuration, setRecordDuration] = useState(0);
+  const [recordBitrate, setRecordBitrate] = useState(0);
+  const [recordedVideo, setRecordedVideo] = useState<RecordedVideo | null>(null);
+  const isRecordingRef = useRef(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordStartTimeRef = useRef(0);
+  const totalRecordedBytesRef = useRef(0);
+  useEffect(() => { isRecordingRef.current = isRecording; }, [isRecording]);
+
+  // Preset Cinematic Camera Modes
+  const [cameraMode, setCameraMode] = useState<CameraMode>('Tactical Top-Down');
+  const cameraModeRef = useRef<CameraMode>('Tactical Top-Down');
+  useEffect(() => { cameraModeRef.current = cameraMode; }, [cameraMode]);
+  const cameraStateRef = useRef({ x: 300, y: 300, zoom: 1 });
+
+  // Instant Killcam & Slow-Mo Replay State
+  const [autoKillcam, setAutoKillcam] = useState(true);
+  const autoKillcamRef = useRef(true);
+  useEffect(() => { autoKillcamRef.current = autoKillcam; }, [autoKillcam]);
+  const [killcamData, setKillcamData] = useState<KillcamModalData | null>(null);
+  const killcamActiveRef = useRef(false);
+  useEffect(() => { killcamActiveRef.current = !!killcamData; }, [killcamData]);
+  const replayBufferRef = useRef<ReplaySnapshot[]>([]);
+  const pendingKillcamRef = useRef<{ delayFrames: number; impactG: number; oppName: string } | null>(null);
+  const lastKillcamTriggerRef = useRef(0);
+
+  // Live Canvas Video Recording Controls
+  const startRecording = () => {
+    soundEngine.init();
+    const canvas = arenaCanvasRef.current;
+    if (!canvas) return;
+
+    const streamSupported = (canvas as HTMLCanvasElement & { captureStream?: (fps?: number) => MediaStream }).captureStream;
+    if (!streamSupported) {
+      alert('Live canvas recording is not supported in this browser.');
+      return;
+    }
+
+    const canvasStream = (canvas as HTMLCanvasElement & { captureStream: (fps: number) => MediaStream }).captureStream(60);
+    const tracks: MediaStreamTrack[] = [...canvasStream.getVideoTracks()];
+
+    const audioDest = soundEngine.getMediaStreamDestination();
+    if (audioDest && audioDest.stream) {
+      const audioTracks = audioDest.stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        tracks.push(audioTracks[0]);
+      }
+    }
+
+    const combinedStream = new MediaStream(tracks);
+
+    const mimeCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4;codecs=avc1,mp4a.40.2',
+      'video/mp4',
+    ];
+    let chosenMime = '';
+    for (const m of mimeCandidates) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)) {
+        chosenMime = m;
+        break;
+      }
+    }
+
+    try {
+      const recorder = new MediaRecorder(
+        combinedStream,
+        chosenMime ? { mimeType: chosenMime, videoBitsPerSecond: 3_500_000 } : undefined
+      );
+
+      recordedChunksRef.current = [];
+      totalRecordedBytesRef.current = 0;
+      recordStartTimeRef.current = performance.now();
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+          totalRecordedBytesRef.current += e.data.size;
+          const elapsedSec = (performance.now() - recordStartTimeRef.current) / 1000;
+          if (elapsedSec > 0.3) {
+            const kbps = Math.round((totalRecordedBytesRef.current * 8) / (elapsedSec * 1000));
+            setRecordBitrate(kbps);
+          }
+        }
+      };
+
+      recorder.onstop = () => {
+        const mime = chosenMime || 'video/webm';
+        const blob = new Blob(recordedChunksRef.current, { type: mime });
+        const url = URL.createObjectURL(blob);
+        const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+        const nowStamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `eyeliner-combat-${nowStamp}.${ext}`;
+        const durationSec = Math.max(0.5, (performance.now() - recordStartTimeRef.current) / 1000);
+
+        setRecordedVideo({
+          blob,
+          url,
+          durationSec,
+          mimeType: mime,
+          sizeBytes: blob.size,
+          filename,
+        });
+        setIsRecording(false);
+        setRecordDuration(0);
+        setRecordBitrate(0);
+      };
+
+      recorder.start(250);
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordDuration(0);
+      setRecordBitrate(0);
+    } catch (err) {
+      console.error('Failed to initialize MediaRecorder:', err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  // Instant Killcam Trigger Logic
+  const triggerKillcam = (impactGVal: number, opponentName: string) => {
+    if (replayBufferRef.current.length === 0) return;
+    const snapshots = [...replayBufferRef.current];
+    const impactIdx = Math.max(0, snapshots.length - 24);
+    setKillcamData({
+      impactG: impactGVal,
+      opponentName,
+      snapshots,
+      impactIndex: impactIdx,
+    });
+  };
+
+  const triggerManualReplay = () => {
+    if (replayBufferRef.current.length === 0) return;
+    const opp = opponentsRef.current.find((o) => !o.destroyed) || opponentsRef.current[0];
+    const targetG = impactG > 0 ? impactG : Math.round(180 + Math.random() * 80);
+    triggerKillcam(targetG, opp.name);
+  };
 
   // Audio mute toggle sync
   const toggleAudioMute = () => {
@@ -1001,6 +1754,19 @@ export function Lab() {
           setPeakG((prev) => Math.max(prev, cappedG));
           setTotalHits((h) => h + 1);
 
+          // Auto-trigger instant slow-motion replay popup on massive impacts (>150G)
+          if (cappedG > 150 && autoKillcamRef.current && !killcamActiveRef.current) {
+            const nowMs = performance.now();
+            if (nowMs - lastKillcamTriggerRef.current > 4000) {
+              lastKillcamTriggerRef.current = nowMs;
+              pendingKillcamRef.current = {
+                delayFrames: 24, // Delay 0.4s to capture full impact aftermath & debris recoil
+                impactG: cappedG,
+                oppName: opp.name,
+              };
+            }
+          }
+
           // Hit Combo System
           comboTimerRef.current = 3.5;
           setHitCombo((c) => {
@@ -1114,6 +1880,104 @@ export function Lab() {
       if (accelHistoryRef.current.length > 200) {
         accelHistoryRef.current.shift();
       }
+
+      // Process pending killcam triggers
+      if (pendingKillcamRef.current) {
+        pendingKillcamRef.current.delayFrames -= 1;
+        if (pendingKillcamRef.current.delayFrames <= 0) {
+          const { impactG: trigG, oppName } = pendingKillcamRef.current;
+          pendingKillcamRef.current = null;
+          triggerKillcam(trigG, oppName);
+        }
+      }
+
+      // Record 60 FPS state snapshot into rolling replay buffer (last 3 seconds = 180 frames)
+      replayBufferRef.current.push({
+        time: now,
+        bot: {
+          x: bot.x,
+          y: bot.y,
+          angle: bot.angle,
+          headingAngle: bot.headingAngle,
+          vx: bot.vx,
+          vy: bot.vy,
+          motorBias: bot.motorBias,
+        },
+        opponents: opponentsRef.current.map((o) => ({
+          id: o.id,
+          name: o.name,
+          type: o.type,
+          x: o.x,
+          y: o.y,
+          vx: o.vx,
+          vy: o.vy,
+          radius: o.radius,
+          color: o.color,
+          health: o.health,
+          maxHealth: o.maxHealth,
+          destroyed: o.destroyed,
+          weaponAngle: o.weaponAngle,
+        })),
+        sparks: sparksRef.current.map((s) => ({ ...s })),
+        debris: debrisRef.current.map((d) => ({ ...d })),
+        scuffs: scuffsRef.current.slice(-25),
+        rpm: rpmRef.current,
+        impactG: impactG,
+      });
+      if (replayBufferRef.current.length > 180) {
+        replayBufferRef.current.shift();
+      }
+
+      // Update live recording duration timer
+      if (isRecordingRef.current && recordStartTimeRef.current > 0) {
+        setRecordDuration((performance.now() - recordStartTimeRef.current) / 1000);
+      }
+
+      // ----------------------------------------------------------------------
+      // SMOOTH CINEMATIC CAMERA TRACKING (AUTO-DIRECTOR CAMERA MODES)
+      // ----------------------------------------------------------------------
+      const mode = cameraModeRef.current;
+      let targetCamX = 300;
+      let targetCamY = 300;
+      let targetZoom = 1.0;
+
+      if (mode === 'Tactical Top-Down') {
+        targetCamX = 300;
+        targetCamY = 300;
+        targetZoom = 1.0;
+      } else if (mode === 'Dynamic Follow Bot') {
+        targetCamX = bot.x;
+        targetCamY = bot.y;
+        targetZoom = 1.45;
+      } else if (mode === 'Clash Zoom') {
+        let nearestDist = 9999;
+        let nearestOpp: Opponent | null = null;
+        for (const opp of opponentsRef.current) {
+          if (!opp.destroyed) {
+            const d = Math.hypot(opp.x - bot.x, opp.y - bot.y);
+            if (d < nearestDist) {
+              nearestDist = d;
+              nearestOpp = opp;
+            }
+          }
+        }
+        if (nearestOpp) {
+          targetCamX = (bot.x + nearestOpp.x) / 2;
+          targetCamY = (bot.y + nearestOpp.y) / 2;
+          // Dynamically zoom in when nearing opponents
+          const prox = Math.max(0, Math.min(1, (270 - nearestDist) / 200));
+          targetZoom = 1.15 + prox * 0.75;
+        } else {
+          targetCamX = bot.x;
+          targetCamY = bot.y;
+          targetZoom = 1.3;
+        }
+      }
+
+      const cam = cameraStateRef.current;
+      cam.x += (targetCamX - cam.x) * 0.08;
+      cam.y += (targetCamY - cam.y) * 0.08;
+      cam.zoom += (targetZoom - cam.zoom) * 0.08;
 
       // ----------------------------------------------------------------------
       // 5. RENDER ALL CANVASES (RETINA / HIGH-DPI SUPPORTED)
@@ -1810,7 +2674,7 @@ export function Lab() {
         
         {/* Left Column: 60FPS Combat Arena Physics */}
         <div className="glass-panel hud-corner" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '18px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="cyber-dot" /> TACTICAL COMBAT ARENA
@@ -1819,14 +2683,98 @@ export function Lab() {
                 3,500 RPM Kinematics · Sinusoidal Motor Modulation · AR500 Tooth Collision Dynamics
               </span>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* Live Video Recording Button */}
+              {!isRecording ? (
+                <button
+                  className="cyber-btn danger"
+                  style={{ padding: '5px 12px', fontSize: '11px' }}
+                  onClick={startRecording}
+                  title="Record 60 FPS Arena Video with Synthesized Motor & Impact Sound"
+                >
+                  <span className="rec-pulsing-dot" /> REC COMBAT (60FPS)
+                </button>
+              ) : (
+                <button
+                  className="cyber-btn danger"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '11px',
+                    background: 'rgba(255, 42, 85, 0.45)',
+                    boxShadow: '0 0 16px rgba(255, 42, 85, 0.7)',
+                  }}
+                  onClick={stopRecording}
+                  title="Stop and Export Combat Recording"
+                >
+                  <span className="rec-pulsing-dot" /> STOP REC ({formatDuration(recordDuration)})
+                </button>
+              )}
+
+              {/* Instant 3s Slow-Motion Replay Trigger */}
               <button
                 className="cyber-btn"
-                style={{ padding: '4px 10px', fontSize: '11px' }}
+                style={{ padding: '5px 10px', fontSize: '11px' }}
+                onClick={triggerManualReplay}
+                title="Instant Slow-Motion Replay (Last 3.0s @ 0.25x Speed)"
+              >
+                🎬 REPLAY (3s)
+              </button>
+
+              {/* Auto-Killcam Toggle */}
+              <button
+                className={`cyber-btn ${autoKillcam ? 'primary' : ''}`}
+                style={{ padding: '5px 10px', fontSize: '11px' }}
+                onClick={() => setAutoKillcam(!autoKillcam)}
+                title="Toggle automatic slow-mo replay popup on massive impacts (>150G)"
+              >
+                ⚡ KILLCAM: {autoKillcam ? 'AUTO' : 'OFF'}
+              </button>
+
+              <button
+                className="cyber-btn"
+                style={{ padding: '5px 10px', fontSize: '11px' }}
                 onClick={resetArena}
               >
                 RESET ARENA (R)
               </button>
+            </div>
+          </div>
+
+          {/* Preset Cinematic Camera Modes (Auto-Director) */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'rgba(10, 16, 28, 0.65)',
+              border: '1px solid rgba(0, 240, 255, 0.2)',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '10px', color: 'var(--cyber-text-muted)', textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                DIRECTOR CAM:
+              </span>
+              {(['Tactical Top-Down', 'Dynamic Follow Bot', 'Clash Zoom'] as CameraMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  className={`cyber-btn ${cameraMode === mode ? 'primary' : ''}`}
+                  style={{ padding: '4px 10px', fontSize: '10px' }}
+                  onClick={() => setCameraMode(mode)}
+                >
+                  {mode === 'Tactical Top-Down' && '🎥 '}
+                  {mode === 'Dynamic Follow Bot' && '🤖 '}
+                  {mode === 'Clash Zoom' && '⚡ '}
+                  {mode.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
+              <span style={{ color: 'var(--cyber-text-dim)' }}>ZOOM:</span>
+              <strong style={{ color: 'var(--neon-cyan)' }}>{cameraStateRef.current.zoom.toFixed(2)}X</strong>
             </div>
           </div>
 
@@ -1852,6 +2800,19 @@ export function Lab() {
               onPointerUp={handleArenaPointerUp}
               onPointerCancel={handleArenaPointerUp}
             />
+
+            {/* Tactical Recording HUD with red pulsating REC badge, recording duration timer, and live bit rate indicator */}
+            {isRecording && (
+              <div className="tactical-rec-hud">
+                <span className="rec-pulsing-dot" />
+                <span style={{ color: '#ff2a55', fontWeight: 'bold', letterSpacing: '0.12em' }}>REC</span>
+                <span style={{ color: '#ffffff', fontWeight: 'bold' }}>{formatDuration(recordDuration)}</span>
+                <span style={{ color: 'var(--neon-cyan)', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px' }}>
+                  {recordBitrate > 1000 ? `${(recordBitrate / 1000).toFixed(2)} Mbps` : `${recordBitrate} kbps`}
+                </span>
+                <span style={{ color: 'var(--neon-amber)', fontSize: '10px' }}>60 FPS</span>
+              </div>
+            )}
 
             {/* In-Canvas Telemetry HUD Overlays */}
             <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '4px', pointerEvents: 'none' }}>
@@ -2206,6 +3167,27 @@ export function Lab() {
           </div>
         </div>
       </div>
+
+      {/* Instant Killcam & Slow-Mo Replay Modal */}
+      {killcamData && (
+        <KillcamReplayModal
+          data={killcamData}
+          onClose={() => setKillcamData(null)}
+        />
+      )}
+
+      {/* Video Export & Instant Preview Modal */}
+      {recordedVideo && (
+        <VideoExportModal
+          video={recordedVideo}
+          onClose={() => {
+            if (recordedVideo.url) {
+              URL.revokeObjectURL(recordedVideo.url);
+            }
+            setRecordedVideo(null);
+          }}
+        />
+      )}
     </div>
   );
 }

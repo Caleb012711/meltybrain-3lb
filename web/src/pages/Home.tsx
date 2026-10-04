@@ -88,11 +88,14 @@ export function Home() {
 
           {/* Prominent Quick-Action Launch Buttons */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
+            <Link className="cyber-btn danger" to="/video" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
+              🎥 Video Studio &amp; Battle Reels
+            </Link>
             <Link className="cyber-btn primary" to="/lab" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              ⚡ Combat Driving Simulator
+              ⚡ Combat Driving Simulator &amp; Rec
             </Link>
             <Link className="cyber-btn" to="/explorer" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              🔍 3D CAD Explorer
+              🔍 3D CAD Explorer &amp; Turntable
             </Link>
             <Link className="cyber-btn" to="/build" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
               🛠️ Step-by-Step Build Guide
@@ -202,6 +205,93 @@ export function Home() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* Premier Showcase: Combat Video Studio, Driving Lab, and 3D Turntable Capture */}
+      <section style={{ marginTop: '20px', marginBottom: '36px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '22px', color: 'var(--neon-crimson)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="cyber-dot" style={{ background: 'var(--neon-crimson)', boxShadow: '0 0 8px var(--neon-crimson)' }} /> 🎥 COMBAT VIDEO STUDIO &amp; MEDIA PIPELINE
+            </h2>
+            <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>
+              Integrated broadcast suite: high-speed battle telemetry reels, in-browser arena video recorder, and 3D turntable capture
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="cyber-badge crimson">60 FPS WEBGL &amp; WEBM</span>
+            <span className="cyber-badge amber">150G SLOW-MO KILLCAM</span>
+            <span className="cyber-badge green">4-CHANNEL TELEMETRY</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+          {/* Card 1: Video Studio & Battle Reels */}
+          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-crimson)' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="cyber-badge crimson">BROADCAST HUB</span>
+                <span className="cyber-badge">4 REEL BREAKDOWNS</span>
+              </div>
+              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🎥 Video Studio &amp; Battle Reels
+              </h3>
+              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
+                Multi-channel breakdown station featuring 4 synchronized combat reels: 1.2 kJ kinetic weapon impacts, directional melty translational pulsing, autonomous LiDAR sweeps, and inverted cleat traction. Includes 0.25x slow-mo playback, event bookmarks, and real-time synchronized telemetry oscillographs (RPM, Centripetal G-force, 4S LiPo voltage, and throttle bias).
+              </p>
+              <div style={{ padding: '10px 12px', background: 'rgba(255, 42, 85, 0.06)', borderRadius: '6px', border: '1px solid rgba(255, 42, 85, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
+                <strong>Features:</strong> Frame scrubber · 0.25x slow-mo · Dual camera PIP · Web Audio engine · 1-click MP4 download
+              </div>
+            </div>
+            <Link to="/video" className="cyber-btn danger" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
+              LAUNCH VIDEO HUB (`/video`) ↗
+            </Link>
+          </div>
+
+          {/* Card 2: Combat Driving Lab */}
+          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-amber)' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="cyber-badge amber">PLAYABLE ARENA SIM</span>
+                <span className="cyber-badge green">CANVAS RECORDER</span>
+              </div>
+              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⚡ Combat Driving Lab &amp; Instant Recorder
+              </h3>
+              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
+                Test drive Eyeliner in a physics-accurate 60 FPS arena simulation with realistic rotational moment of inertia, differential throttle bias, and AI sparring opponents. Features live in-browser arena video recording with Web Audio API sound capture, automated &gt;150G slow-mo killcam replays with spark magnification, and instant WebM / MP4 video export.
+              </p>
+              <div style={{ padding: '10px 12px', background: 'rgba(255, 170, 0, 0.06)', borderRadius: '6px', border: '1px solid rgba(255, 170, 0, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
+                <strong>Features:</strong> 60 FPS Canvas Record · Web Audio motor whine &amp; clangs · Slow-Mo Killcam · Clash Zoom camera
+              </div>
+            </div>
+            <Link to="/lab" className="cyber-btn amber" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
+              OPEN COMBAT LAB (`/lab`) ↗
+            </Link>
+          </div>
+
+          {/* Card 3: 3D CAD Explorer & Turntable Capture */}
+          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-cyan)' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="cyber-badge">THREE.JS WEBGL</span>
+                <span className="cyber-badge green">360° TURNTABLE CAPTURE</span>
+              </div>
+              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🔍 3D Explorer &amp; Turntable Video Capture
+              </h3>
+              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
+                Inspect the full Rev 5 &amp; Rev 6 multi-body assemblies with exploded part breakdown, transparent X-ray avionics inspection, and direct CAD STEP/STL downloads. Includes an in-browser 3D turntable video generator with 4 cinematic camera tracks (360° Orbit, Exploded Assembly, 3,500 RPM Weapon Spin-Up, Cleat Macro Zoom) and dynamic studio lighting presets.
+              </p>
+              <div style={{ padding: '10px 12px', background: 'rgba(0, 240, 255, 0.06)', borderRadius: '6px', border: '1px solid rgba(0, 240, 255, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
+                <strong>Features:</strong> 4 Cinematic camera tracks · 4 Studio lighting environments · 60 FPS WebGL capture · Direct video download
+              </div>
+            </div>
+            <Link to="/explorer" className="cyber-btn primary" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
+              EXPLORE 3D CAD (`/explorer`) ↗
+            </Link>
           </div>
         </div>
       </section>

@@ -46,8 +46,9 @@ function ScrollToTop() {
 
 const primaryNav = [
   { to: '/', label: 'Overview' },
-  { to: '/lab', label: '⚡ Combat Lab (Sim)' },
-  { to: '/explorer', label: '3D Explorer' },
+  { to: '/video', label: '🎥 Video Reels' },
+  { to: '/lab', label: '⚡ Combat Lab' },
+  { to: '/explorer', label: '🔍 3D Explorer' },
   { to: '/build', label: '🛠️ Build Guide' },
   { to: '/bom', label: 'Parts & BOM' },
   { to: '/firmware', label: 'Firmware & .ino' },
@@ -89,9 +90,10 @@ export function Layout() {
           <p>Autonomous 3lb Meltybrain Combat Robot.<br />Kinetic translation weapon, CAD, and telemetry station.</p>
         </div>
         <div className="footer-links">
-          <Link to="/lab">⚡ Combat Lab (Sim)</Link>
-          <Link to="/explorer">3D CAD Explorer</Link>
-          <Link to="/build">Build Guide &amp; Wiring</Link>
+          <Link to="/video">🎥 Video Studio &amp; Battle Reels</Link>
+          <Link to="/lab">⚡ Combat Driving Lab (Sim &amp; Recorder)</Link>
+          <Link to="/explorer">🔍 3D Explorer &amp; Turntable Capture</Link>
+          <Link to="/build">🛠️ Build Guide &amp; Wiring</Link>
           <Link to="/bom">Interactive Parts &amp; BOM</Link>
         </div>
         <div className="footer-links">

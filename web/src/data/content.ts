@@ -3,8 +3,9 @@ export type NavEntry = { to: string; label: string; end?: boolean; anchors?: Nav
 
 export const nav: NavEntry[] = [
   { to: '/', label: 'Overview', end: true },
+  { to: '/video', label: '🎥 Video Studio' },
   { to: '/lab', label: '⚡ Combat Lab' },
-  { to: '/explorer', label: '3D Explorer' },
+  { to: '/explorer', label: '🔍 3D Explorer' },
   { to: '/firmware', label: 'Firmware & .ino' },
   { to: '/cyberdeck', label: 'RadioMaster Station' },
   { to: '/printing', label: 'Slicer Studio' },

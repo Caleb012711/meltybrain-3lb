@@ -21,7 +21,15 @@ import {
   Rev5Model,
   CameraPresetRig,
   SpinUpGroup,
+  STUDIO_LIGHTING_PRESETS,
+  Rev5StudioLighting,
+  CINEMATIC_TRACKS,
+  Rev5CinematicDirector,
+  Rev5VideoModal,
   type CameraPreset,
+  type StudioLightingPreset,
+  type CinematicTrackId,
+  type VideoRecordingResult,
 } from '../components/Rev5Showcase';
 import './Explorer.css';
 
@@ -51,6 +59,17 @@ export function Explorer() {
   const [rev5ActivePreset, setRev5ActivePreset] = useState<CameraPreset | null>('isometric');
   const [rev5SubsystemFilter, setRev5SubsystemFilter] = useState('all');
   const [rev5Query, setRev5Query] = useState('');
+
+  // Dynamic Studio Lighting & 3D Video Turntable States
+  const [studioLighting, setStudioLighting] = useState<StudioLightingPreset>('combatArena');
+  const [selectedCinematicTrack, setSelectedCinematicTrack] = useState<CinematicTrackId>('orbit360');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isCinematicPreviewing, setIsCinematicPreviewing] = useState(false);
+  const [cinematicProgress, setCinematicProgress] = useState(0);
+  const [cinematicElapsed, setCinematicElapsed] = useState(0);
+  const [cinematicDuration, setCinematicDuration] = useState(6.5);
+  const [forcedCinematicRpm, setForcedCinematicRpm] = useState<number | undefined>(undefined);
+  const [recordedVideo, setRecordedVideo] = useState<VideoRecordingResult | null>(null);
 
   // Camera animation target for Rev 5
   const [camTargetPos, setCamTargetPos] = useState<[number, number, number] | null>(CAMERA_PRESETS.isometric.pos);
@@ -94,6 +113,9 @@ export function Explorer() {
       setIsCamAnimating(true);
       setRev5Spin(false);
       setRev5Rpm(0);
+      setIsRecording(false);
+      setIsCinematicPreviewing(false);
+      setForcedCinematicRpm(undefined);
     } else {
       setSelected(null);
       setHovered(null);
@@ -116,10 +138,40 @@ export function Explorer() {
     setCamTargetPos(preset.pos);
     setCamTargetLookAt(preset.target);
     setIsCamAnimating(true);
+    setIsCinematicPreviewing(false);
+    setIsRecording(false);
+    setForcedCinematicRpm(undefined);
 
     if (preset.explode !== undefined) {
       setRev5Explode(preset.explode);
     }
+  }, []);
+
+  // Handle Automated 3D Video Turntable Recording & Cinematic Tracks
+  const handleStartRecording = useCallback((trackId: CinematicTrackId) => {
+    setSelectedCinematicTrack(trackId);
+    setIsCinematicPreviewing(false);
+    setIsCamAnimating(false);
+    setRev5ActivePreset(null);
+    setCinematicProgress(0);
+    setCinematicElapsed(0);
+    setIsRecording(true);
+  }, []);
+
+  const handleStartCinematicPreview = useCallback((trackId: CinematicTrackId) => {
+    setSelectedCinematicTrack(trackId);
+    setIsRecording(false);
+    setIsCamAnimating(false);
+    setRev5ActivePreset(null);
+    setCinematicProgress(0);
+    setCinematicElapsed(0);
+    setIsCinematicPreviewing(true);
+  }, []);
+
+  const handleStopCinematic = useCallback(() => {
+    setIsRecording(false);
+    setIsCinematicPreviewing(false);
+    setForcedCinematicRpm(undefined);
   }, []);
 
   // Handle Rev 5 Part Selection with Camera Focus
@@ -246,8 +298,83 @@ export function Explorer() {
             <div className="explorer-canvas" style={{ position: 'relative' }}>
               {isRev5 ? (
                 <>
+                  {/* Live Recording & Turntable Progress HUD Overlay */}
+                  {isRecording && (
+                    <div className="rev5-recording-hud" role="status" aria-live="assertive">
+                      <div className="rev5-recording-header">
+                        <div className="rev5-rec-badge">
+                          <span className="rec-pulse-dot" />
+                          <span>REC 60 FPS WEBGL</span>
+                        </div>
+                        <span className="rev5-recording-title">
+                          {CINEMATIC_TRACKS[selectedCinematicTrack].name} · {STUDIO_LIGHTING_PRESETS[studioLighting].name}
+                        </span>
+                        <button
+                          type="button"
+                          className="mini"
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: '11px',
+                            background: 'rgba(255, 23, 68, 0.25)',
+                            borderColor: '#ff1744',
+                            color: '#ff1744',
+                          }}
+                          onClick={handleStopCinematic}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="rev5-recording-bar-container">
+                        <div
+                          className="rev5-recording-bar-fill"
+                          style={{ width: `${cinematicProgress}%` }}
+                        />
+                      </div>
+                      <div className="rev5-recording-footer">
+                        <span>Direct Canvas Stream (60 FPS) · MediaRecorder</span>
+                        <span className="rev5-recording-timer">
+                          {cinematicProgress}% · {cinematicElapsed.toFixed(1)}s / {cinematicDuration.toFixed(1)}s
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cinematic Preview HUD Overlay */}
+                  {isCinematicPreviewing && (
+                    <div className="rev5-recording-hud preview" role="status">
+                      <div className="rev5-recording-header">
+                        <div className="rev5-rec-badge preview">
+                          <span className="cyber-dot" style={{ background: 'var(--accent-graphic)' }} />
+                          <span>PREVIEWING CAMERA TRACK</span>
+                        </div>
+                        <span className="rev5-recording-title">
+                          {CINEMATIC_TRACKS[selectedCinematicTrack].name}
+                        </span>
+                        <button
+                          type="button"
+                          className="mini"
+                          onClick={handleStopCinematic}
+                        >
+                          Stop
+                        </button>
+                      </div>
+                      <div className="rev5-recording-bar-container">
+                        <div
+                          className="rev5-recording-bar-fill"
+                          style={{ width: `${cinematicProgress}%`, background: 'var(--accent-graphic)' }}
+                        />
+                      </div>
+                      <div className="rev5-recording-footer">
+                        <span>Automated Cinematic Trajectory</span>
+                        <span className="rev5-recording-timer">
+                          {cinematicProgress}% · {cinematicElapsed.toFixed(1)}s / {cinematicDuration.toFixed(1)}s
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Live Spin Up Telemetry HUD Overlay */}
-                  <div className="rev5-hud-overlay">
+                  <div className="rev5-hud-overlay" style={{ top: isRecording || isCinematicPreviewing ? 74 : 14 }}>
                     <div className="rev5-hud-badge">
                       <span className="cyber-dot" style={{ background: rev5Spin ? '#00ff66' : 'var(--accent-graphic)' }} />
                       <span>SPIN VELOCITY:</span>
@@ -289,23 +416,28 @@ export function Explorer() {
                       role="img"
                       aria-label="Rev 5 3D Model Showcase"
                     >
-                      <color attach="background" args={[theme === 'dark' ? '#18191a' : '#eeece5']} />
+                      <color attach="background" args={[STUDIO_LIGHTING_PRESETS[studioLighting].bgColor]} />
                       
-                      {/* Showroom Lighting */}
-                      <ambientLight intensity={theme === 'dark' ? 0.75 : 0.9} />
-                      <directionalLight position={[120, 150, 100]} intensity={1.5} castShadow />
-                      <directionalLight position={[-120, -60, -100]} intensity={0.6} color="#8ec5d9" />
-                      <directionalLight position={[0, -150, 50]} intensity={0.4} color="#ffffff" />
-                      <pointLight position={[0, 80, 0]} intensity={0.8} />
+                      {/* Dynamic Studio Lighting Rig */}
+                      <Rev5StudioLighting presetId={studioLighting} />
 
-                      {/* Ground Plane Grid */}
+                      {/* Ground Plane Grid with Studio Preset Tinting */}
                       <gridHelper
-                        args={[360, 36, theme === 'dark' ? '#383a3d' : '#c9c5ba', theme === 'dark' ? '#222426' : '#e2ded4']}
+                        args={[
+                          360,
+                          36,
+                          STUDIO_LIGHTING_PRESETS[studioLighting].gridColors[0],
+                          STUDIO_LIGHTING_PRESETS[studioLighting].gridColors[1],
+                        ]}
                         position={[0, -55, 0]}
                       />
 
                       <Suspense fallback={null}>
-                        <SpinUpGroup spinUp={rev5Spin && !reduced} onRpmUpdate={setRev5Rpm}>
+                        <SpinUpGroup
+                          spinUp={rev5Spin && !reduced}
+                          forcedRpm={forcedCinematicRpm}
+                          onRpmUpdate={setRev5Rpm}
+                        >
                           <Rev5Model
                             explode={rev5Explode}
                             wireframe={rev5Wireframe}
@@ -326,6 +458,33 @@ export function Explorer() {
                         onAnimationEnd={() => setIsCamAnimating(false)}
                       />
 
+                      {(isRecording || isCinematicPreviewing) && (
+                        <Rev5CinematicDirector
+                          activeTrack={selectedCinematicTrack}
+                          presetId={studioLighting}
+                          isRunning={isRecording || isCinematicPreviewing}
+                          isRecording={isRecording}
+                          onProgress={(pct, elapsed, total) => {
+                            setCinematicProgress(pct);
+                            setCinematicElapsed(elapsed);
+                            setCinematicDuration(total);
+                          }}
+                          onExplodeUpdate={(exp) => setRev5Explode(exp)}
+                          onSpinUpdate={(spinActive, rpm) => {
+                            setRev5Spin(spinActive);
+                            setForcedCinematicRpm(rpm);
+                          }}
+                          onComplete={(result) => {
+                            setIsRecording(false);
+                            setIsCinematicPreviewing(false);
+                            setForcedCinematicRpm(undefined);
+                            if (result) {
+                              setRecordedVideo(result);
+                            }
+                          }}
+                        />
+                      )}
+
                       <OrbitControls
                         enableDamping
                         dampingFactor={0.05}
@@ -333,6 +492,7 @@ export function Explorer() {
                         minDistance={35}
                         maxDistance={500}
                         zoomToCursor
+                        enabled={!isRecording && !isCinematicPreviewing}
                         onStart={() => {
                           setIsCamAnimating(false);
                           setRev5ActivePreset(null);
@@ -439,6 +599,73 @@ export function Explorer() {
                 {/* Rev 5 Specific Camera Presets & Exploded Slider */}
                 {isRev5 ? (
                   <>
+                    {/* Dynamic Studio Lighting Presets */}
+                    <div className="rev5-lighting-bar">
+                      <span className="rev5-presets-label">Studio Lighting:</span>
+                      {(Object.keys(STUDIO_LIGHTING_PRESETS) as StudioLightingPreset[]).map((key) => {
+                        const preset = STUDIO_LIGHTING_PRESETS[key];
+                        const isActive = studioLighting === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            className={`rev5-lighting-btn ${isActive ? 'active' : ''}`}
+                            onClick={() => setStudioLighting(key)}
+                            title={preset.description}
+                          >
+                            <span className="preset-dot" style={{ background: preset.dotColor }} />
+                            <span>{preset.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 3D Turntable Video Generator & Cinematic Showcase Suite */}
+                    <div className="rev5-cinematic-bar">
+                      <div className="rev5-cinematic-selector">
+                        <span className="rev5-presets-label">Cinematic Reel:</span>
+                        <div className="rev5-reel-chips">
+                          {(Object.keys(CINEMATIC_TRACKS) as CinematicTrackId[]).map((key) => {
+                            const track = CINEMATIC_TRACKS[key];
+                            const isSel = selectedCinematicTrack === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                className={`rev5-reel-btn ${isSel ? 'active' : ''}`}
+                                onClick={() => setSelectedCinematicTrack(key)}
+                                title={track.description}
+                              >
+                                {track.shortLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rev5-cinematic-actions">
+                        <button
+                          type="button"
+                          className="rev5-preview-btn"
+                          onClick={() => handleStartCinematicPreview(selectedCinematicTrack)}
+                          disabled={isRecording || isCinematicPreviewing}
+                          title="Preview camera track trajectory without recording"
+                        >
+                          {isCinematicPreviewing ? '⏹ Stop' : '▶ Preview Track'}
+                        </button>
+                        <button
+                          type="button"
+                          className="rev5-record-cta"
+                          onClick={() => handleStartRecording(selectedCinematicTrack)}
+                          disabled={isRecording}
+                          title="Record 60 FPS WebGL stream using MediaRecorder"
+                        >
+                          <span className="record-circle" />
+                          <span>{isRecording ? 'RECORDING 60 FPS…' : '🎬 RECORD 3D VIDEO'}</span>
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="rev5-presets-bar">
                       <span className="rev5-presets-label">Camera Presets:</span>
                       {(Object.keys(CAMERA_PRESETS) as CameraPreset[]).map((key) => {
@@ -1105,6 +1332,18 @@ export function Explorer() {
           </div>
         </div>
       </section>
+
+      {/* 3D Turntable Video Preview & Download Modal */}
+      {recordedVideo && (
+        <Rev5VideoModal
+          videoResult={recordedVideo}
+          onClose={() => setRecordedVideo(null)}
+          onRecordAgain={() => {
+            setRecordedVideo(null);
+            handleStartRecording(selectedCinematicTrack);
+          }}
+        />
+      )}
     </div>
   );
 }
