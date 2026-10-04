@@ -527,6 +527,8 @@ def main():
     add_or_update("TPU_Battery_Pocket_2", "TPU_Battery_Isolation_Pocket_2 (95A Viscoelastic)", pocket_2, "ElectronicsAssembly")
     add_or_update("LiDAR_Optical_Debris_Shield", "LiDAR_Optical_Debris_Shield (Makrolon Polycarbonate)", lidar_shield, "ElectronicsAssembly")
     add_or_update("LiDAR_Mount_Rev6", "LiDAR_Mount_Rev6 (Flush ST VL53L4CD)", lidar_mount, "ElectronicsAssembly")
+    add_or_update("Titanium_Cleat_Wheel_32T_155in", "Titanium_Cleat_Wheel_32T (1.55in)", cleat_disc, "DriveUnits")
+    add_or_update("Drive_Pod_626ZZ_Hub_Assembly", "Drive_Pod_626ZZ_Hub_Assembly", hub_assy, "DriveUnits")
     
     doc.recompute()
     
@@ -545,8 +547,8 @@ def main():
         "weapon_option_a_symmetric_2tooth": doc.Weapon_Option_A_Symmetric_2Tooth,
         "weapon_option_b_single_bite_tungsten": doc.Weapon_Option_B_Single_Bite_Tungsten,
         "weapon_option_c_undercutter_wedge": doc.Weapon_Option_C_Undercutter_Wedge,
-        "titanium_cleat_wheel_32T_1.55in": cleat_disc,
-        "drive_pod_626zz_hub_assembly": hub_assy,
+        "titanium_cleat_wheel_32T_1.55in": doc.Titanium_Cleat_Wheel_32T_155in,
+        "drive_pod_626zz_hub_assembly": doc.Drive_Pod_626ZZ_Hub_Assembly,
         "eyeliner_chassis_puck_rev6": doc.Chassis_Puck,
         "eyeliner_lidar_mount_rev6": doc.LiDAR_Mount_Rev6,
     }
