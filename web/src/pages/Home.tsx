@@ -1,510 +1,1063 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
+import { HeroCombatViewer3D, WEAPON_MODES, type WeaponMode, type LightingPreset } from '../components/HeroCombatViewer3D';
 import '../cyber-combat.css';
-
-const ModelShowcase = lazy(() => import('../components/ModelShowcase').then((m) => ({ default: m.ModelShowcase })));
-
-type HeroViewMode = 'render' | '3d' | 'underside' | 'internals';
+import './Home.css';
 
 export function Home() {
-  const [heroView, setHeroView] = useState<HeroViewMode>('render');
+  // ---------------------------------------------------------------------------
+  // 1. Interactive 3D Hero Viewport State
+  // ---------------------------------------------------------------------------
+  const [weaponMode, setWeaponMode] = useState<WeaponMode>('A');
+  const [isSpinning, setIsSpinning] = useState<boolean>(true);
+  const [rpm, setRpm] = useState<number>(4000);
+  const [exploded, setExploded] = useState<number>(0);
+  const [strobeLaser, setStrobeLaser] = useState<boolean>(true);
+  const [lightingPreset, setLightingPreset] = useState<LightingPreset>('cyber');
+
+  // Dynamic Tactical Calculations based on RPM and Weapon Mode
+  const activeWeapon = WEAPON_MODES[weaponMode];
+  const rpmRatio = rpm / 4000;
+  // Kinetic energy: proportional to omega^2
+  const liveKeJoules = Math.round(activeWeapon.keJoules * (rpmRatio * rpmRatio));
+  // Tip speed: proportional to omega
+  const liveTipSpeedMph = Math.round(activeWeapon.tipSpeedMph * rpmRatio);
+  // Centripetal acceleration: proportional to omega^2
+  const liveCentripetalG = Math.round(activeWeapon.centripetalG * (rpmRatio * rpmRatio));
+  const robotCombatMassG = 1360.8;
+
+  // ---------------------------------------------------------------------------
+  // 2. Bento Card 1: Kinetic Strike & Bite Depth Mechanics State
+  // ---------------------------------------------------------------------------
+  const [transSpeed, setTransSpeed] = useState<number>(1.8); // m/s
+  const [calcRpm, setCalcRpm] = useState<number>(4000);
+  const [calcTeethCount, setCalcTeethCount] = useState<number>(2);
+
+  // Bite depth formula: b = v_trans / (N_teeth * (RPM / 60)) * 1000 mm
+  const biteDepthMm = useMemo(() => {
+    if (calcRpm <= 0 || calcTeethCount <= 0) return 0;
+    const revsPerSec = calcRpm / 60;
+    const bitesPerSec = calcTeethCount * revsPerSec;
+    return Number(((transSpeed / bitesPerSec) * 1000).toFixed(2));
+  }, [transSpeed, calcRpm, calcTeethCount]);
+
+  // ---------------------------------------------------------------------------
+  // 2. Bento Card 2: 100% Invertible Chassis State
+  // ---------------------------------------------------------------------------
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+
+  // ---------------------------------------------------------------------------
+  // 2. Bento Card 3: 360° Micro-LiDAR Opponent Tracker State
+  // ---------------------------------------------------------------------------
+  const [radarState, setRadarState] = useState<'searching' | 'locked' | 'auto-ram'>('locked');
+  const [radarAzimuth, setRadarAzimuth] = useState<number>(134.2);
+  const [radarRange, setRadarRange] = useState<number>(1.74);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRadarAzimuth((prev) => Number(((prev + 0.8) % 360).toFixed(1)));
+      setRadarRange((prev) => {
+        const next = prev + (Math.random() * 0.08 - 0.04);
+        return Number(Math.max(0.6, Math.min(3.8, next)).toFixed(2));
+      });
+    }, 180);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // 2. Bento Card 4: Quick-Swap 15s LiPo Cartridge State
+  // ---------------------------------------------------------------------------
+  const [lipoStep, setLipoStep] = useState<number>(0);
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [swapTimer, setSwapTimer] = useState<number>(11.4);
+  const swapIntervalRef = useRef<number | null>(null);
+
+  const startPitSwap = () => {
+    if (isSwapping) return;
+    setIsSwapping(true);
+    setLipoStep(1);
+    setSwapTimer(0.0);
+
+    const startTime = performance.now();
+    if (swapIntervalRef.current) clearInterval(swapIntervalRef.current);
+
+    swapIntervalRef.current = window.setInterval(() => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      setSwapTimer(Number(elapsed.toFixed(1)));
+
+      if (elapsed >= 2.5 && elapsed < 5.5) {
+        setLipoStep(2);
+      } else if (elapsed >= 5.5 && elapsed < 8.8) {
+        setLipoStep(3);
+      } else if (elapsed >= 8.8 && elapsed < 11.4) {
+        setLipoStep(4);
+      } else if (elapsed >= 11.4) {
+        setLipoStep(4);
+        setIsSwapping(false);
+        if (swapIntervalRef.current) clearInterval(swapIntervalRef.current);
+      }
+    }, 100);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (swapIntervalRef.current) clearInterval(swapIntervalRef.current);
+    };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // 2. Bento Card 5: 36T Titanium Cleat Traction Matrix State
+  // ---------------------------------------------------------------------------
+  const [selectedSurface, setSelectedSurface] = useState<'steel' | 'wood' | 'hazard'>('steel');
+
+  const surfaces = {
+    steel: { name: 'Smooth Painted Steel (NHRL / SPARC)', cleatMu: 0.94, siliconeMu: 0.85, tpuMu: 0.52, foamMu: 0.41 },
+    wood: { name: 'Plywood Test Deck (Workshop)', cleatMu: 1.15, siliconeMu: 0.90, tpuMu: 0.65, foamMu: 0.55 },
+    hazard: { name: 'Diamond Plate Steel (Hazard Zone)', cleatMu: 1.05, siliconeMu: 0.72, tpuMu: 0.48, foamMu: 0.35 },
+  };
+
+  const currentSurface = surfaces[selectedSurface];
+
+  // ---------------------------------------------------------------------------
+  // 3. Interactive Weight Budget Matrix State
+  // Exact default: Armor 437g, Motors & Pods 184g, Dual 4S LiPo 210g, Electronics & LiDAR 92g, Puck & Fasteners 437.8g = Exactly 1,360.8g
+  // ---------------------------------------------------------------------------
+  const [armorMass, setArmorMass] = useState<number>(437.0);
+  const [motorMass, setMotorMass] = useState<number>(184.0);
+  const [batteryMass, setBatteryMass] = useState<number>(210.0);
+  const [electronicsMass, setElectronicsMass] = useState<number>(92.0);
+  const [puckMass, setPuckMass] = useState<number>(437.8);
+
+  const totalBudgetG = useMemo(() => {
+    return Number((armorMass + motorMass + batteryMass + electronicsMass + puckMass).toFixed(1));
+  }, [armorMass, motorMass, batteryMass, electronicsMass, puckMass]);
+
+  const maxBudgetG = 1360.8;
+  const deltaG = Number((maxBudgetG - totalBudgetG).toFixed(1));
+  const isOverweight = totalBudgetG > maxBudgetG;
+  const isExactLimit = totalBudgetG === maxBudgetG;
+
+  const resetWeightBudget = () => {
+    setArmorMass(437.0);
+    setMotorMass(184.0);
+    setBatteryMass(210.0);
+    setElectronicsMass(92.0);
+    setPuckMass(437.8);
+  };
 
   return (
-    <div className="page overview-page cyber-container" style={{ padding: '24px 20px 80px', maxWidth: '1440px', margin: '0 auto' }}>
-      {/* Topline Status Bar */}
-      <div className="overview-topline" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span className="cyber-badge">TACTICAL CYBER-STATION // COMBAT ARCHITECTURE</span>
-          <span className="cyber-badge green">SYSTEM REV: 5.0 COMBAT READY</span>
-          <span className="cyber-badge">SPARC BEETLEWEIGHT 3LB</span>
+    <div className="home-container">
+      {/* ----------------------------------------------------------------------
+          TOPLINE TACTICAL STATUS BAR
+          ---------------------------------------------------------------------- */}
+      <header className="home-topline" aria-label="Tactical Status Bar">
+        <div className="home-topline-left">
+          <span className="cyber-badge">
+            <span className="cyber-dot" style={{ color: 'var(--neon-cyan)' }} />
+            REV 7 COMBAT SPECIFICATION
+          </span>
+          <span className="cyber-badge green">STATUS: COMBAT READY // ACTIVE TEST</span>
+          <span className="cyber-badge">SPARC BEETLEWEIGHT 3.00 LB</span>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span className="cyber-badge amber">WEIGHT: 1,222 g / 2.69 lb (CAP 1,360.8 g)</span>
+        <div className="home-topline-right">
+          <span className="cyber-badge amber">MAX LIMIT: 1,360.8 g (3.000 LB)</span>
+          <span className="cyber-badge" style={{ color: 'var(--neon-cyan)', borderColor: 'rgba(0, 240, 255, 0.4)' }}>
+            DSHOT600 · 8kHz · CRSF 250Hz
+          </span>
         </div>
-      </div>
+      </header>
 
-      {/* Hero Section */}
-      <section className="overview-hero" aria-labelledby="overview-title" style={{ padding: '20px 0 40px', display: 'grid', gridTemplateColumns: 'minmax(320px, 1.05fr) minmax(320px, 1.15fr)', gap: '36px', alignItems: 'start' }}>
-        <div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-            <span className="cyber-badge crimson">3,500 RPM KINETIC STRIKE</span>
-            <span className="cyber-badge amber">DSHOT600 8kHz</span>
-            <span className="cyber-badge">CRSF 250Hz</span>
-            <span className="cyber-badge green">AUTONOMOUS LIDAR</span>
+      {/* ----------------------------------------------------------------------
+          1. INTERACTIVE 3D HERO VIEWPORT SECTION
+          ---------------------------------------------------------------------- */}
+      <section className="home-hero-grid" aria-labelledby="hero-title">
+        {/* Left Column: Robot Bio, Quick Stats, High-Impact CTAs */}
+        <div className="hero-info-column">
+          <div className="hero-title-group">
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <span className="cyber-badge crimson">4,000 RPM KINETIC STRIKE</span>
+              <span className="cyber-badge amber">415 J ENERGY RING</span>
+              <span className="cyber-badge green">360° MICRO-LIDAR AUTO-RAM</span>
+            </div>
+
+            <h1 id="hero-title" className="hero-main-title">
+              EYELINER <span className="rev-tag">// REV 7</span>
+            </h1>
+
+            <p className="hero-tagline">
+              Autonomous Meltybrain Combat Robot. 3.00 lb Kinetic Masterpiece.
+            </p>
+
+            <p className="hero-bio">
+              Translating through high-speed directional motor differential pulsing at 4,000 RPM.
+              Equipped with dual ±400g H3LIS331DL centrifugal accelerometers, stroboscopic heading beacon laser,
+              autonomous 360° micro-LiDAR opponent auto-ram tracking, and 100% invertible Ti-6Al-4V cleat drivetrain.
+            </p>
           </div>
 
-          <h1 id="overview-title" style={{ fontSize: 'clamp(36px, 5.5vw, 70px)', letterSpacing: '-0.05em', margin: '0 0 12px', lineHeight: 1.05, color: '#fff' }}>
-            EYELINER <span style={{ color: 'var(--neon-cyan)', fontSize: '0.62em' }}>/ 3 LB</span>
-          </h1>
-
-          <p className="overview-subtitle" style={{ fontSize: 'clamp(17px, 2vw, 24px)', color: 'var(--neon-amber)', margin: '0 0 14px', fontWeight: 600 }}>
-            Next-Gen Autonomous Meltybrain Combat Robot.
-          </p>
-
-          <p className="overview-description" style={{ color: 'var(--cyber-text-muted)', fontSize: '15px', lineHeight: 1.6, maxWidth: '52ch', margin: '0 0 20px' }}>
-            High-speed rotational translation weapon with 1.2 kJ kinetic impact energy. Spun up to 3,500 RPM,
-            translating via directional motor throttle differential pulsing, guided by dual ±400g H3LIS331DL
-            accelerometers, pulsed stroboscopic optical beacon, and autonomous LiDAR opponent auto-ramming.
-          </p>
-
-          {/* Quick Stats Badges Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '24px' }}>
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-crimson)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Strike Speed</div>
-              <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--neon-crimson)', fontFamily: 'var(--cyber-mono)' }}>3,500 RPM</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>1.2 kJ kinetic energy</div>
+          {/* Quick Stats Grid */}
+          <div className="hero-quick-stats">
+            <div className="hero-stat-card" style={{ borderLeft: '3px solid var(--neon-crimson)' }}>
+              <div className="hero-stat-label">Kinetic Impact</div>
+              <div className="hero-stat-value" style={{ color: 'var(--neon-crimson)' }}>
+                {liveKeJoules} J
+              </div>
+              <div className="hero-stat-sub">@ {rpm.toLocaleString()} RPM</div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-amber)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Combat Weight</div>
-              <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--neon-amber)', fontFamily: 'var(--cyber-mono)' }}>1,222g (2.69 lb)</div>
-              <div style={{ fontSize: '11px', color: 'var(--neon-green)' }}>+138.8g ballast reserve</div>
+            <div className="hero-stat-card" style={{ borderLeft: '3px solid var(--neon-amber)' }}>
+              <div className="hero-stat-label">Tooth Tip Speed</div>
+              <div className="hero-stat-value" style={{ color: 'var(--neon-amber)' }}>
+                {liveTipSpeedMph} MPH
+              </div>
+              <div className="hero-stat-sub">64.8 m/s perimeter</div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-cyan)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Traction Drive</div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#fff', fontFamily: 'var(--cyber-mono)' }}>Ti-6Al-4V Cleats</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>Invertible drive wheels</div>
+            <div className="hero-stat-card" style={{ borderLeft: '3px solid var(--neon-cyan)' }}>
+              <div className="hero-stat-label">Centripetal G</div>
+              <div className="hero-stat-value" style={{ color: 'var(--neon-cyan)' }}>
+                {liveCentripetalG} G
+              </div>
+              <div className="hero-stat-sub">Dual ±400g IMU</div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-green)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Centrifugal IMU</div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--neon-green)', fontFamily: 'var(--cyber-mono)' }}>Dual ±400G</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>H3LIS331DL SPI 10MHz</div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-purple)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Auto-Targeting</div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--neon-purple)', fontFamily: 'var(--cyber-mono)' }}>Micro-LiDAR</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>360° opponent lock radar</div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '10px 14px', borderLeft: '3px solid var(--neon-cyan)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Motor Control</div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--neon-cyan)', fontFamily: 'var(--cyber-mono)' }}>DSHOT600 8kHz</div>
-              <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>4S LiPo / AM32 ESCs</div>
+            <div className="hero-stat-card" style={{ borderLeft: '3px solid var(--neon-green)' }}>
+              <div className="hero-stat-label">Combat Weight</div>
+              <div className="hero-stat-value" style={{ color: 'var(--neon-green)' }}>
+                {robotCombatMassG} g
+              </div>
+              <div className="hero-stat-sub">Exactly 3.000 lb limit</div>
             </div>
           </div>
 
-          {/* Prominent Quick-Action Launch Buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
-            <Link className="cyber-btn danger" to="/video" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              🎥 Video Studio &amp; Battle Reels
+          {/* High-Impact CTA Buttons */}
+          <div className="hero-cta-grid">
+            <Link to="/lab" className="hero-cta-btn primary">
+              <span>⚡</span> Launch Arena Driving Sim
             </Link>
-            <Link className="cyber-btn primary" to="/lab" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              ⚡ Combat Driving Simulator &amp; Rec
+            <Link to="/explorer" className="hero-cta-btn">
+              <span>🔍</span> 3D CAD Teardown
             </Link>
-            <Link className="cyber-btn" to="/explorer" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              🔍 3D CAD Explorer &amp; Turntable
+            <Link to="/video" className="hero-cta-btn danger">
+              <span>🎥</span> Combat Video Reels
             </Link>
-            <Link className="cyber-btn" to="/build" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              🛠️ Step-by-Step Build Guide
-            </Link>
-            <Link className="cyber-btn" to="/bom" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              📋 Interactive Parts &amp; BOM
-            </Link>
-            <Link className="cyber-btn" to="/firmware" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              💻 Firmware &amp; .ino Studio
-            </Link>
-            <Link className="cyber-btn amber" to="/cyberdeck" style={{ padding: '12px 16px', fontSize: '13px', justifyContent: 'flex-start' }}>
-              📻 RadioMaster &amp; Cyberdeck
+            <Link to="/build" className="hero-cta-btn amber">
+              <span>📦</span> Parts &amp; Build Guide
             </Link>
           </div>
         </div>
 
-        {/* Hero Showcase Stage (Rev 5 Photo-Accurate Render & 3D Interactive) */}
-        <div className="glass-panel hud-corner" style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* Stage Viewport Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <button
-                className={`cyber-btn ${heroView === 'render' ? 'primary' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '11px' }}
-                onClick={() => setHeroView('render')}
-              >
-                📸 REV 5 RENDER
-              </button>
-              <button
-                className={`cyber-btn ${heroView === '3d' ? 'primary' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '11px' }}
-                onClick={() => setHeroView('3d')}
-              >
-                🌐 3D CAD ORBIT
-              </button>
-              <button
-                className={`cyber-btn ${heroView === 'underside' ? 'primary' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '11px' }}
-                onClick={() => setHeroView('underside')}
-              >
-                ⚙️ UNDERSIDE CLEATS
-              </button>
-              <button
-                className={`cyber-btn ${heroView === 'internals' ? 'primary' : ''}`}
-                style={{ padding: '6px 12px', fontSize: '11px' }}
-                onClick={() => setHeroView('internals')}
-              >
-                🧠 AVIONICS BAY
-              </button>
+        {/* Right Column: 3D WebGL Hero Stage */}
+        <div className="hero-viewport-stage">
+          {/* Top Controls: Weapon Mode Selector & Lighting */}
+          <div className="stage-top-controls">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="hero-stat-label" style={{ margin: 0 }}>Weapon Config:</span>
+              <div className="stage-weapon-selector">
+                <button
+                  className={`weapon-btn ${weaponMode === 'A' ? 'active' : ''}`}
+                  onClick={() => setWeaponMode('A')}
+                  title="Mode A: 2-Tooth High-KE Ring (415 J)"
+                >
+                  Mode A: 2-Tooth (415 J)
+                </button>
+                <button
+                  className={`weapon-btn ${weaponMode === 'B' ? 'active' : ''}`}
+                  onClick={() => setWeaponMode('B')}
+                  title="Mode B: Single Deep-Bite Razor + Tungsten Wedge"
+                >
+                  Mode B: Razor + Tungsten
+                </button>
+                <button
+                  className={`weapon-btn ${weaponMode === 'C' ? 'active' : ''}`}
+                  onClick={() => setWeaponMode('C')}
+                  title="Mode C: Low-Profile Undercutter Scoop"
+                >
+                  Mode C: Undercutter
+                </button>
+                <button
+                  className={`weapon-btn ${weaponMode === 'D' ? 'active' : ''}`}
+                  onClick={() => setWeaponMode('D')}
+                  title="Mode D: Skirt-Breaker Can-Opener"
+                >
+                  Mode D: Can-Opener
+                </button>
+              </div>
             </div>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>
-              {heroView === 'render' && 'REV 5.0 PHOTO-ACCURATE'}
-              {heroView === '3d' && 'INTERACTIVE WEBGL'}
-              {heroView === 'underside' && 'INVERTIBLE DRIVE'}
-              {heroView === 'internals' && 'DUAL SENSOR AVIONICS'}
-            </span>
+
+            {/* Lighting Preset Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="hero-stat-label" style={{ margin: 0 }}>Studio:</span>
+              <select
+                value={lightingPreset}
+                onChange={(e) => setLightingPreset(e.target.value as LightingPreset)}
+                style={{
+                  background: 'rgba(18, 26, 44, 0.9)',
+                  border: '1px solid var(--cyber-border)',
+                  color: 'var(--neon-cyan)',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  fontFamily: 'var(--cyber-mono)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="cyber">Cyberpunk Neon</option>
+                <option value="studio">Studio Neutral</option>
+                <option value="arena">Deep Arena</option>
+                <option value="ir">Tactical Infrared</option>
+              </select>
+            </div>
           </div>
 
-          {/* Stage Display Area */}
-          <div style={{ position: 'relative', width: '100%', minHeight: '400px', background: 'rgba(4, 7, 14, 0.75)', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--cyber-border-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {heroView === 'render' && (
-              <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <img
-                  src="/cad/eyeliner_combat_v01.png"
-                  alt="Eyeliner Rev 5 photo-accurate combat robot render"
-                  style={{ width: '100%', height: '400px', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8, 12, 21, 0.85)', backdropFilter: 'blur(10px)', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)', fontSize: '12px' }}>
-                  <span style={{ color: '#fff' }}><strong>Rev 5 Complete Combat Assembly</strong> · Dual AR500 teeth &amp; Ti-6Al-4V cleat pods</span>
-                  <Link to="/explorer" style={{ color: 'var(--neon-cyan)', textDecoration: 'none', fontWeight: 600 }}>Explore CAD ↗</Link>
+          {/* Interactive 3D Canvas Stage */}
+          <div className="stage-canvas-wrapper">
+            <HeroCombatViewer3D
+              weaponMode={weaponMode}
+              rpm={rpm}
+              isSpinning={isSpinning}
+              exploded={exploded}
+              strobeLaser={strobeLaser}
+              lightingPreset={lightingPreset}
+            />
+
+            {/* Tactical HUD Overlay - Top Left */}
+            <div className="stage-hud-overlay">
+              <div className="stage-hud-badge">
+                <span className="cyber-dot" style={{ color: isSpinning ? 'var(--neon-crimson)' : 'var(--cyber-text-dim)' }} />
+                <span>SPIN: {isSpinning ? `${rpm.toLocaleString()} RPM` : 'STANDBY'}</span>
+              </div>
+              <div className="stage-hud-badge">
+                <span style={{ color: activeWeapon.color }}>●</span>
+                <span>{activeWeapon.badge}</span>
+              </div>
+            </div>
+
+            {/* Tactical HUD Metrics Overlay - Top Right */}
+            <div className="stage-hud-metrics">
+              <div className="hud-metric-box">
+                <div className="label">Kinetic Energy</div>
+                <div className="value" style={{ color: 'var(--neon-crimson)' }}>
+                  {liveKeJoules} J
                 </div>
               </div>
-            )}
-
-            {heroView === '3d' && (
-              <div style={{ width: '100%', height: '400px' }}>
-                <Suspense fallback={<div style={{ color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>INITIALIZING 3D TACTICAL VIEWER…</div>}>
-                  <ModelShowcase />
-                </Suspense>
-              </div>
-            )}
-
-            {heroView === 'underside' && (
-              <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <img
-                  src="/cad/eyeliner_combat_v01_underside.png"
-                  alt="Eyeliner underside showing invertible cleat drivetrain"
-                  style={{ width: '100%', height: '400px', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8, 12, 21, 0.85)', backdropFilter: 'blur(10px)', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)', fontSize: '12px' }}>
-                  <span style={{ color: '#fff' }}><strong>Underside Cleat Pod Layout</strong> · Symmetrical invertible ground clearance</span>
-                  <Link to="/build" style={{ color: 'var(--neon-cyan)', textDecoration: 'none', fontWeight: 600 }}>Build Specs ↗</Link>
+              <div className="hud-metric-box">
+                <div className="label">Tip Speed</div>
+                <div className="value" style={{ color: 'var(--neon-amber)' }}>
+                  {liveTipSpeedMph} mph
                 </div>
               </div>
-            )}
-
-            {heroView === 'internals' && (
-              <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <img
-                  src="/cad/eyeliner_combat_v01_internals.png"
-                  alt="Eyeliner internal avionics bay with dual H3LIS331DL accelerometers and Teensy 4.0"
-                  style={{ width: '100%', height: '400px', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8, 12, 21, 0.85)', backdropFilter: 'blur(10px)', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--cyber-border-faint)', fontSize: '12px' }}>
-                  <span style={{ color: '#fff' }}><strong>Avionics &amp; Sensor Routing</strong> · Dual ±400g H3LIS331DL &amp; Teensy 4.0</span>
-                  <Link to="/firmware" style={{ color: 'var(--neon-green)', textDecoration: 'none', fontWeight: 600 }}>Firmware .ino ↗</Link>
+              <div className="hud-metric-box">
+                <div className="label">Centripetal G</div>
+                <div className="value" style={{ color: 'var(--neon-cyan)' }}>
+                  {liveCentripetalG} G
                 </div>
               </div>
-            )}
+              <div className="hud-metric-box">
+                <div className="label">Weight Meter</div>
+                <div className="value" style={{ color: 'var(--neon-green)' }}>
+                  {robotCombatMassG} g
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Interactive Control Bar: Spin Toggle, Laser Toggle, Exploded View Slider */}
+          <div className="stage-bottom-bar">
+            {/* Quick Interactive Toggles */}
+            <div className="stage-quick-toggles">
+              <button
+                className={`toggle-chip ${isSpinning ? 'active' : ''}`}
+                onClick={() => setIsSpinning(!isSpinning)}
+              >
+                {isSpinning ? '🔄 SPINNING (4,000 RPM)' : '⏸️ SPIN-UP ROBOT'}
+              </button>
+
+              <button
+                className={`toggle-chip ${strobeLaser ? 'active laser' : ''}`}
+                onClick={() => setStrobeLaser(!strobeLaser)}
+              >
+                {strobeLaser ? '🔦 HEADING LASER: ACTIVE' : '🔦 HEADING LASER: OFF'}
+              </button>
+            </div>
+
+            {/* RPM Slider */}
+            <div className="stage-slider-group">
+              <span>RPM: {rpm}</span>
+              <input
+                type="range"
+                min="500"
+                max="4500"
+                step="100"
+                value={rpm}
+                disabled={!isSpinning}
+                onChange={(e) => setRpm(Number(e.target.value))}
+              />
+            </div>
+
+            {/* Exploded View Slider */}
+            <div className="stage-slider-group">
+              <span>EXPLODED VIEW: {Math.round(exploded * 100)}%</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={exploded}
+                onChange={(e) => setExploded(Number(e.target.value))}
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Premier Showcase: Combat Video Studio, Driving Lab, and 3D Turntable Capture */}
-      <section style={{ marginTop: '20px', marginBottom: '36px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+      {/* ----------------------------------------------------------------------
+          2. MODERN BENTO GRID ARCHITECTURE (Cards 1 to 5)
+          ---------------------------------------------------------------------- */}
+      <section aria-labelledby="bento-title">
+        <div className="bento-section-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: '22px', color: 'var(--neon-crimson)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="cyber-dot" style={{ background: 'var(--neon-crimson)', boxShadow: '0 0 8px var(--neon-crimson)' }} /> 🎥 COMBAT VIDEO STUDIO &amp; MEDIA PIPELINE
+            <h2 id="bento-title" className="bento-title-main">
+              <span className="cyber-dot" style={{ color: 'var(--neon-cyan)' }} />
+              TACTICAL BENTO ARCHITECTURE // CRITICAL INNOVATIONS
             </h2>
             <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>
-              Integrated broadcast suite: high-speed battle telemetry reels, in-browser arena video recorder, and 3D turntable capture
+              Interactive mechanical, kinematic, optical, and energy systems engineered for SPARC 3lb dominance
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <span className="cyber-badge crimson">60 FPS WEBGL &amp; WEBM</span>
-            <span className="cyber-badge amber">150G SLOW-MO KILLCAM</span>
-            <span className="cyber-badge green">4-CHANNEL TELEMETRY</span>
-          </div>
+          <span className="cyber-badge green">5 SYSTEMS VALIDATED</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
-          {/* Card 1: Video Studio & Battle Reels */}
-          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-crimson)' }}>
+        <div className="bento-grid">
+          {/* ------------------------------------------------------------------
+              Card 1: Kinetic Strike Mechanics (Interactive Bite Depth vs RPM)
+              ------------------------------------------------------------------ */}
+          <div className="bento-card bento-card-1 hud-corner">
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span className="cyber-badge crimson">BROADCAST HUB</span>
-                <span className="cyber-badge">4 REEL BREAKDOWNS</span>
+              <div className="bento-card-header">
+                <span className="cyber-badge crimson">KINETICS // EQUATION SOLVER</span>
+                <span className="cyber-badge">IMPACT MECHANICS</span>
               </div>
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                🎥 Video Studio &amp; Battle Reels
-              </h3>
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                Multi-channel breakdown station featuring 4 synchronized combat reels: 1.2 kJ kinetic weapon impacts, directional melty translational pulsing, autonomous LiDAR sweeps, and inverted cleat traction. Includes 0.25x slow-mo playback, event bookmarks, and real-time synchronized telemetry oscillographs (RPM, Centripetal G-force, 4S LiPo voltage, and throttle bias).
+
+              <h3 className="bento-card-title">01 // Kinetic Strike &amp; Bite Depth Mechanics</h3>
+              <p className="bento-card-desc">
+                Tooth bite depth <em>b</em> determines whether kinetic strikes transfer massive structural shock into the opponent&apos;s
+                chassis or glance off. At high rotational velocities, tooth pass frequency can outpace translation speed, causing teeth
+                to skate on armor. Use the live solver below to calculate penetration depth:
               </p>
-              <div style={{ padding: '10px 12px', background: 'rgba(255, 42, 85, 0.06)', borderRadius: '6px', border: '1px solid rgba(255, 42, 85, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Features:</strong> Frame scrubber · 0.25x slow-mo · Dual camera PIP · Web Audio engine · 1-click MP4 download
+
+              {/* Interactive Calculation Card */}
+              <div className="strike-calc-box">
+                <div className="calc-controls-row">
+                  <div className="calc-field">
+                    <label>
+                      <span>TRANSLATION SPEED (V_trans)</span>
+                      <strong style={{ color: 'var(--neon-cyan)' }}>{transSpeed} m/s</strong>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="3.5"
+                      step="0.1"
+                      value={transSpeed}
+                      onChange={(e) => setTransSpeed(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="calc-field">
+                    <label>
+                      <span>ROTATIONAL SPEED (RPM)</span>
+                      <strong style={{ color: 'var(--neon-amber)' }}>{calcRpm.toLocaleString()} RPM</strong>
+                    </label>
+                    <input
+                      type="range"
+                      min="1000"
+                      max="4500"
+                      step="100"
+                      value={calcRpm}
+                      onChange={(e) => setCalcRpm(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="calc-field">
+                    <label>
+                      <span>TOOTH COUNT (N_teeth)</span>
+                      <strong style={{ color: '#fff' }}>{calcTeethCount} {calcTeethCount === 1 ? 'Tooth' : 'Teeth'}</strong>
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <button
+                        className={`weapon-btn ${calcTeethCount === 1 ? 'active' : ''}`}
+                        style={{ flex: 1 }}
+                        onClick={() => setCalcTeethCount(1)}
+                      >
+                        1 Tooth (Mode B)
+                      </button>
+                      <button
+                        className={`weapon-btn ${calcTeethCount === 2 ? 'active' : ''}`}
+                        style={{ flex: 1 }}
+                        onClick={() => setCalcTeethCount(2)}
+                      >
+                        2 Teeth (Mode A/D)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Bite Depth Result */}
+                <div className="bite-depth-display">
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Calculated Bite Depth (b = v / (N · ω))
+                    </div>
+                    <div className="bite-depth-val">
+                      {biteDepthMm} mm
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--cyber-text-muted)' }}>
+                      {biteDepthMm >= 10
+                        ? '💥 DEEP BITE ZONE: Catastrophic structural penetration & frame shear.'
+                        : biteDepthMm >= 5
+                        ? '⚡ OPTIMAL BITE: Crisp edge gouging and violent kinetic launch.'
+                        : '⚠️ SHALLOW BITE: High probability of glancing on 3mm Hardox/Titanium.'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--cyber-text-dim)' }}>STRIKE FREQUENCY</div>
+                    <div style={{ fontFamily: 'var(--cyber-mono)', fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                      {Math.round(calcTeethCount * (calcRpm / 60))} hits/sec
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <Link to="/video" className="cyber-btn danger" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
-              LAUNCH VIDEO HUB (`/video`) ↗
-            </Link>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '14px' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--cyber-text-dim)', fontFamily: 'var(--cyber-mono)' }}>
+                FORMULA: b = (v_trans / (N · (RPM/60))) · 1000
+              </span>
+              <Link to="/engineering" className="cyber-btn" style={{ padding: '6px 14px', fontSize: '11px' }}>
+                VIEW FULL EQUATION SUITE ↗
+              </Link>
+            </div>
           </div>
 
-          {/* Card 2: Combat Driving Lab */}
-          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-amber)' }}>
+          {/* ------------------------------------------------------------------
+              Card 2: 100% Invertible Chassis (Interactive 180° Flip Demo)
+              ------------------------------------------------------------------ */}
+          <div className="bento-card bento-card-2 hud-corner">
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span className="cyber-badge amber">PLAYABLE ARENA SIM</span>
-                <span className="cyber-badge green">CANVAS RECORDER</span>
+              <div className="bento-card-header">
+                <span className="cyber-badge">CHASSIS // SYMMETRY</span>
+                <span className="cyber-badge green">4.185mm CLEARANCE</span>
               </div>
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                ⚡ Combat Driving Lab &amp; Instant Recorder
-              </h3>
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                Test drive Eyeliner in a physics-accurate 60 FPS arena simulation with realistic rotational moment of inertia, differential throttle bias, and AI sparring opponents. Features live in-browser arena video recording with Web Audio API sound capture, automated &gt;150G slow-mo killcam replays with spark magnification, and instant WebM / MP4 video export.
+
+              <h3 className="bento-card-title">02 // 100% Invertible Chassis</h3>
+              <p className="bento-card-desc">
+                Violent hits flip bots across the arena. Eyeliner eliminates self-righting srimech delay by engineering
+                identical 4.185mm ground clearance top and bottom with bi-directional Ti-6Al-4V cleats.
               </p>
-              <div style={{ padding: '10px 12px', background: 'rgba(255, 170, 0, 0.06)', borderRadius: '6px', border: '1px solid rgba(255, 170, 0, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Features:</strong> 60 FPS Canvas Record · Web Audio motor whine &amp; clangs · Slow-Mo Killcam · Clash Zoom camera
+
+              {/* Interactive 180° Flip Demo */}
+              <div className="invertible-demo-box">
+                <div className={`flipper-stage ${isFlipped ? 'flipped' : ''}`}>
+                  <div className="clearance-guide-top">
+                    ▲ TOP CLEARANCE: 4.185 mm
+                  </div>
+                  <div className="chassis-schematic-body">
+                    <span style={{ fontSize: '10.5px', fontFamily: 'var(--cyber-mono)', color: '#fff', fontWeight: 700 }}>
+                      {isFlipped ? 'INVERTED FLIGHT // DSHOT REV' : 'UPRIGHT NORMAL // DSHOT FWD'}
+                    </span>
+                    <div className="schematic-wheel left" />
+                    <div className="schematic-wheel right" />
+                  </div>
+                  <div className="clearance-guide-bot">
+                    ▼ BOT CLEARANCE: 4.185 mm
+                  </div>
+                </div>
+
+                <button
+                  className="cyber-btn primary"
+                  style={{ marginTop: '16px', padding: '8px 18px', fontSize: '12px' }}
+                  onClick={() => setIsFlipped(!isFlipped)}
+                >
+                  🔄 {isFlipped ? 'FLIP UPRIGHT (0°)' : 'TRIGGER 180° CHASSIS INVERSION'}
+                </button>
               </div>
             </div>
-            <Link to="/lab" className="cyber-btn amber" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
-              OPEN COMBAT LAB (`/lab`) ↗
-            </Link>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '14px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)' }}>
+                Zero self-righting delay · Immediate torque recovery
+              </span>
+              <span className="cyber-badge green">100% INVERTIBLE</span>
+            </div>
           </div>
 
-          {/* Card 3: 3D CAD Explorer & Turntable Capture */}
-          <div className="glass-panel hud-corner" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-cyan)' }}>
+          {/* ------------------------------------------------------------------
+              Card 3: 360° Micro-LiDAR Opponent Tracker
+              ------------------------------------------------------------------ */}
+          <div className="bento-card bento-card-3 hud-corner">
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span className="cyber-badge">THREE.JS WEBGL</span>
-                <span className="cyber-badge green">360° TURNTABLE CAPTURE</span>
+              <div className="bento-card-header">
+                <span className="cyber-badge green">OPTICAL RADAR</span>
+                <span className="cyber-badge">58.3 SWEEPS/S</span>
               </div>
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                🔍 3D Explorer &amp; Turntable Video Capture
-              </h3>
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                Inspect the full Rev 5 &amp; Rev 6 multi-body assemblies with exploded part breakdown, transparent X-ray avionics inspection, and direct CAD STEP/STL downloads. Includes an in-browser 3D turntable video generator with 4 cinematic camera tracks (360° Orbit, Exploded Assembly, 3,500 RPM Weapon Spin-Up, Cleat Macro Zoom) and dynamic studio lighting presets.
+
+              <h3 className="bento-card-title">03 // 360° Micro-LiDAR Radar</h3>
+              <p className="bento-card-desc">
+                At 3,500–4,000 RPM, the embedded Time-of-Flight micro-LiDAR sweeps 58+ times per second, building a real-time
+                radial range map and locking onto opponents with lead-angle trajectory solving.
               </p>
-              <div style={{ padding: '10px 12px', background: 'rgba(0, 240, 255, 0.06)', borderRadius: '6px', border: '1px solid rgba(0, 240, 255, 0.2)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Features:</strong> 4 Cinematic camera tracks · 4 Studio lighting environments · 60 FPS WebGL capture · Direct video download
+
+              {/* Animated Radar Screen */}
+              <div className="radar-display-wrapper">
+                <div className="radar-sweep-beam" />
+                <div className="radar-reticle-ring" style={{ width: '40%', height: '40%' }} />
+                <div className="radar-reticle-ring" style={{ width: '70%', height: '70%' }} />
+                <div className="radar-reticle-ring" style={{ width: '95%', height: '95%' }} />
+
+                {/* Opponent Blip */}
+                <div
+                  className="radar-blip"
+                  style={{
+                    top: `${50 - Math.sin((radarAzimuth * Math.PI) / 180) * 32}%`,
+                    left: `${50 + Math.cos((radarAzimuth * Math.PI) / 180) * 32}%`,
+                  }}
+                  title={`Opponent Target: Azimuth ${radarAzimuth}°, Range ${radarRange}m`}
+                />
+              </div>
+
+              {/* Radar Status Bar & Buttons */}
+              <div style={{ background: 'rgba(8, 12, 22, 0.7)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cyber-border-faint)', marginBottom: '14px', fontSize: '11.5px', fontFamily: 'var(--cyber-mono)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: 'var(--cyber-text-dim)' }}>AZIMUTH / RANGE:</span>
+                  <span style={{ color: 'var(--neon-green)', fontWeight: 700 }}>
+                    {radarAzimuth}° · {radarRange} m
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--cyber-text-dim)' }}>LEAD ANGLE COMP:</span>
+                  <span style={{ color: 'var(--neon-cyan)' }}>+18.4° (AUTO-RAM)</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  className={`weapon-btn ${radarState === 'searching' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '6px 8px' }}
+                  onClick={() => setRadarState('searching')}
+                >
+                  SEARCH
+                </button>
+                <button
+                  className={`weapon-btn ${radarState === 'locked' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '6px 8px' }}
+                  onClick={() => setRadarState('locked')}
+                >
+                  LOCK
+                </button>
+                <button
+                  className={`weapon-btn ${radarState === 'auto-ram' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '6px 8px', color: 'var(--neon-crimson)', borderColor: 'rgba(255, 42, 85, 0.4)' }}
+                  onClick={() => setRadarState('auto-ram')}
+                >
+                  AUTO-RAM
+                </button>
               </div>
             </div>
-            <Link to="/explorer" className="cyber-btn primary" style={{ width: '100%', padding: '10px 14px', fontSize: '13px', justifyContent: 'center' }}>
-              EXPLORE 3D CAD (`/explorer`) ↗
-            </Link>
+
+            <div style={{ borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '14px', marginTop: '16px' }}>
+              <Link to="/firmware" style={{ fontSize: '11.5px', color: 'var(--neon-green)', textDecoration: 'none', fontWeight: 600 }}>
+                EXPLORE LIDAR KERNEL CODE ↗
+              </Link>
+            </div>
+          </div>
+
+          {/* ------------------------------------------------------------------
+              Card 4: Quick-Swap 15s LiPo Cartridge
+              ------------------------------------------------------------------ */}
+          <div className="bento-card bento-card-4 hud-corner">
+            <div>
+              <div className="bento-card-header">
+                <span className="cyber-badge amber">ENERGY // 4S LIPO</span>
+                <span className="cyber-badge">&lt;15s PIT SWAP</span>
+              </div>
+
+              <h3 className="bento-card-title">04 // Quick-Swap 15s LiPo Cartridge</h3>
+              <p className="bento-card-desc">
+                Eliminates screw disassembly between tournament elimination rounds. A magnetic slide-rail cartridge
+                snaps dual 4S 850mAh packs into high-current XT30U sockets in under 15 seconds.
+              </p>
+
+              {/* Step Sequence Timeline */}
+              <div className="lipo-sequence-box">
+                <div className="lipo-steps-timeline">
+                  <div className={`lipo-step-item ${lipoStep >= 1 ? 'done' : ''} ${lipoStep === 1 ? 'active' : ''}`}>
+                    <span>01</span>
+                    <span>DISENGAGE CARBON SAFETY LATCH</span>
+                  </div>
+                  <div className={`lipo-step-item ${lipoStep >= 2 ? 'done' : ''} ${lipoStep === 2 ? 'active' : ''}`}>
+                    <span>02</span>
+                    <span>SLIDE EJECT DEPLETED 4S PACK</span>
+                  </div>
+                  <div className={`lipo-step-item ${lipoStep >= 3 ? 'done' : ''} ${lipoStep === 3 ? 'active' : ''}`}>
+                    <span>03</span>
+                    <span>INSERT FRESH 4S 850mAh 95C PACK</span>
+                  </div>
+                  <div className={`lipo-step-item ${lipoStep >= 4 ? 'done' : ''} ${lipoStep === 4 ? 'active' : ''}`}>
+                    <span>04</span>
+                    <span>ENGAGE AUTO-LOCK &amp; REBOOT MCU</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '12px', fontFamily: 'var(--cyber-mono)' }}>
+                  <span style={{ color: 'var(--cyber-text-dim)' }}>PIT STOP DURATION:</span>
+                  <span style={{ color: 'var(--neon-amber)', fontWeight: 800, fontSize: '15px' }}>
+                    {swapTimer}s <span style={{ fontSize: '10px', color: 'var(--neon-green)' }}>(&lt;15s TARGET)</span>
+                  </span>
+                </div>
+
+                <button
+                  className="cyber-btn amber"
+                  style={{ width: '100%', padding: '9px 14px', fontSize: '12px' }}
+                  onClick={startPitSwap}
+                  disabled={isSwapping}
+                >
+                  {isSwapping ? `SWAPPING IN PROGRESS... (${swapTimer}s)` : '⚡ RUN 15s PIT SWAP SIMULATION'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--cyber-text-dim)', fontFamily: 'var(--cyber-mono)' }}>
+                <span>BUS: 16.79V 4S</span>
+                <span>BURST: 95C (120A)</span>
+                <span>PACK MASS: 210g</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ------------------------------------------------------------------
+              Card 5: 36T Titanium Cleat Traction Matrix
+              ------------------------------------------------------------------ */}
+          <div className="bento-card bento-card-5 hud-corner">
+            <div>
+              <div className="bento-card-header">
+                <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>
+                  TRACTION DRIVE
+                </span>
+                <span className="cyber-badge">TI-6AL-4V</span>
+              </div>
+
+              <h3 className="bento-card-title">05 // 36T Titanium Cleat Traction Matrix</h3>
+              <p className="bento-card-desc">
+                High-speed melty translation requires extreme wheel traction without shredding under 4,000 RPM wheel scrub.
+                Compare friction coefficients (μ) across arena surfaces:
+              </p>
+
+              {/* Surface Selector */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                <button
+                  className={`weapon-btn ${selectedSurface === 'steel' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '5px 8px', fontSize: '10.5px' }}
+                  onClick={() => setSelectedSurface('steel')}
+                >
+                  Painted Steel
+                </button>
+                <button
+                  className={`weapon-btn ${selectedSurface === 'wood' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '5px 8px', fontSize: '10.5px' }}
+                  onClick={() => setSelectedSurface('wood')}
+                >
+                  Plywood Test
+                </button>
+                <button
+                  className={`weapon-btn ${selectedSurface === 'hazard' ? 'active' : ''}`}
+                  style={{ flex: 1, padding: '5px 8px', fontSize: '10.5px' }}
+                  onClick={() => setSelectedSurface('hazard')}
+                >
+                  Diamond Plate
+                </button>
+              </div>
+
+              {/* Matrix Table */}
+              <table className="cleat-matrix-table">
+                <thead>
+                  <tr>
+                    <th>Wheel Material</th>
+                    <th>Friction (μ)</th>
+                    <th>Wear / Scrub Resistance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="highlight">
+                    <td style={{ color: 'var(--neon-purple)' }}>36T Ti-6Al-4V Cleats</td>
+                    <td style={{ fontFamily: 'var(--cyber-mono)' }}>μ = {currentSurface.cleatMu.toFixed(2)}</td>
+                    <td style={{ color: 'var(--neon-green)' }}>Indestructible (0% wear)</td>
+                  </tr>
+                  <tr>
+                    <td>Shore 20A Silicone</td>
+                    <td style={{ fontFamily: 'var(--cyber-mono)' }}>μ = {currentSurface.siliconeMu.toFixed(2)}</td>
+                    <td style={{ color: 'var(--neon-amber)' }}>High grip, vulnerable to cuts</td>
+                  </tr>
+                  <tr>
+                    <td>TPU 95A HF Direct</td>
+                    <td style={{ fontFamily: 'var(--cyber-mono)' }}>μ = {currentSurface.tpuMu.toFixed(2)}</td>
+                    <td style={{ color: 'var(--cyber-text-dim)' }}>Slips during spin-up</td>
+                  </tr>
+                  <tr>
+                    <td>Neoprene Foam</td>
+                    <td style={{ fontFamily: 'var(--cyber-mono)' }}>μ = {currentSurface.foamMu.toFixed(2)}</td>
+                    <td style={{ color: 'var(--neon-crimson)' }}>Melts / shreds in 30s</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--cyber-border-faint)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)' }}>
+                Surface: {currentSurface.name}
+              </span>
+              <Link to="/build" style={{ fontSize: '11.5px', color: 'var(--neon-purple)', textDecoration: 'none', fontWeight: 600 }}>
+                CLEAT ASSEMBLY SPEC ↗
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Feature Deep-Dive Cards Section */}
-      <section style={{ marginTop: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+      {/* ----------------------------------------------------------------------
+          3. INTERACTIVE WEIGHT BUDGET MATRIX
+          ---------------------------------------------------------------------- */}
+      <section className="weight-budget-section hud-corner" aria-labelledby="weight-matrix-title">
+        <div className="weight-header-row">
           <div>
-            <h2 style={{ margin: 0, fontSize: '22px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="cyber-dot" /> TACTICAL ENGINEERING DEEP DIVES
+            <h2 id="weight-matrix-title" style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="cyber-dot" style={{ color: isExactLimit ? 'var(--neon-green)' : isOverweight ? 'var(--neon-crimson)' : 'var(--neon-amber)' }} />
+              INTERACTIVE WEIGHT BUDGET MATRIX // 3.00 LB CAP
             </h2>
             <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>
-              Critical innovations driving autonomous meltybrain translation, target tracking, and combat durability
+              Precise subsystem allocation against the strict SPARC &amp; NHRL 1,360.8 g (3.000 lb) weigh-in limit
             </span>
           </div>
-          <span className="cyber-badge green">ALL SYSTEMS VALIDATED</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span
+              className={`cyber-badge ${isExactLimit ? 'green' : isOverweight ? 'crimson' : 'amber'}`}
+              style={{ fontSize: '13px', padding: '6px 14px' }}
+            >
+              {isExactLimit && '🎯 EXACT 1,360.8 g (100.0% OPTIMAL)'}
+              {!isExactLimit && isOverweight && `❌ OVERWEIGHT BY ${Math.abs(deltaG)} g (DISQUALIFIED)`}
+              {!isExactLimit && !isOverweight && `✅ UNDERWEIGHT BY +${deltaG} g (LEGAL)`}
+            </span>
+            <button className="cyber-btn" style={{ padding: '6px 12px', fontSize: '11px' }} onClick={resetWeightBudget}>
+              RESET REV 7 BASELINE
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '22px' }}>
-          
-          {/* Deep Dive 1: Invertible Cleat Drivetrain */}
-          <div className="glass-panel hud-corner" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-cyan)' }}>
-            <div>
-              <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '6px', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--cyber-border-faint)' }}>
-                <img
-                  src="/cad/eyeliner_cleat_wheel_detail.png"
-                  alt="Ti-6Al-4V cleat wheel and invertible drive detail"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span className="cyber-badge" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)' }}>
-                  DRIVETRAIN
-                </span>
-              </div>
+        {/* Visual Progress Breakdown Bar */}
+        <div className="weight-progress-bar">
+          <div
+            className="weight-bar-segment"
+            style={{
+              width: `${(armorMass / maxBudgetG) * 100}%`,
+              background: 'var(--neon-crimson, #ff2a55)',
+              color: '#fff',
+            }}
+            title={`Armor: ${armorMass}g (${((armorMass / maxBudgetG) * 100).toFixed(1)}%)`}
+          >
+            ARMOR {armorMass}g
+          </div>
+          <div
+            className="weight-bar-segment"
+            style={{
+              width: `${(motorMass / maxBudgetG) * 100}%`,
+              background: 'var(--neon-cyan, #00f0ff)',
+              color: '#000',
+            }}
+            title={`Motors & Pods: ${motorMass}g (${((motorMass / maxBudgetG) * 100).toFixed(1)}%)`}
+          >
+            MOTORS {motorMass}g
+          </div>
+          <div
+            className="weight-bar-segment"
+            style={{
+              width: `${(batteryMass / maxBudgetG) * 100}%`,
+              background: 'var(--neon-amber, #ffaa00)',
+              color: '#000',
+            }}
+            title={`Dual 4S LiPo: ${batteryMass}g (${((batteryMass / maxBudgetG) * 100).toFixed(1)}%)`}
+          >
+            LIPO {batteryMass}g
+          </div>
+          <div
+            className="weight-bar-segment"
+            style={{
+              width: `${(electronicsMass / maxBudgetG) * 100}%`,
+              background: 'var(--neon-green, #00ff88)',
+              color: '#000',
+            }}
+            title={`Electronics & LiDAR: ${electronicsMass}g (${((electronicsMass / maxBudgetG) * 100).toFixed(1)}%)`}
+          >
+            AVIONICS {electronicsMass}g
+          </div>
+          <div
+            className="weight-bar-segment"
+            style={{
+              width: `${(puckMass / maxBudgetG) * 100}%`,
+              background: 'var(--neon-purple, #a855f7)',
+              color: '#fff',
+            }}
+            title={`Puck & Fasteners: ${puckMass}g (${((puckMass / maxBudgetG) * 100).toFixed(1)}%)`}
+          >
+            PUCK {puckMass}g
+          </div>
+        </div>
 
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <span className="cyber-badge">TI-6AL-4V WATERJET</span>
-                <span className="cyber-badge green">INVERTIBLE CLEARANCE</span>
-                <span className="cyber-badge amber">DUAL BE1806 2300KV</span>
-              </div>
-
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff' }}>
-                Invertible Cleat Drivetrain
-              </h3>
-
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                Meltybrain combat bots endure violent kinetic impacts that invert or toss the chassis across the arena.
-                Eyeliner features a completely symmetrical top-and-bottom drive module: laser-waterjet Grade 5 Titanium
-                (Ti-6Al-4V) cleat wheels paired with high-traction TPU dual rings provide 0.85 static friction against painted
-                steel floors. The bot drives upside-down instantaneously with zero mechanical self-righting delay.
-              </p>
-
-              <div style={{ padding: '10px 12px', background: 'rgba(0, 240, 255, 0.05)', borderRadius: '6px', border: '1px solid rgba(0, 240, 255, 0.15)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Key Specs:</strong> 18 mm OD · 12-tooth Ti cleats · 240 g module mass · 4S overvoltage headroom
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-              <Link to="/explorer" className="cyber-btn primary" style={{ width: '100%', padding: '10px', fontSize: '12px' }}>
-                EXPLORE CLEAT CAD ↗
-              </Link>
-              <Link to="/build" className="cyber-btn" style={{ padding: '10px 14px', fontSize: '12px' }}>
-                ASSEMBLY
-              </Link>
+        {/* Live Sliders for Each Subsystem */}
+        <div className="weight-controls-grid">
+          {/* Armor Slider */}
+          <div className="weight-control-card" style={{ borderLeft: '3px solid var(--neon-crimson)' }}>
+            <label>
+              <span>ARMOR &amp; TEETH</span>
+              <strong style={{ color: 'var(--neon-crimson)' }}>{armorMass} g</strong>
+            </label>
+            <input
+              type="range"
+              min="246"
+              max="520"
+              step="1"
+              value={armorMass}
+              onChange={(e) => setArmorMass(Number(e.target.value))}
+            />
+            <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '4px' }}>
+              Ti Teeth (246g) · AR500 Std (437g) · Heavy (480g)
             </div>
           </div>
 
-          {/* Deep Dive 2: Micro-LiDAR AI Auto-Ramming */}
-          <div className="glass-panel hud-corner" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-purple)' }}>
-            <div>
-              <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '6px', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--cyber-border-faint)' }}>
-                <img
-                  src="/cad/eyeliner_combat_v01_lidar_detail.png"
-                  alt="Micro-LiDAR sensor and turret detail"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span className="cyber-badge" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)', color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>
-                  TARGETING
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>TOF 58 SWEEPS/SEC</span>
-                <span className="cyber-badge green">SUB-5MS GATING</span>
-                <span className="cyber-badge crimson">AUTONOMOUS RAM</span>
-              </div>
-
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff' }}>
-                Micro-LiDAR AI Auto-Ramming
-              </h3>
-
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                As Eyeliner spins at 3,500 RPM (58.3 full sweeps per second), an embedded high-speed pulsed Time-of-Flight
-                micro-LiDAR sensor scans a full 360° radar field. On-chip radial range gating filters arena boundaries,
-                locking onto the opponent robot&apos;s azimuth and velocity. When auto-ram is triggered, the flight controller
-                automatically adjusts motor phase pulse duty to charge the opponent with zero driver latency.
-              </p>
-
-              <div style={{ padding: '10px 12px', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '6px', border: '1px solid rgba(168, 85, 247, 0.15)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Key Specs:</strong> 4.0 m envelope · 15° beam width · &lt;5 ms pulse gating · Lead-angle trajectory solver
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-              <Link to="/lab" className="cyber-btn primary" style={{ width: '100%', padding: '10px', fontSize: '12px' }}>
-                TEST IN SIMULATOR ↗
-              </Link>
-              <Link to="/firmware" className="cyber-btn" style={{ padding: '10px 14px', fontSize: '12px' }}>
-                ALGORITHM
-              </Link>
+          {/* Motors & Pods Slider */}
+          <div className="weight-control-card" style={{ borderLeft: '3px solid var(--neon-cyan)' }}>
+            <label>
+              <span>MOTORS &amp; CLEAT PODS</span>
+              <strong style={{ color: 'var(--neon-cyan)' }}>{motorMass} g</strong>
+            </label>
+            <input
+              type="range"
+              min="140"
+              max="240"
+              step="1"
+              value={motorMass}
+              onChange={(e) => setMotorMass(Number(e.target.value))}
+            />
+            <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '4px' }}>
+              Dual BE1806 2300KV + Grade 5 Ti Cleats (184g)
             </div>
           </div>
 
-          {/* Deep Dive 3: Dual-Accelerometer Centrifugal Omega Estimation */}
-          <div className="glass-panel hud-corner" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-green)' }}>
-            <div>
-              <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '6px', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--cyber-border-faint)' }}>
-                <img
-                  src="/cad/eyeliner_combat_v01_internals.png"
-                  alt="Dual H3LIS331DL accelerometer mounting and internal avionics"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span className="cyber-badge green" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)' }}>
-                  AVIONICS
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <span className="cyber-badge green">DUAL H3LIS331DL ±400G</span>
-                <span className="cyber-badge">SPI 10MHZ</span>
-                <span className="cyber-badge amber">1,000HZ LOOP</span>
-              </div>
-
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff' }}>
-                Dual-Accelerometer Centrifugal Omega Estimation
-              </h3>
-
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                Standard MEMS gyroscopes clip and saturate at 2,000 deg/s (~333 RPM). Eyeliner bypasses this limit with
-                two ±400g H3LIS331DL accelerometers mounted at precision calibrated radial distances r₁ and r₂ from the center
-                of rotation. Differencing the two sensors completely cancels chassis translation acceleration, computing pure
-                rotational velocity ω = √(Δa/Δr) up to 4,000+ RPM with sub-degree beacon phase lock.
-              </p>
-
-              <div style={{ padding: '10px 12px', background: 'rgba(0, 255, 136, 0.05)', borderRadius: '6px', border: '1px solid rgba(0, 255, 136, 0.15)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Key Specs:</strong> 10 MHz SPI bus · 1,000 Hz filter loop · 0.05% phase jitter · Zero gyro drift
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-              <Link to="/firmware" className="cyber-btn primary" style={{ width: '100%', padding: '10px', fontSize: '12px' }}>
-                BROWSE FIRMWARE .INO ↗
-              </Link>
-              <Link to="/engineering" className="cyber-btn" style={{ padding: '10px 14px', fontSize: '12px' }}>
-                CALCS
-              </Link>
+          {/* Dual 4S LiPo Slider */}
+          <div className="weight-control-card" style={{ borderLeft: '3px solid var(--neon-amber)' }}>
+            <label>
+              <span>DUAL 4S LIPO CARTRIDGE</span>
+              <strong style={{ color: 'var(--neon-amber)' }}>{batteryMass} g</strong>
+            </label>
+            <input
+              type="range"
+              min="160"
+              max="270"
+              step="1"
+              value={batteryMass}
+              onChange={(e) => setBatteryMass(Number(e.target.value))}
+            />
+            <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '4px' }}>
+              650mAh (170g) · 850mAh 95C (210g) · 1000mAh (260g)
             </div>
           </div>
 
-          {/* Deep Dive 4: RadioMaster Pocket Custom Dock */}
-          <div className="glass-panel hud-corner" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderTop: '3px solid var(--neon-amber)' }}>
-            <div>
-              <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '6px', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--cyber-border-faint)' }}>
-                <img
-                  src="/cad/cyberdeck_dock_detail.png"
-                  alt="RadioMaster Pocket custom 3D printed cyberdeck dock"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <span className="cyber-badge amber" style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)' }}>
-                  GROUND STATION
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <span className="cyber-badge amber">EDGETX 2.10</span>
-                <span className="cyber-badge">CRSF 250HZ</span>
-                <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>7" FPV CYBERDECK</span>
-              </div>
-
-              <h3 style={{ margin: '0 0 10px', fontSize: '19px', color: '#fff' }}>
-                RadioMaster Pocket Custom Dock
-              </h3>
-
-              <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.6 }}>
-                A field-ready, 3D printed cyberdeck docking station engineered specifically for the RadioMaster Pocket ELRS
-                transmitter. Integrates a 7-inch sunlight-readable telemetry display, USB-C diagnostic pass-through to Combat Lab,
-                magnetic quick-release handset latch, hot-swappable dual 18650 power pack, and an external SPARC-compliant
-                hardware disarm switch for safe pit handling.
-              </p>
-
-              <div style={{ padding: '10px 12px', background: 'rgba(255, 170, 0, 0.05)', borderRadius: '6px', border: '1px solid rgba(255, 170, 0, 0.15)', fontSize: '12px', color: 'var(--cyber-text-dim)', marginBottom: '16px' }}>
-                <strong>Key Specs:</strong> PA6-CF nylon print · M3 brass heatsets · 250 Hz packet rate · &lt;4 ms stick latency
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-              <Link to="/cyberdeck" className="cyber-btn amber" style={{ width: '100%', padding: '10px', fontSize: '12px' }}>
-                OPEN CYBERDECK STATION ↗
-              </Link>
-              <Link to="/printing" className="cyber-btn" style={{ padding: '10px 14px', fontSize: '12px' }}>
-                STL FILES
-              </Link>
+          {/* Electronics & LiDAR Slider */}
+          <div className="weight-control-card" style={{ borderLeft: '3px solid var(--neon-green)' }}>
+            <label>
+              <span>ELECTRONICS &amp; LIDAR</span>
+              <strong style={{ color: 'var(--neon-green)' }}>{electronicsMass} g</strong>
+            </label>
+            <input
+              type="range"
+              min="65"
+              max="130"
+              step="1"
+              value={electronicsMass}
+              onChange={(e) => setElectronicsMass(Number(e.target.value))}
+            />
+            <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '4px' }}>
+              Teensy 4.0 + Dual ±400g IMU + Micro-LiDAR (92g)
             </div>
           </div>
 
+          {/* Chassis Puck & Fasteners Slider */}
+          <div className="weight-control-card" style={{ borderLeft: '3px solid var(--neon-purple)' }}>
+            <label>
+              <span>PUCK &amp; ALLOY FASTENERS</span>
+              <strong style={{ color: 'var(--neon-purple)' }}>{puckMass} g</strong>
+            </label>
+            <input
+              type="range"
+              min="360"
+              max="490"
+              step="0.1"
+              value={puckMass}
+              onChange={(e) => setPuckMass(Number(e.target.value))}
+            />
+            <div style={{ fontSize: '10.5px', color: 'var(--cyber-text-dim)', marginTop: '4px' }}>
+              TPU 95A HF Unibody + Grade 12.9 M3 Bolts (437.8g)
+            </div>
+          </div>
+        </div>
+
+        {/* Live Weight Summary Readout */}
+        <div className="weight-summary-bar">
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Total Weight Rollup:</span>
+              <div style={{ fontFamily: 'var(--cyber-mono)', fontSize: '20px', fontWeight: 800, color: isOverweight ? 'var(--neon-crimson)' : '#fff' }}>
+                {totalBudgetG} g <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>({(totalBudgetG / 453.592).toFixed(3)} lb)</span>
+              </div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Weigh-in Limit:</span>
+              <div style={{ fontFamily: 'var(--cyber-mono)', fontSize: '20px', fontWeight: 800, color: 'var(--neon-cyan)' }}>
+                1,360.8 g <span style={{ fontSize: '13px', color: 'var(--cyber-text-muted)' }}>(3.000 lb)</span>
+              </div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '11px', color: 'var(--cyber-text-dim)', textTransform: 'uppercase' }}>Allocation Margin:</span>
+              <div
+                style={{
+                  fontFamily: 'var(--cyber-mono)',
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  color: isExactLimit ? 'var(--neon-green)' : isOverweight ? 'var(--neon-crimson)' : 'var(--neon-amber)',
+                }}
+              >
+                {deltaG >= 0 ? `+${deltaG} g reserve` : `${deltaG} g over limit`}
+              </div>
+            </div>
+          </div>
+
+          <Link to="/bom" className="cyber-btn primary" style={{ padding: '10px 18px', fontSize: '12px' }}>
+            VIEW INTERACTIVE BOM &amp; VENDORS ↗
+          </Link>
         </div>
       </section>
 
-      {/* Cyber Combat Station Navigation Modules */}
-      <section style={{ marginTop: '36px' }}>
+      {/* ----------------------------------------------------------------------
+          ALL TACTICAL COMBAT STATIONS & MODULES
+          ---------------------------------------------------------------------- */}
+      <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--cyber-border)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="cyber-dot" /> ALL TACTICAL COMBAT STATIONS &amp; MODULES
+              <span className="cyber-dot" /> ALL COMBAT STATIONS &amp; CAD MODULES
             </h2>
             <span style={{ fontSize: '12px', color: 'var(--cyber-text-muted)' }}>
               Complete engineering repository: physics simulation, firmware, BOM, CAD, and additive manufacturing
@@ -512,156 +1065,78 @@ export function Home() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          
-          {/* Station 1: Combat Test Lab */}
-          <Link to="/lab" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)', transition: 'all 0.2s ease' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <Link to="/lab" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="cyber-badge">SIMULATOR</span>
               <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
             </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>01 // Combat Test Lab</h3>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>01 // Combat Test Lab</h3>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
-              Spin up to 3,500 RPM on Canvas physics. Drive translation with the virtual RadioMaster Pocket,
+              Spin up to 4,000 RPM on Canvas physics. Drive translation with the virtual RadioMaster Pocket,
               sweep simulated 360° LiDAR radar, and engage AI auto-ramming!
             </p>
           </Link>
 
-          {/* Station 2: 3D Model Explorer */}
-          <Link to="/explorer" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-amber)', transition: 'all 0.2s ease' }}>
+          <Link to="/explorer" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-amber)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="cyber-badge amber">3D CAD</span>
               <span style={{ color: 'var(--neon-amber)', fontSize: '18px' }}>↗</span>
             </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>02 // 3D Model Explorer</h3>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>02 // 3D Model Explorer</h3>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
               Orbit and explode source CAD assemblies. Inspect TPU chassis pucks, titanium cleats, PropDrive motors,
-              and 1.2 kJ AR500 hardened teeth.
+              and 415 J AR500 hardened teeth.
             </p>
           </Link>
 
-          {/* Station 3: Build Guide & Step-by-Step */}
-          <Link to="/build" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)', transition: 'all 0.2s ease' }}>
+          <Link to="/video" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-crimson)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge">ASSEMBLY GUIDE</span>
-              <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
+              <span className="cyber-badge crimson">MEDIA REELS</span>
+              <span style={{ color: 'var(--neon-crimson)', fontSize: '18px' }}>↗</span>
             </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>03 // Step-by-Step Build Guide</h3>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>03 // Combat Video Reels</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
+              Broadcast studio with 4 high-speed impact breakdown reels, slow-mo killcam inspection,
+              and 4-channel synchronized combat telemetry oscillographs.
+            </p>
+          </Link>
+
+          <Link to="/build" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-green)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="cyber-badge green">BUILD GUIDE</span>
+              <span style={{ color: 'var(--neon-green)', fontSize: '18px' }}>↗</span>
+            </div>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>04 // Step-by-Step Build Guide</h3>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
               Complete mechanical, electrical, and firmware assembly walkthrough. Torquing titanium cleats,
               soldering Teensy 4.0 flight controller, and DShot600 ESC calibration.
             </p>
           </Link>
 
-          {/* Station 4: Bill of Materials & Cost */}
-          <Link to="/bom" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-crimson)', transition: 'all 0.2s ease' }}>
+          <Link to="/bom" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-purple)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge crimson">BOM &amp; SPEC</span>
-              <span style={{ color: 'var(--neon-crimson)', fontSize: '18px' }}>↗</span>
+              <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>PARTS &amp; BOM</span>
+              <span style={{ color: 'var(--neon-purple)', fontSize: '18px' }}>↗</span>
             </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>04 // BOM, Weight &amp; Cost</h3>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>05 // BOM &amp; Hardware Lot</h3>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
-              Full 3lb weight budget accounting (1,222g actual vs 1,360.8g cap). Verified vendor links for motors, ESCs,
+              Complete 3lb mass accounting (1,360.8g exact limit). Verified vendor links for motors, ESCs,
               Teensy MCU, SendCutSend armor lot, and spares kit.
             </p>
           </Link>
 
-          {/* Station 5: Firmware & .ino Explorer */}
-          <Link to="/firmware" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-green)', transition: 'all 0.2s ease' }}>
+          <Link to="/firmware" className="glass-panel hud-corner" style={{ padding: '20px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge green">KERNEL</span>
-              <span style={{ color: 'var(--neon-green)', fontSize: '18px' }}>↗</span>
+              <span className="cyber-badge">FIRMWARE</span>
+              <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
             </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>05 // Firmware &amp; .ino Studio</h3>
+            <h3 style={{ margin: '12px 0 6px', fontSize: '17px', color: '#fff' }}>06 // Firmware &amp; .ino Studio</h3>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
               Browse the production Teensy 4.0 flight sketch. Live config generator for custom spin RPM,
               sensor baseline, latency, and SPARC failsafe timeouts.
             </p>
           </Link>
-
-          {/* Station 6: RadioMaster Tactical Station */}
-          <Link to="/cyberdeck" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-purple)', transition: 'all 0.2s ease' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge" style={{ color: 'var(--neon-purple)', borderColor: 'rgba(168, 85, 247, 0.4)' }}>GROUND LINK</span>
-              <span style={{ color: 'var(--neon-purple)', fontSize: '18px' }}>↗</span>
-            </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>06 // RadioMaster Cyberdeck</h3>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
-              RadioMaster Pocket ELRS 2.4GHz hardware layout, 3D printed cyberdeck dock renders, EdgeTX model skeleton,
-              and live telemetry downlinks.
-            </p>
-          </Link>
-
-          {/* Station 7: 3D Printing & Slicer Studio */}
-          <Link to="/printing" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-cyan)', transition: 'all 0.2s ease' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge">ADDITIVE MFG</span>
-              <span style={{ color: 'var(--neon-cyan)', fontSize: '18px' }}>↗</span>
-            </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>07 // 3D Printing &amp; Slicer</h3>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
-              Bambu Studio / OrcaSlicer profiles (TPU 95A HF, PA6-CF, PETG HF). 17 direct STL downloads,
-              Bambu preset export (.ini), and material cost calculator.
-            </p>
-          </Link>
-
-          {/* Station 8: Engineering Calcs & Physics */}
-          <Link to="/engineering" className="glass-panel hud-corner" style={{ padding: '22px', textDecoration: 'none', color: 'inherit', borderLeft: '3px solid var(--neon-amber)', transition: 'all 0.2s ease' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="cyber-badge amber">PHYSICS</span>
-              <span style={{ color: 'var(--neon-amber)', fontSize: '18px' }}>↗</span>
-            </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '18px', color: '#fff' }}>08 // Engineering &amp; Physics</h3>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--cyber-text-muted)', lineHeight: 1.5 }}>
-              Centrifugal acceleration equations, moment of inertia tensor, kinetic impact energy dissipation,
-              and dynamic mass balance verification.
-            </p>
-          </Link>
-
-        </div>
-      </section>
-
-      {/* Weight Budget Breakdown Bar */}
-      <section className="glass-panel hud-corner" style={{ marginTop: '36px', padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '18px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="cyber-dot" style={{ background: 'var(--neon-green)' }} />
-              Combat Weight Budget Allocation (1,222.0 g / 1,360.8 g Max)
-            </h3>
-            <span style={{ fontSize: '12px', color: 'var(--cyber-text-muted)' }}>
-              138.8 g (10.2%) under the SPARC 3 lb limit — allows armor thickening or tungsten ballast
-            </span>
-          </div>
-          <span className="cyber-badge green">COMPLIANT // 2.69 LB</span>
-        </div>
-
-        {/* Visual Progress Bar */}
-        <div style={{ width: '100%', height: '24px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '6px', overflow: 'hidden', display: 'flex', border: '1px solid var(--cyber-border-faint)', marginBottom: '14px' }}>
-          <div style={{ width: '35.8%', background: 'var(--neon-crimson)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: '#fff' }} title="AR500 Teeth & Armor: 437g (35.8%)">
-            ARMOR 437g
-          </div>
-          <div style={{ width: '19.6%', background: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: '#000' }} title="Drivetrain & Motors: 240g (19.6%)">
-            DRIVE 240g
-          </div>
-          <div style={{ width: '20.8%', background: 'var(--neon-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: '#000' }} title="TPU Chassis Pucks: 254g (20.8%)">
-            CHASSIS 254g
-          </div>
-          <div style={{ width: '16.0%', background: 'var(--neon-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: '#000' }} title="4S LiPo Battery: 195g (16.0%)">
-            BATT 195g
-          </div>
-          <div style={{ width: '7.8%', background: 'var(--neon-purple)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: '#fff' }} title="Avionics & Sensors: 96g (7.8%)">
-            IMU 96g
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--cyber-text-dim)', flexWrap: 'wrap', gap: '8px' }}>
-          <span>⚔️ AR500 Armor: 437g</span>
-          <span>⚙️ Drivetrain (Motors + Cleats): 240g</span>
-          <span>🛡️ TPU Pucks &amp; Diffuser: 254g</span>
-          <span>🔋 4S 850mAh Battery: 195g</span>
-          <span>🧠 Teensy + Dual IMU + LiDAR: 96g</span>
-          <span style={{ color: 'var(--neon-green)', fontWeight: 600 }}>⚖️ Margin: 138.8g</span>
         </div>
       </section>
     </div>

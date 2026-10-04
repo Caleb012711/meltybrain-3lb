@@ -372,6 +372,9 @@ export function VideoHub() {
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [sourceMode, setSourceMode] = useState<'canvas' | 'mp4'>('canvas');
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [isVideoExporting, setIsVideoExporting] = useState<boolean>(false);
+  const [videoExportProgress, setVideoExportProgress] = useState<number>(0);
+  const [oscilloscopeMode, setOscilloscopeMode] = useState<'timeline' | 'liveSweep'>('timeline');
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -1175,10 +1178,70 @@ export function VideoHub() {
     showNotice('Combat telemetry stream exported to JSON');
   };
 
-  const showNotice = (msg: string) => {
+  const showNotice = useCallback((msg: string) => {
     setExportNotice(msg);
     setTimeout(() => setExportNotice(null), 3500);
-  };
+  }, []);
+
+  const handleExportVideoClip = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || sourceMode !== 'canvas') {
+      showNotice('Please switch to Canvas mode to record simulation clip');
+      return;
+    }
+    if (typeof canvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+      showNotice('Video recording is not supported in this browser environment');
+      return;
+    }
+
+    try {
+      setIsVideoExporting(true);
+      setVideoExportProgress(0);
+      const stream = canvas.captureStream(60);
+      const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000 });
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        setIsVideoExporting(false);
+        if (chunks.length > 0) {
+          const blob = new Blob(chunks, { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.download = `eyeliner-${activeReelId}-physics-reel.webm`;
+          a.href = url;
+          a.click();
+          URL.revokeObjectURL(url);
+          showNotice(`Exported 60 FPS video clip for ${currentReel.title}!`);
+        }
+      };
+
+      recorder.start();
+      const durationMs = 6000;
+      const startTime = performance.now();
+      const interval = setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        setVideoExportProgress(Math.min(100, Math.round((elapsed / durationMs) * 100)));
+        if (elapsed >= durationMs) {
+          clearInterval(interval);
+          if (recorder.state === 'recording') {
+            recorder.stop();
+          }
+        }
+      }, 100);
+    } catch (err) {
+      setIsVideoExporting(false);
+      console.error(err);
+      showNotice('Export failed: ' + (err as Error).message);
+    }
+  }, [sourceMode, activeReelId, currentReel, showNotice]);
+
 
   // Format timecode (00:04.28)
   const formatTimecode = (sec: number) => {
@@ -1463,6 +1526,21 @@ export function VideoHub() {
                   </button>
                 </div>
 
+                {/* Export 60 FPS Video Clip */}
+                <button
+                  type="button"
+                  className="ctrl-btn"
+                  onClick={handleExportVideoClip}
+                  disabled={isVideoExporting}
+                  style={{
+                    color: isVideoExporting ? '#ff1744' : '#00f0ff',
+                    borderColor: isVideoExporting ? '#ff1744' : 'rgba(0, 240, 255, 0.4)',
+                  }}
+                  title="Export high-resolution 60 FPS video clip of current animated physics reel"
+                >
+                  {isVideoExporting ? `🎬 REC (${videoExportProgress}%)` : '🎬 Clip MP4/WebM'}
+                </button>
+
                 {/* Export frame button */}
                 <button
                   type="button"
@@ -1522,7 +1600,34 @@ export function VideoHub() {
         {/* ================================================================== */}
         {/* SYNCHRONIZED TELEMETRY HUD (4 Real-Time Graph Channels)           */}
         {/* ================================================================== */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10, padding: '0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="cyber-dot" style={{ background: '#00f0ff', width: 9, height: 9 }} />
+            <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--mono, monospace)', letterSpacing: '0.06em', color: '#e6edf3' }}>
+              4-CHANNEL SYNCHRONIZED OSCILLOSCOPE HUD
+            </h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#8b949e', fontFamily: 'var(--mono, monospace)' }}>OSCILLOSCOPE MODE:</span>
+            <button
+              type="button"
+              className={`source-opt-btn ${oscilloscopeMode === 'timeline' ? 'selected' : ''}`}
+              onClick={() => setOscilloscopeMode('timeline')}
+            >
+              Timeline Waveform
+            </button>
+            <button
+              type="button"
+              className={`source-opt-btn ${oscilloscopeMode === 'liveSweep' ? 'selected' : ''}`}
+              onClick={() => setOscilloscopeMode('liveSweep')}
+            >
+              Live Phosphor Sweep
+            </button>
+          </div>
+        </div>
+
         <section className="telemetry-grid" aria-label="Synchronized Telemetry HUD">
+
           {/* Channel 1: RPM */}
           <div className="telemetry-channel-card hud-corner">
             <div className="telemetry-channel-header">

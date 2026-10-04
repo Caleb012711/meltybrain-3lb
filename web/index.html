@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6f5f1" />
+    <meta name="theme-color" content="#07090e" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet" />
     <script>
 // Apply the saved theme before the first render to avoid a bright flash.
 (() => {
@@ -12,15 +15,15 @@
   try { saved = localStorage.getItem('eyeliner-theme'); } catch { /* Storage may be disabled. */ }
   const theme = saved === 'light' || saved === 'dark'
     ? saved
-    : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    : 'dark'; // Cyber-aerospace default dark theme
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 })();
     </script>
     <link rel="preload" href="./cad/main-cad.glb" as="fetch" type="model/gltf-binary" crossorigin />
     <link rel="preload" href="./cad/main-cad.parts.json" as="fetch" type="application/json" crossorigin />
-    <meta name="description" content="Eyeliner — 3lb meltybrain combat robot. Real CAD, Onshape export, PCBWay ordering, TPU printing, Teensy firmware." />
-    <title>Eyeliner — Project workspace</title>
+    <meta name="description" content="Eyeliner Rev 7 'Apex Predator' — 3lb Meltybrain Combat Robot. 4,000 RPM, 415 Joules kinetic weapon, interactive 3D WebGL sim, autonomous LiDAR translation." />
+    <title>Eyeliner Rev 7 Apex Predator // 3lb Meltybrain Station</title>
   </head>
   <body>
     <div id="root"></div>

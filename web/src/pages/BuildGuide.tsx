@@ -1262,6 +1262,286 @@ export function BuildGuide() {
         </div>
       </div>
 
+      {/* FASTENER TORQUE SPECIFICATIONS & RETENTION MATRIX */}
+      <div className="bg-schematics-card glass-panel hud-corner" style={{ marginTop: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <div>
+            <span className="cyber-badge cyber-badge-amber">FASTENER INTEGRITY SPECIFICATION</span>
+            <h2 style={{ fontSize: '22px', margin: '4px 0 0', color: '#fff' }}>
+              Grade 12.9 Fastener Torque &amp; Thread Retention Matrix
+            </h2>
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--cyber-text-dim)', textAlign: 'right' }}>
+            All fasteners: Metric Grade 12.9 Alloy Steel (1220 MPa Tensile) · Calibrated digital torque wrench required
+          </div>
+        </div>
+
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--cyber-border)', background: 'rgba(0,0,0,0.35)', color: 'var(--neon-cyan)' }}>
+                <th style={{ padding: '12px 14px' }}>Fastener Size &amp; Type</th>
+                <th style={{ padding: '12px 14px' }}>Target Torque (N·m / in-lb)</th>
+                <th style={{ padding: '12px 14px' }}>Threadlock Compound</th>
+                <th style={{ padding: '12px 14px' }}>Assembly Location &amp; Subsystem</th>
+                <th style={{ padding: '12px 14px' }}>Tightening Pattern &amp; Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  M2 × 0.40 Grade 12.9 SHCS
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  0.40 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(3.5 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge" style={{ background: 'rgba(0, 240, 255, 0.1)', color: 'var(--neon-cyan)' }}>
+                    Loctite 243 (Medium Blue)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  Dual H3LIS331DL accelerometer mounts, VL53L4CD LiDAR bracket, optical beacon PCB
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Symmetric cross pattern. Max 2 threads protrusion beyond brass insert. Do not over-torque in PLA/PETG.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  M2.5 × 0.45 Grade 12.9 SHCS
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  0.85 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(7.5 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge" style={{ background: 'rgba(0, 240, 255, 0.1)', color: 'var(--neon-cyan)' }}>
+                    Loctite 243 (Medium Blue)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  Propdrive 2836 brushless stator face to 7075-T6 motor knuckle
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  4-bolt criss-cross pattern. Verify uniform stator-rotor air gap (≥0.25 mm radial clearance) before final pass.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  M3 × 0.50 Grade 12.9 Alloy Steel
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  2.00 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(17.7 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge amber" style={{ background: 'rgba(255, 170, 0, 0.15)', color: 'var(--neon-amber)' }}>
+                    Loctite 243 / 263 (Red on Teeth)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  6061-T6 Chassis sandwich deck perimeter, Ti top deflector lid, battery cartridge clamp
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  <strong>6-bolt star torque pattern:</strong> Stage 1 (0.8 N·m) → Stage 2 (1.4 N·m) → Final (2.0 N·m). Belleville washers installed cup-up.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  M4 × 0.70 Grade 12.9 High-Tensile
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  4.50 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(39.8 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge crimson" style={{ background: 'rgba(255, 42, 85, 0.15)', color: 'var(--neon-crimson)' }}>
+                    Loctite 263 (High-Strength Red)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  0.25&quot; AR500 symmetric impact teeth shear anchors to 7075-T6 weapon hubs
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Degrease threads with pure acetone. Opposed shear studs absorb 1,200 J hit energy; inspect torque every 2 bouts.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  M3 Ruthex Brass Heat-Set Insert
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  1.20 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(10.6 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#fff' }}>
+                    Dry (Mechanical Knurl Lock)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  TPU 95A chassis puck body, battery cartridge cradle, LiDAR debris shield
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Iron set to 230°C. Sink 0.2 mm below flush surface. Never apply anaerobic threadlock directly to raw brass in 3D prints.
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                  626ZZ Dead Axle Clamping Block
+                </td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)', fontWeight: 700 }}>
+                  1.80 N·m <span style={{ color: 'var(--cyber-text-dim)', fontWeight: 400 }}>(15.9 in-lb)</span>
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span className="cyber-badge amber" style={{ background: 'rgba(255, 170, 0, 0.15)', color: 'var(--neon-amber)' }}>
+                    Loctite 680 Retaining Compound
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px', color: '#fff' }}>
+                  6.000 mm h6 precision ground shaft &amp; 19.000 mm H7 bearing bore fitment
+                </td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Wipe with Loctite 7471 primer. Cure 24 hours at room temp (or 2 hours at 65°C) to withstand 400g radial combat acceleration.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* COMPLETE AVIONICS & SENSOR PINOUT ROUTING MATRIX */}
+      <div className="bg-schematics-card glass-panel hud-corner" style={{ marginTop: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <div>
+            <span className="cyber-badge cyber-badge-cyan">ELECTRICAL ARCHITECTURE</span>
+            <h2 style={{ fontSize: '22px', margin: '4px 0 0', color: '#fff' }}>
+              Teensy 4.0 Avionics Pinout &amp; High-Speed Bus Routing
+            </h2>
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--cyber-text-dim)', textAlign: 'right' }}>
+            NXP i.MX RT1062 ARM Cortex-M7 @ 600 MHz · High-speed DMA &amp; hardware IntervalTimer architecture
+          </div>
+        </div>
+
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--cyber-border)', background: 'rgba(0,0,0,0.35)', color: 'var(--neon-cyan)' }}>
+                <th style={{ padding: '12px 14px' }}>Teensy Pin</th>
+                <th style={{ padding: '12px 14px' }}>Peripheral / Subsystem</th>
+                <th style={{ padding: '12px 14px' }}>Protocol &amp; Bus Speed</th>
+                <th style={{ padding: '12px 14px' }}>Wiring Gauge &amp; Spec</th>
+                <th style={{ padding: '12px 14px' }}>Hardware Role &amp; Failsafe Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 0 (RX1)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>RadioMaster RP1 ELRS Receiver</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-amber)' }}>CRSF UART @ 420k Baud</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Silicone Twisted Pair</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  500 Hz RC stick packet stream. Hard watchdog: drops to 0 RPM failsafe if no packet received within 100 ms.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 1 (TX1)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>ELRS Telemetry Return</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-amber)' }}>CRSF UART @ 420k Baud</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Silicone Twisted Pair</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  50 Hz live telemetry downlink: battery voltage, estimated RPM, accelerometer g-loading, and loop timing jitter.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 2 (PWM)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>AM32 55A ESC Motor Left</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)' }}>DShot600 (8 kHz Frame)</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>28 AWG Shielded Lead</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Digital motor command stream with bidirectional telemetry feedback (eRPM, temp, current).
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 3 (PWM)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>AM32 55A ESC Motor Right</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)' }}>DShot600 (8 kHz Frame)</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>28 AWG Shielded Lead</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Digital motor command stream with bidirectional telemetry feedback. Anti-phase sinusoidal throttling.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 6 (PWM)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>Optical Heading Beacon</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-green)' }}>MOSFET Gate Strobe (1 kHz)</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>26 AWG High-Current Pair</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Ultra-bright green 3W LED strobe fires in a 15° window at true north for visual heading alignment.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 9 (CS2)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>H3LIS331DL Accelerometer #2</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)' }}>SPI Mode 3 @ 10 MHz</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Ribbon Run</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  ±400g opposed sensor mounted at radius R2 = 35.0 mm. Active LOW chip select.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pin 10 (CS1)</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>H3LIS331DL Accelerometer #1</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)' }}>SPI Mode 3 @ 10 MHz</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Ribbon Run</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  ±400g opposed sensor mounted at radius R1 = 25.0 mm. Differential math strips impact shock pulses.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pins 11–13</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>Hardware SPI0 (MOSI/MISO/SCK)</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)' }}>10.0 MHz Shared SPI Bus</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Ground-Interleaved</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  High-speed synchronous telemetry bus. Direct DMA reading during 1 kHz loop ISR.
+                </td>
+              </tr>
+
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-cyan)', fontWeight: 700 }}>Pins 18 / 19</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>VL53L4CD ToF LiDAR (Rev 7)</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-amber)' }}>Fast I2C @ 400 kHz</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>30 AWG Silicone Pair (4.7kΩ Pull-ups)</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Short-range target proximity detection through polycarbonate optical port. Auto-ramming trigger.
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-crimson)', fontWeight: 700 }}>VIN / GND</td>
+                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: 600 }}>5V 3A UBEC &amp; Star Ground</td>
+                <td style={{ padding: '12px 14px', fontFamily: 'var(--cyber-mono)', color: 'var(--neon-crimson)' }}>5.0V Low-Ripple DC</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)' }}>20 AWG Heavy Silicone</td>
+                <td style={{ padding: '12px 14px', color: 'var(--cyber-text-muted)', fontSize: '12px' }}>
+                  Regulated clean power rail isolated from 4S 16.8V ESC back-EMF spikes. Star ground prevents ground loops.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Main 8-Phase Step-by-Step Build Card Stack */}
       <div className="bg-phases-list" style={{ marginTop: 40 }}>
         {PHASES_DATA.map((phase) => {

@@ -327,3 +327,149 @@
   pointer-events: none;
 }
 
+/* ==========================================================================
+   FULLSCREEN ARENA VIEWPORT & FLOATING GLASSMORPHISM HUD PANELS
+   ========================================================================== */
+.arena-fullscreen-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 240, 255, 0.15);
+  background: #04070e;
+  border: 1px solid var(--cyber-border-strong);
+  transition: all 0.3s ease;
+}
+
+.arena-fullscreen-wrapper.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  z-index: 9999;
+  border-radius: 0;
+  border: none;
+}
+
+.floating-hud {
+  position: absolute;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.floating-hud-panel {
+  background: rgba(10, 16, 28, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--cyber-text);
+  font-family: var(--cyber-mono);
+}
+
+.floating-hud-top {
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.floating-hud-bottom {
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.floating-hud-bottom > * {
+  pointer-events: auto;
+}
+
+.arena-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--cyber-mono);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--cyber-text-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.arena-tab-btn:hover {
+  color: #fff;
+  border-color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.arena-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(0, 140, 255, 0.15));
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+}
+
+.arena-tab-btn.active.amber {
+  background: linear-gradient(135deg, rgba(255, 170, 0, 0.25), rgba(220, 120, 0, 0.15));
+  border-color: var(--neon-amber);
+  color: var(--neon-amber);
+  box-shadow: 0 0 16px rgba(255, 170, 0, 0.35);
+}
+
+.arena-tab-btn.active.crimson {
+  background: linear-gradient(135deg, rgba(255, 42, 85, 0.25), rgba(200, 20, 50, 0.15));
+  border-color: var(--neon-crimson);
+  color: var(--neon-crimson);
+  box-shadow: 0 0 16px rgba(255, 42, 85, 0.35);
+}
+
+/* Gamepad Live Status Badge */
+.gamepad-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--cyber-mono);
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  color: var(--neon-green);
+  animation: gamepadGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes gamepadGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 255, 136, 0.2); }
+  50% { box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); }
+}
+
+/* Hazard Warning Animation */
+@keyframes hazardPulse {
+  0%, 100% { border-color: rgba(255, 170, 0, 0.4); }
+  50% { border-color: rgba(255, 42, 85, 0.9); box-shadow: 0 0 16px rgba(255, 42, 85, 0.4); }
+}
+
+.hazard-pulse-panel {
+  animation: hazardPulse 1.8s infinite ease-in-out;
+}
+
+

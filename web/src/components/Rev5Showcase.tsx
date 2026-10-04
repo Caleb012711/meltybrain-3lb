@@ -3,10 +3,12 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 
+export type RevSubsystem = 'Armor' | 'Drive Pods' | 'Battery Cartridge' | 'Avionics & LiDAR' | 'Weapons';
+
 export interface Rev5PartSpec {
   id: string;
   name: string;
-  subsystem: string;
+  subsystem: RevSubsystem;
   massG: number;
   material: string;
   manufacturing: string;
@@ -26,14 +28,16 @@ export interface Rev5PartSpec {
   opacity?: number;
   focusTarget: [number, number, number];
   focusCameraPos: [number, number, number];
-  fallbackType: 'chassis' | 'plate' | 'cleat' | 'tire' | 'motor' | 'battery' | 'lidar';
+  fallbackType: 'chassis' | 'plate' | 'cleat' | 'tire' | 'motor' | 'battery' | 'cartridge' | 'lidar' | 'weapon_a' | 'weapon_b' | 'weapon_c' | 'weapon_d' | 'hub';
+  weaponOption?: 'A' | 'B' | 'C' | 'D';
 }
+
 
 export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'chassis_puck',
     name: 'Main Combat Chassis Puck',
-    subsystem: 'Chassis & Structural Unibody',
+    subsystem: 'Armor',
     massG: 180,
     material: 'Bambu TPU 95A HF (Semi-translucent Frosted Combat TPU)',
     manufacturing: 'FDM 3D Print (90% Gyroid Infill, 6 Perimeters, 0.20mm Layer)',
@@ -58,7 +62,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'top_plate',
     name: 'Top Armor Plate',
-    subsystem: 'Top Armor & Avionics Protection',
+    subsystem: 'Armor',
     massG: 64,
     material: 'Dark Smoke Polycarbonate (Makrolon 3.5mm)',
     manufacturing: 'CNC Precision Milling with Chamfered Fastener Slots',
@@ -83,7 +87,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'bottom_plate',
     name: 'Bottom Skid Plate Armor',
-    subsystem: 'Belly Armor & Ground Deflector',
+    subsystem: 'Armor',
     massG: 62,
     material: 'Dark Smoke Polycarbonate (Makrolon 3.5mm)',
     manufacturing: 'CNC Precision Milling / Waterjet with Chamfered Slots',
@@ -107,14 +111,14 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   },
   {
     id: 'wheel_cleat_left',
-    name: 'Left Titanium Wheel Cleat',
-    subsystem: 'Traction & Ground Engagement',
-    massG: 14.2,
+    name: 'Left 36T Titanium Wheel Cleat',
+    subsystem: 'Drive Pods',
+    massG: 15.1,
     material: 'Ti-6Al-4V Grade 5 Titanium (Annealed)',
-    manufacturing: 'Precision Abrasive Waterjet Cut (0.040" / 1.0mm)',
+    manufacturing: 'Precision Abrasive Waterjet Cut (1.2mm, 36 Forward-Raked Teeth)',
     fasteners: '3× M2.5 Hardened Ground Dowel Pins per hub',
-    stlFile: 'eyeliner_wheel_cleat_left.stl',
-    stlSize: '558 KB',
+    stlFile: 'titanium_cleat_wheel_36T_1.55in.stl',
+    stlSize: '2.5 MB',
     assembledPosition: [-54, 0, -2],
     assembledRotation: [0, Math.PI / 2, 0],
     explodeDisplacement: [-110, 0, 0],
@@ -127,14 +131,14 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   },
   {
     id: 'wheel_cleat_right',
-    name: 'Right Titanium Wheel Cleat',
-    subsystem: 'Traction & Ground Engagement',
-    massG: 14.2,
+    name: 'Right 36T Titanium Wheel Cleat',
+    subsystem: 'Drive Pods',
+    massG: 15.1,
     material: 'Ti-6Al-4V Grade 5 Titanium (Annealed)',
-    manufacturing: 'Precision Abrasive Waterjet Cut (0.040" / 1.0mm)',
+    manufacturing: 'Precision Abrasive Waterjet Cut (1.2mm, 36 Forward-Raked Teeth)',
     fasteners: '3× M2.5 Hardened Ground Dowel Pins per hub',
-    stlFile: 'eyeliner_wheel_cleat_right.stl',
-    stlSize: '558 KB',
+    stlFile: 'titanium_cleat_wheel_36T_1.55in.stl',
+    stlSize: '2.5 MB',
     assembledPosition: [54, 0, -2],
     assembledRotation: [0, -Math.PI / 2, 0],
     explodeDisplacement: [110, 0, 0],
@@ -148,7 +152,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'silicone_tire_left',
     name: 'Left High-Grip Silicone Tire',
-    subsystem: 'Traction & Shock Attenuation',
+    subsystem: 'Drive Pods',
     massG: 18.5,
     material: 'Smooth-On Dragon Skin 20 (Terracotta Silicone)',
     manufacturing: '2-Part Vacuum Degassed Injection Mold (Shore 20A)',
@@ -168,7 +172,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'silicone_tire_right',
     name: 'Right High-Grip Silicone Tire',
-    subsystem: 'Traction & Shock Attenuation',
+    subsystem: 'Drive Pods',
     massG: 18.5,
     material: 'Smooth-On Dragon Skin 20 (Terracotta Silicone)',
     manufacturing: '2-Part Vacuum Degassed Injection Mold (Shore 20A)',
@@ -188,7 +192,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'motor_left',
     name: 'Left Drive Motor (PropDrive 2836)',
-    subsystem: 'Propulsion & Kinematic Drive',
+    subsystem: 'Drive Pods',
     massG: 82,
     material: 'Machined 6061-T6 Aluminum / N52 Magnets / Steel Axle',
     manufacturing: 'Precision CNC Turning & Dynamic Spin Balancing (1200KV)',
@@ -208,7 +212,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'motor_right',
     name: 'Right Drive Motor (PropDrive 2836)',
-    subsystem: 'Propulsion & Kinematic Drive',
+    subsystem: 'Drive Pods',
     massG: 82,
     material: 'Machined 6061-T6 Aluminum / N52 Magnets / Steel Axle',
     manufacturing: 'Precision CNC Turning & Dynamic Spin Balancing (1200KV)',
@@ -226,9 +230,49 @@ export const REV5_PARTS: Rev5PartSpec[] = [
     fallbackType: 'motor',
   },
   {
+    id: 'hub_retainer_626zz',
+    name: 'Dual 626ZZ Hub Retainer & Dead Axle Clamp',
+    subsystem: 'Drive Pods',
+    massG: 18.0,
+    material: '7075-T6 Billet Aluminum',
+    manufacturing: 'Precision CNC Turning (19mm H7 Dual Bearing Bore)',
+    fasteners: '6mm Hardened Ground Dead Axle with Anti-Rotation Lock',
+    stlFile: 'bearing_retainer_626zz_hub.stl',
+    stlSize: '1.3 MB',
+    assembledPosition: [-50, 0, 0],
+    assembledRotation: [0, Math.PI / 2, 0],
+    explodeDisplacement: [-95, 0, 0],
+    color: '#8590a0',
+    roughness: 0.25,
+    metalness: 0.90,
+    focusTarget: [-50, 0, 0],
+    focusCameraPos: [-85, 25, 30],
+    fallbackType: 'hub',
+  },
+  {
+    id: 'battery_cartridge',
+    name: 'Quick-Swap Viscoelastic TPU Battery Cartridge',
+    subsystem: 'Battery Cartridge',
+    massG: 34.0,
+    material: 'Bambu TPU 95A Viscoelastic (Shore 95A)',
+    manufacturing: 'FDM 3D Print (100% Solid Infill, Shock Dissipation Ribs)',
+    fasteners: 'Toolless Snap Latch Detents + Heavy Ergonomic Pull Tab',
+    stlFile: 'eyeliner_battery_cartridge_rev7.stl',
+    stlSize: '39 KB',
+    assembledPosition: [0, 0, -4],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 0, -50],
+    color: '#1e2836',
+    roughness: 0.55,
+    metalness: 0.12,
+    focusTarget: [0, 0, -4],
+    focusCameraPos: [45, 65, -55],
+    fallbackType: 'cartridge',
+  },
+  {
     id: 'battery_pack_1',
     name: 'Tattu 4S 650mAh Battery Pack A',
-    subsystem: 'Energy Storage & High-Current Bus',
+    subsystem: 'Battery Cartridge',
     massG: 74,
     material: 'Lithium-Polymer 95C Pouch Cell Core with Kevlar Wrap',
     manufacturing: 'Automated Cell Matching & Heavy Heatshrink Packaging',
@@ -248,7 +292,7 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   {
     id: 'battery_pack_2',
     name: 'Tattu 4S 650mAh Battery Pack B',
-    subsystem: 'Energy Storage & High-Current Bus',
+    subsystem: 'Battery Cartridge',
     massG: 74,
     material: 'Lithium-Polymer 95C Pouch Cell Core with Kevlar Wrap',
     manufacturing: 'Automated Cell Matching & Heavy Heatshrink Packaging',
@@ -267,8 +311,8 @@ export const REV5_PARTS: Rev5PartSpec[] = [
   },
   {
     id: 'lidar_mount',
-    name: 'AI Micro-LiDAR Mount',
-    subsystem: 'Autonomous Navigation & Sensor Bay',
+    name: 'ST VL53L4CD Flush Micro-LiDAR Mount',
+    subsystem: 'Avionics & LiDAR',
     massG: 6.8,
     material: 'Bambu PA6-CF (Carbon Fiber Reinforced Polyamide)',
     manufacturing: 'High-Resolution FDM 3D Printing (0.12mm Layer Height)',
@@ -285,7 +329,118 @@ export const REV5_PARTS: Rev5PartSpec[] = [
     focusCameraPos: [35, 80, 55],
     fallbackType: 'lidar',
   },
+  {
+    id: 'lidar_shield',
+    name: 'Makrolon Polycarbonate Optical Debris Shield',
+    subsystem: 'Avionics & LiDAR',
+    massG: 2.1,
+    material: 'Optical Grade Polycarbonate (1.2mm Makrolon)',
+    manufacturing: 'Laser Cut with 18° Optical Aperture & Anti-Scratch Polish',
+    fasteners: 'Flush Recessed Snap Retention Bezel',
+    stlFile: 'lidar_polycarbonate_debris_shield.stl',
+    stlSize: '3.0 KB',
+    assembledPosition: [0, 49, 15],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 55, 115],
+    color: '#d4f0ff',
+    roughness: 0.1,
+    metalness: 0.08,
+    transmission: 0.92,
+    thickness: 1.2,
+    ior: 1.58,
+    transparent: true,
+    opacity: 0.78,
+    focusTarget: [0, 49, 15],
+    focusCameraPos: [35, 80, 55],
+    fallbackType: 'lidar',
+  },
+  {
+    id: 'weapon_option_a',
+    name: 'Weapon Option A (Symmetric 2-Tooth AR500)',
+    subsystem: 'Weapons',
+    weaponOption: 'A',
+    massG: 220,
+    material: 'SendCutSend Hardened AR500 Armor Steel (3.175mm)',
+    manufacturing: 'Precision Fiber Laser Cut & Chamfered Tooth Edge',
+    fasteners: '4× M4 Grade 12.9 High-Tensile Bolts + Belleville Washers',
+    stlFile: 'weapon_option_a_symmetric_2tooth.stl',
+    stlSize: '23.9 MB',
+    assembledPosition: [0, 0, 0],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 0, 32],
+    color: '#464c58',
+    roughness: 0.35,
+    metalness: 0.92,
+    focusTarget: [-65, -30, 0],
+    focusCameraPos: [-120, 50, 60],
+    fallbackType: 'weapon_a',
+  },
+  {
+    id: 'weapon_option_b',
+    name: 'Weapon Option B (Single-Bite + Tungsten Counterweight)',
+    subsystem: 'Weapons',
+    weaponOption: 'B',
+    massG: 245,
+    material: 'AR500 Steel Tooth + Machined High-Density Tungsten Wedge',
+    manufacturing: 'Fiber Laser Tooth + Wire EDM Heavy Tungsten Counterweight',
+    fasteners: '4× M4 Grade 12.9 High-Tensile Bolts',
+    stlFile: 'weapon_option_b_single_bite_tungsten.stl',
+    stlSize: '12.0 MB',
+    assembledPosition: [0, 0, 0],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 0, 32],
+    color: '#555b68',
+    roughness: 0.32,
+    metalness: 0.95,
+    focusTarget: [-65, -30, 0],
+    focusCameraPos: [-120, 50, 60],
+    fallbackType: 'weapon_b',
+  },
+  {
+    id: 'weapon_option_c',
+    name: 'Weapon Option C (Undercutter Low-Profile Wedge)',
+    subsystem: 'Weapons',
+    weaponOption: 'C',
+    massG: 215,
+    material: 'Titanium-Inlaid AR500 Steel Ground Skimmer',
+    manufacturing: 'Precision Laser Cut with 14° Lifting Bevel',
+    fasteners: '4× M4 Grade 12.9 High-Tensile Bolts',
+    stlFile: 'weapon_option_c_undercutter_wedge.stl',
+    stlSize: '24.0 MB',
+    assembledPosition: [0, 0, 0],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 0, 32],
+    color: '#39404c',
+    roughness: 0.38,
+    metalness: 0.90,
+    focusTarget: [-65, -30, 0],
+    focusCameraPos: [-120, 50, 60],
+    fallbackType: 'weapon_c',
+  },
+  {
+    id: 'weapon_option_d',
+    name: 'Weapon Option D (Kinetic Axe / High-KE Beater Thresher)',
+    subsystem: 'Weapons',
+    weaponOption: 'D',
+    massG: 260,
+    material: 'Hardox 500 / AR500 Extreme Kinetic Impactor',
+    manufacturing: 'High-Precision Fiber Laser with 32° Axe Rake & Tungsten Heel',
+    fasteners: '4× M4 Grade 12.9 High-Tensile Bolts',
+    stlFile: 'weapon_option_d_kinetic_axe.stl',
+    stlSize: '916 KB',
+    assembledPosition: [0, 0, 0],
+    assembledRotation: [0, 0, 0],
+    explodeDisplacement: [0, 0, 32],
+    color: '#2b313d',
+    roughness: 0.28,
+    metalness: 0.96,
+    focusTarget: [-65, -30, 0],
+    focusCameraPos: [-120, 50, 60],
+    fallbackType: 'weapon_d',
+  },
 ];
+
+export const REV7_PARTS = REV5_PARTS;
 
 export type CameraPreset = 'isometric' | 'topArmor' | 'underside' | 'cleatDrive' | 'lidarBay' | 'exploded';
 
@@ -338,10 +493,10 @@ function createProceduralGeometry(type: Rev5PartSpec['fallbackType']): THREE.Buf
     }
     case 'cleat': {
       const shape = new THREE.Shape();
-      const teeth = 12;
+      const teeth = 36;
       for (let i = 0; i < teeth * 2; i++) {
         const angle = (i * Math.PI) / teeth;
-        const r = i % 2 === 0 ? 19.68 : 14.5;
+        const r = i % 2 === 0 ? 19.68 : 15.2;
         const x = Math.cos(angle) * r;
         const y = Math.sin(angle) * r;
         if (i === 0) shape.moveTo(x, y);
@@ -352,7 +507,7 @@ function createProceduralGeometry(type: Rev5PartSpec['fallbackType']): THREE.Buf
       hole.absarc(0, 0, 3.0, 0, Math.PI * 2, true);
       shape.holes.push(hole);
       const g = new THREE.ExtrudeGeometry(shape, {
-        depth: 1.02,
+        depth: 1.2,
         bevelEnabled: true,
         bevelThickness: 0.2,
         bevelSize: 0.2,
@@ -385,13 +540,53 @@ function createProceduralGeometry(type: Rev5PartSpec['fallbackType']): THREE.Buf
       g.computeVertexNormals();
       return g;
     }
+    case 'hub': {
+      const g = new THREE.CylinderGeometry(13, 13, 14, 24);
+      g.center();
+      g.computeVertexNormals();
+      return g;
+    }
     case 'battery': {
       const g = new THREE.BoxGeometry(60, 31, 24);
       g.computeVertexNormals();
       return g;
     }
+    case 'cartridge': {
+      const g = new THREE.BoxGeometry(70, 38, 25);
+      g.computeVertexNormals();
+      return g;
+    }
     case 'lidar': {
       const g = new THREE.BoxGeometry(18, 20, 13);
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'weapon_a': {
+      const shape = new THREE.Shape();
+      shape.absarc(0, 0, 75, 0, Math.PI * 2, false);
+      const hole = new THREE.Path();
+      hole.absarc(0, 0, 66, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+      const g = new THREE.ExtrudeGeometry(shape, { depth: 12, bevelEnabled: true });
+      g.center();
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'weapon_b': {
+      const g = new THREE.BoxGeometry(82, 38, 14);
+      g.center();
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'weapon_c': {
+      const g = new THREE.BoxGeometry(88, 34, 10);
+      g.center();
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'weapon_d': {
+      const g = new THREE.BoxGeometry(92, 42, 16);
+      g.center();
       g.computeVertexNormals();
       return g;
     }
@@ -518,6 +713,16 @@ export function Rev5PartMesh({
           />
         )}
       </mesh>
+      {xray && (
+        <mesh geometry={geometry}>
+          <meshBasicMaterial
+            wireframe
+            color={isSelected ? '#38ef7d' : '#00f0ff'}
+            transparent
+            opacity={0.65}
+          />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -629,7 +834,49 @@ export function SpinUpGroup({
   );
 }
 
-/** Complete Rev 5 3D Model Assembly */
+/** 3D Center of Mass Indicator Reticle with Spin Axis Alignment */
+export function CenterOfMassReticle({
+  visible = true,
+  position = [0.08, 0.05, 0.12] as [number, number, number],
+}: {
+  visible?: boolean;
+  position?: [number, number, number];
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const t = clock.getElapsedTime();
+    const s = 1.0 + 0.06 * Math.sin(t * 4);
+    groupRef.current.scale.set(s, s, s);
+  });
+
+  if (!visible) return null;
+
+  return (
+    <group ref={groupRef} position={position}>
+      {/* Central reticle core */}
+      <mesh>
+        <sphereGeometry args={[2.0, 16, 16]} />
+        <meshBasicMaterial color="#00f0ff" wireframe />
+      </mesh>
+      {/* 3 Orthogonal Gimbal Rings */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[8.5, 0.35, 8, 32]} />
+        <meshBasicMaterial color="#38ef7d" />
+      </mesh>
+      <mesh rotation={[0, 0, 0]}>
+        <torusGeometry args={[8.5, 0.35, 8, 32]} />
+        <meshBasicMaterial color="#00f0ff" />
+      </mesh>
+      <mesh rotation={[0, Math.PI / 2, 0]}>
+        <torusGeometry args={[8.5, 0.35, 8, 32]} />
+        <meshBasicMaterial color="#ffaa00" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Complete Rev 7 / Rev 5 3D Model Assembly */
 export function Rev5Model({
   explode,
   wireframe,
@@ -637,6 +884,9 @@ export function Rev5Model({
   selectedId,
   hoveredId,
   isolatedId,
+  isolatedSubsystem,
+  selectedWeaponOption = 'A',
+  showCoM = true,
   onSelect,
   onHover,
 }: {
@@ -646,6 +896,9 @@ export function Rev5Model({
   selectedId: string | null;
   hoveredId: string | null;
   isolatedId: string | null;
+  isolatedSubsystem?: string | null;
+  selectedWeaponOption?: 'A' | 'B' | 'C' | 'D';
+  showCoM?: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
 }) {
@@ -653,9 +906,19 @@ export function Rev5Model({
     // Rotate -90 deg on X so CAD Z is pointing up (+Y) in Three.js
     <group rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
       {REV5_PARTS.map((spec) => {
+        // If part is a weapon option, only render the mounted weapon option on the bot
+        if (spec.weaponOption && spec.weaponOption !== selectedWeaponOption) {
+          if (isolatedSubsystem !== 'Weapons' && selectedId !== spec.id) {
+            return null;
+          }
+        }
+
         const isSelected = selectedId === spec.id;
         const isHovered = hoveredId === spec.id;
-        const isDimmed = isolatedId !== null && isolatedId !== spec.id;
+        const isDimmed = Boolean(
+          (isolatedId !== null && isolatedId !== spec.id) ||
+          (isolatedSubsystem && isolatedSubsystem !== 'all' && spec.subsystem !== isolatedSubsystem)
+        );
 
         return (
           <Rev5PartMesh
@@ -672,9 +935,13 @@ export function Rev5Model({
           />
         );
       })}
+
+      {/* Center of Mass 3D Indicator */}
+      <CenterOfMassReticle visible={showCoM} position={[0.08, 0.05, 0.12]} />
     </group>
   );
 }
+
 
 /* =========================================================================
    DYNAMIC LIGHTING STUDIO PRESETS
@@ -1187,9 +1454,8 @@ export function Rev5VideoModal({
   onClose: () => void;
   onRecordAgain: () => void;
 }) {
-  const downloadFilename = useMemo(
-    () => `eyeliner_rev5_${videoResult.trackId}_${Date.now()}.${videoResult.fileExtension}`,
-    [videoResult]
+  const [downloadFilename] = useState(
+    () => `eyeliner_rev7_${videoResult.trackId}_${Date.now()}.${videoResult.fileExtension}`
   );
 
   return (

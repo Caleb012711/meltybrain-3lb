@@ -44,7 +44,7 @@ body {
   background-image: radial-gradient(rgba(212, 215, 221, 0.45) 1px, transparent 1px);
   background-size: 24px 24px;
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
@@ -53,7 +53,7 @@ body {
 }
 
 code, .mono {
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.86em;
   background: var(--inset);
   color: var(--ink);

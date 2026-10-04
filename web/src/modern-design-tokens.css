@@ -1,0 +1,887 @@
+/* ==========================================================================
+   EYELINER REV 7 "APEX PREDATOR" — 2026 CYBER-AEROSPACE DESIGN SYSTEM
+   Modern Web Architecture: Tokens, color-mix(), Backdrop Filters,
+   Glassmorphism, CSS Nesting & Micro-Glow Transitions
+   ========================================================================== */
+
+:root {
+  /* Obsidian Glass Foundations */
+  --obsidian-950: #040609;
+  --obsidian-900: #07090e;
+  --obsidian-850: #0a0e16;
+  --obsidian-800: #0d111a;
+  --obsidian-750: #121824;
+  --obsidian-700: #182030;
+  --obsidian-600: #232d42;
+
+  /* Tactical Combat Accents */
+  --neon-cyan: #00f0ff;
+  --impact-amber: #ff6b00;
+  --combat-lime: #00ff66;
+  --tactical-purple: #8a2be2;
+  --kinetic-crimson: #ff2a55;
+  --warning-gold: #ffbe0b;
+
+  /* Color-mix Dynamic Derivations */
+  --cyan-subtle: color-mix(in srgb, var(--neon-cyan) 8%, transparent);
+  --cyan-tint: color-mix(in srgb, var(--neon-cyan) 16%, transparent);
+  --cyan-glow: color-mix(in srgb, var(--neon-cyan) 28%, transparent);
+  --cyan-border: color-mix(in srgb, var(--neon-cyan) 32%, transparent);
+  --cyan-border-active: color-mix(in srgb, var(--neon-cyan) 65%, rgba(255, 255, 255, 0.2));
+
+  --amber-subtle: color-mix(in srgb, var(--impact-amber) 10%, transparent);
+  --amber-tint: color-mix(in srgb, var(--impact-amber) 20%, transparent);
+  --amber-glow: color-mix(in srgb, var(--impact-amber) 32%, transparent);
+  --amber-border: color-mix(in srgb, var(--impact-amber) 40%, transparent);
+
+  --lime-subtle: color-mix(in srgb, var(--combat-lime) 10%, transparent);
+  --lime-tint: color-mix(in srgb, var(--combat-lime) 20%, transparent);
+  --lime-glow: color-mix(in srgb, var(--combat-lime) 35%, transparent);
+
+  --purple-subtle: color-mix(in srgb, var(--tactical-purple) 12%, transparent);
+  --purple-glow: color-mix(in srgb, var(--tactical-purple) 35%, transparent);
+
+  /* Glassmorphism & High-Order Depth */
+  --dock-bg: rgba(7, 9, 14, 0.78);
+  --dock-blur: blur(24px) saturate(190%);
+  --panel-bg: rgba(13, 17, 26, 0.72);
+  --panel-elevated: rgba(18, 24, 36, 0.84);
+  --modal-bg: rgba(9, 12, 18, 0.88);
+  --modal-backdrop: rgba(4, 6, 9, 0.72);
+
+  /* Border Highlights & Smooth Gradient Fades */
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.07);
+  --border-cyan-glass: 1px solid color-mix(in srgb, var(--neon-cyan) 25%, rgba(255, 255, 255, 0.08));
+  --border-amber-glass: 1px solid color-mix(in srgb, var(--impact-amber) 32%, rgba(255, 255, 255, 0.08));
+  --border-top-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  --border-active-glow: inset 0 0 12px 0 color-mix(in srgb, var(--neon-cyan) 20%, transparent);
+
+  /* Micro-Glow Shadows */
+  --glow-cyan-sm: 0 0 14px -2px color-mix(in srgb, var(--neon-cyan) 32%, transparent);
+  --glow-cyan-md: 0 0 28px -4px color-mix(in srgb, var(--neon-cyan) 42%, transparent);
+  --glow-amber-sm: 0 0 14px -2px color-mix(in srgb, var(--impact-amber) 35%, transparent);
+  --glow-amber-md: 0 0 28px -4px color-mix(in srgb, var(--impact-amber) 50%, transparent);
+  --shadow-dock: 0 18px 44px -10px rgba(0, 0, 0, 0.75), 0 0 28px -6px color-mix(in srgb, var(--neon-cyan) 18%, transparent);
+  --shadow-command: 0 24px 64px -12px rgba(0, 0, 0, 0.85), 0 0 36px -8px color-mix(in srgb, var(--neon-cyan) 25%, transparent);
+
+  /* Typography */
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, Menlo, Consolas, monospace;
+
+  /* High Performance Easings */
+  --ease-tactical: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Light Mode Overrides */
+[data-theme='light'] {
+  --obsidian-950: #e8ecf4;
+  --obsidian-900: #f1f4f9;
+  --obsidian-850: #f6f8fb;
+  --obsidian-800: #ffffff;
+  --obsidian-750: #f8fafc;
+  --obsidian-700: #e2e8f0;
+  --obsidian-600: #cbd5e1;
+
+  --dock-bg: rgba(255, 255, 255, 0.86);
+  --dock-blur: blur(24px) saturate(180%);
+  --panel-bg: rgba(255, 255, 255, 0.88);
+  --panel-elevated: rgba(248, 250, 252, 0.95);
+  --modal-bg: rgba(255, 255, 255, 0.94);
+  --modal-backdrop: rgba(15, 23, 42, 0.45);
+
+  --neon-cyan: #0284c7;
+  --impact-amber: #ea580c;
+  --combat-lime: #16a34a;
+  --tactical-purple: #7e22ce;
+
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.08);
+  --border-cyan-glass: 1px solid color-mix(in srgb, var(--neon-cyan) 35%, rgba(0, 0, 0, 0.06));
+  --border-amber-glass: 1px solid color-mix(in srgb, var(--impact-amber) 40%, rgba(0, 0, 0, 0.06));
+  --border-top-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+
+  --shadow-dock: 0 14px 34px -8px rgba(15, 23, 42, 0.12), 0 2px 10px rgba(0, 0, 0, 0.04);
+  --shadow-command: 0 24px 50px -12px rgba(15, 23, 42, 0.22);
+}
+
+/* ==========================================================================
+   GLOBAL AERODYNAMIC NAVIGATION DOCK
+   ========================================================================== */
+
+.apex-nav-wrapper {
+  position: sticky;
+  top: 12px;
+  z-index: 100;
+  width: 100%;
+  padding: 0 16px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  margin-bottom: 12px;
+}
+
+.apex-nav-dock {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1340px;
+  min-height: 60px;
+  padding: 6px 10px;
+  background: var(--dock-bg);
+  backdrop-filter: var(--dock-blur);
+  -webkit-backdrop-filter: var(--dock-blur);
+  border: var(--border-cyan-glass);
+  box-shadow: var(--shadow-dock), var(--border-top-highlight);
+  border-radius: 9999px;
+  transition: all 260ms var(--ease-tactical);
+  position: relative;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--neon-cyan) 45%, rgba(255, 255, 255, 0.15));
+    box-shadow: var(--shadow-dock), 0 0 28px -4px color-mix(in srgb, var(--neon-cyan) 25%, transparent);
+  }
+}
+
+/* Brand Section */
+.apex-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 8px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 9999px;
+  transition: background 200ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--cyan-subtle);
+  }
+
+  .apex-brand-icon-wrapper {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--neon-cyan) 14%, var(--obsidian-800));
+    border: 1px solid color-mix(in srgb, var(--neon-cyan) 40%, transparent);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      border: 1px solid var(--neon-cyan);
+      opacity: 0.4;
+      animation: pulse-ring 2.8s infinite cubic-bezier(0.2, 0, 0, 1);
+    }
+  }
+
+  .apex-brand-svg {
+    width: 18px;
+    height: 18px;
+    color: var(--neon-cyan);
+    filter: drop-shadow(0 0 6px var(--neon-cyan));
+  }
+
+  .apex-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+
+    .apex-title {
+      font-family: var(--font-family-mono);
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffffff;
+      [data-theme='light'] & {
+        color: #0f172a;
+      }
+    }
+
+    .apex-sub {
+      font-size: 9.5px;
+      font-family: var(--font-family-mono);
+      color: var(--neon-cyan);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Telemetry Badge (REV 7 APEX // 4,000 RPM) */
+.apex-telemetry-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 11px;
+  background: color-mix(in srgb, var(--impact-amber) 12%, var(--obsidian-800));
+  border: 1px solid color-mix(in srgb, var(--impact-amber) 35%, transparent);
+  border-radius: 9999px;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--impact-amber);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px -3px color-mix(in srgb, var(--impact-amber) 35%, transparent);
+
+  .telemetry-beacon {
+    width: 6.5px;
+    height: 6.5px;
+    border-radius: 50%;
+    background: var(--impact-amber);
+    box-shadow: 0 0 8px var(--impact-amber);
+    animation: blink-beacon 1.4s infinite ease-in-out;
+  }
+
+  .telemetry-highlight {
+    color: #ffffff;
+    font-weight: 800;
+    [data-theme='light'] & {
+      color: #0f172a;
+    }
+  }
+}
+
+@keyframes blink-beacon {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Nav Links Strip */
+.apex-nav-strip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 6px;
+  mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .apex-nav-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    min-height: 40px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-family: var(--font-family-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 9999px;
+    white-space: nowrap;
+    transition: all 180ms var(--ease-tactical);
+    border: 1px solid transparent;
+
+    [data-theme='light'] & {
+      color: #475569;
+    }
+
+    &:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+      [data-theme='light'] & {
+        color: #0f172a;
+        background: rgba(0, 0, 0, 0.04);
+      }
+    }
+
+    &.active {
+      color: var(--neon-cyan);
+      background: color-mix(in srgb, var(--neon-cyan) 14%, var(--obsidian-800));
+      border: 1px solid color-mix(in srgb, var(--neon-cyan) 45%, transparent);
+      box-shadow: 0 0 16px -3px color-mix(in srgb, var(--neon-cyan) 40%, transparent),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+      font-weight: 700;
+
+      [data-theme='light'] & {
+        color: #0284c7;
+        background: rgba(2, 132, 199, 0.1);
+        border-color: rgba(2, 132, 199, 0.4);
+      }
+    }
+  }
+}
+
+/* Control Buttons (Cmd+K Launcher, Audio, Theme, Hamburger) */
+.apex-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.apex-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--obsidian-750) 60%, transparent);
+  border: var(--border-subtle);
+  border-radius: 9999px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 180ms var(--ease-tactical);
+
+  [data-theme='light'] & {
+    background: rgba(0, 0, 0, 0.03);
+    color: #475569;
+  }
+
+  &:hover {
+    color: #ffffff;
+    border-color: color-mix(in srgb, var(--neon-cyan) 45%, transparent);
+    background: color-mix(in srgb, var(--neon-cyan) 10%, transparent);
+    box-shadow: 0 0 12px -2px color-mix(in srgb, var(--neon-cyan) 30%, transparent);
+
+    [data-theme='light'] & {
+      color: #0f172a;
+    }
+  }
+}
+
+.apex-launcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  height: 38px;
+  background: color-mix(in srgb, var(--neon-cyan) 10%, var(--obsidian-800));
+  border: 1px solid color-mix(in srgb, var(--neon-cyan) 35%, transparent);
+  border-radius: 9999px;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 180ms var(--ease-tactical);
+
+  [data-theme='light'] & {
+    color: #0f172a;
+    background: rgba(2, 132, 199, 0.08);
+  }
+
+  &:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 16px -2px color-mix(in srgb, var(--neon-cyan) 45%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .cmd-kbd {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--neon-cyan) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--neon-cyan) 40%, transparent);
+    font-size: 9.5px;
+    color: var(--neon-cyan);
+    font-weight: 700;
+  }
+}
+
+/* Audio Mute Toggle Button */
+.apex-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--obsidian-800);
+  border: var(--border-subtle);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 180ms var(--ease-tactical);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+
+  &.is-active {
+    color: var(--combat-lime);
+    border-color: color-mix(in srgb, var(--combat-lime) 40%, transparent);
+    background: color-mix(in srgb, var(--combat-lime) 10%, transparent);
+    box-shadow: 0 0 12px -2px color-mix(in srgb, var(--combat-lime) 30%, transparent);
+  }
+
+  .soundbars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+
+    span {
+      display: inline-block;
+      width: 2.5px;
+      background: currentColor;
+      border-radius: 1px;
+      height: 4px;
+      transition: height 150ms ease;
+    }
+  }
+
+  &.is-active .soundbars {
+    span:nth-child(1) { animation: sound-bounce 0.8s infinite ease-in-out alternate; }
+    span:nth-child(2) { animation: sound-bounce 0.6s infinite 0.2s ease-in-out alternate; }
+    span:nth-child(3) { animation: sound-bounce 0.9s infinite 0.4s ease-in-out alternate; }
+  }
+}
+
+@keyframes sound-bounce {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+/* ==========================================================================
+   GLOBAL COMMAND PALETTE (CMD+K MODAL)
+   ========================================================================== */
+
+.cmd-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: clamp(48px, 12vh, 120px);
+  padding-inline: 16px;
+  animation: fade-in 160ms var(--ease-tactical);
+}
+
+.cmd-palette-modal {
+  width: 100%;
+  max-width: 640px;
+  background: var(--modal-bg);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid color-mix(in srgb, var(--neon-cyan) 35%, rgba(255, 255, 255, 0.12));
+  border-radius: 18px;
+  box-shadow: var(--shadow-command), var(--border-top-highlight);
+  overflow: hidden;
+  animation: modal-enter 220ms var(--ease-spring);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cmd-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  [data-theme='light'] & {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .cmd-search-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--neon-cyan);
+    flex-shrink: 0;
+  }
+
+  .cmd-search-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-family: var(--font-family-mono);
+    font-size: 15px;
+    font-weight: 500;
+
+    [data-theme='light'] & {
+      color: #0f172a;
+    }
+
+    &::placeholder {
+      color: #64748b;
+      font-size: 14px;
+    }
+  }
+
+  .cmd-esc-tag {
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+}
+
+.cmd-results-list {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+
+  .cmd-category-title {
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    padding: 8px 12px 4px;
+    font-weight: 700;
+  }
+
+  .cmd-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    font-family: var(--font-family-sans);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all 120ms ease;
+
+    [data-theme='light'] & {
+      color: #334155;
+    }
+
+    .cmd-item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .cmd-item-icon {
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+      }
+
+      .cmd-item-title {
+        font-weight: 600;
+        color: #f1f5f9;
+        [data-theme='light'] & {
+          color: #0f172a;
+        }
+      }
+
+      .cmd-item-desc {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-left: 6px;
+        font-family: var(--font-family-mono);
+      }
+    }
+
+    .cmd-item-shortcut {
+      font-family: var(--font-family-mono);
+      font-size: 10px;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    &.selected, &:hover {
+      background: color-mix(in srgb, var(--neon-cyan) 12%, var(--obsidian-800));
+      border-color: color-mix(in srgb, var(--neon-cyan) 35%, transparent);
+      color: #ffffff;
+      box-shadow: 0 0 14px -3px color-mix(in srgb, var(--neon-cyan) 25%, transparent);
+
+      [data-theme='light'] & {
+        background: rgba(2, 132, 199, 0.1);
+        color: #0284c7;
+      }
+
+      .cmd-item-title {
+        color: var(--neon-cyan);
+        [data-theme='light'] & {
+          color: #0284c7;
+        }
+      }
+    }
+  }
+}
+
+.cmd-footer-tips {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: #64748b;
+
+  .cmd-shortcuts-legend {
+    display: flex;
+    gap: 12px;
+
+    span kbd {
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      margin-right: 3px;
+    }
+  }
+
+  .cmd-system-rev {
+    color: var(--neon-cyan);
+    font-weight: 700;
+  }
+}
+
+/* ==========================================================================
+   2026 CYBER-AEROSPACE FOOTER
+   ========================================================================== */
+
+.apex-footer {
+  margin-top: 64px;
+  border-top: 1px solid color-mix(in srgb, var(--neon-cyan) 20%, rgba(255, 255, 255, 0.06));
+  background: linear-gradient(180deg, var(--obsidian-900) 0%, var(--obsidian-950) 100%);
+  position: relative;
+  overflow: hidden;
+
+  [data-theme='light'] & {
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    border-top-color: rgba(0, 0, 0, 0.08);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    opacity: 0.6;
+  }
+
+  .apex-footer-inner {
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 48px 24px 32px;
+  }
+
+  .apex-footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 36px;
+    margin-bottom: 40px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .footer-col-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    .footer-brand-title {
+      font-family: var(--font-family-mono);
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      [data-theme='light'] & {
+        color: #0f172a;
+      }
+
+      .footer-badge {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--neon-cyan) 18%, transparent);
+        border: 1px solid var(--neon-cyan);
+        color: var(--neon-cyan);
+      }
+    }
+
+    .footer-desc {
+      color: #94a3b8;
+      font-size: 13px;
+      line-height: 1.6;
+      max-width: 320px;
+      margin: 0;
+    }
+
+    .footer-telemetry-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .telemetry-chip {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+
+      &.highlight {
+        color: var(--neon-cyan);
+        border-color: color-mix(in srgb, var(--neon-cyan) 30%, transparent);
+      }
+      &.amber {
+        color: var(--impact-amber);
+        border-color: color-mix(in srgb, var(--impact-amber) 30%, transparent);
+      }
+      &.lime {
+        color: var(--combat-lime);
+        border-color: color-mix(in srgb, var(--combat-lime) 30%, transparent);
+      }
+    }
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    h4 {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      margin: 0 0 6px;
+    }
+
+    a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 150ms ease, transform 150ms ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+
+      &:hover {
+        color: #ffffff;
+        transform: translateX(3px);
+        [data-theme='light'] & {
+          color: #0f172a;
+        }
+      }
+    }
+  }
+
+  .apex-footer-bottom {
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--font-family-mono);
+    font-size: 11px;
+    color: #64748b;
+
+    .bottom-specs {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      .nhrl-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--combat-lime) 15%, transparent);
+        border: 1px solid var(--combat-lime);
+        color: var(--combat-lime);
+        font-weight: 700;
+      }
+
+      .git-sha {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
+      }
+    }
+
+    .copyright {
+      color: #475569;
+    }
+  }
+}

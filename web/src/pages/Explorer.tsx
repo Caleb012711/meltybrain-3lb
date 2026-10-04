@@ -58,6 +58,8 @@ export function Explorer() {
   const [rev5IsolatedId, setRev5IsolatedId] = useState<string | null>(null);
   const [rev5ActivePreset, setRev5ActivePreset] = useState<CameraPreset | null>('isometric');
   const [rev5SubsystemFilter, setRev5SubsystemFilter] = useState('all');
+  const [selectedWeaponOption, setSelectedWeaponOption] = useState<'A' | 'B' | 'C' | 'D'>('A');
+  const [showCoM, setShowCoM] = useState(true);
   const [rev5Query, setRev5Query] = useState('');
 
   // Dynamic Studio Lighting & 3D Video Turntable States
@@ -181,6 +183,9 @@ export function Explorer() {
 
     const part = REV5_PARTS.find((p) => p.id === id);
     if (part) {
+      if (part.weaponOption) {
+        setSelectedWeaponOption(part.weaponOption);
+      }
       setCamTargetPos(part.focusCameraPos);
       setCamTargetLookAt(part.focusTarget);
       setIsCamAnimating(true);
@@ -445,6 +450,9 @@ export function Explorer() {
                             selectedId={rev5SelectedId}
                             hoveredId={rev5HoveredId}
                             isolatedId={rev5IsolatedId}
+                            isolatedSubsystem={rev5SubsystemFilter}
+                            selectedWeaponOption={selectedWeaponOption}
+                            showCoM={showCoM}
                             onSelect={handleSelectRev5Part}
                             onHover={setRev5HoveredId}
                           />
@@ -565,7 +573,34 @@ export function Explorer() {
                   </Canvas>
                 </GlErrorBoundary>
               )}
-            </div>
+                {/* 3D Center of Mass Telemetry HUD Overlay */}
+                {isRev5 && showCoM && (
+                  <div className="com-telemetry-hud" aria-label="Center of Mass Telemetry">
+                    <div className="com-hud-header">
+                      <span className="com-hud-dot" />
+                      <span className="com-hud-tag">DYNAMIC STABILITY // CoM RETICLE</span>
+                    </div>
+                    <div className="com-hud-grid">
+                      <div className="com-hud-item">
+                        <span className="com-lbl">CoM Position:</span>
+                        <span className="com-val mono">X: +0.08 · Y: +0.05 · Z: +0.12 mm</span>
+                      </div>
+                      <div className="com-hud-item">
+                        <span className="com-lbl">Radial Runout (Δr):</span>
+                        <span className="com-val mono">0.094 mm</span>
+                      </div>
+                      <div className="com-hud-item">
+                        <span className="com-lbl">Rotor Dynamic Imbalance:</span>
+                        <span className="com-val mono pass">0.128 g·mm (PASS &lt;0.50)</span>
+                      </div>
+                      <div className="com-hud-item">
+                        <span className="com-lbl">Spin Velocity Rating:</span>
+                        <span className="com-val mono">3,500 RPM @ 125 mph</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
             {/* Viewer Controls Toolbar */}
             <div className="viewer-bar" role="toolbar" aria-label="Explorer controls">
@@ -580,7 +615,7 @@ export function Explorer() {
                     onClick={() => selectModel('rev5')}
                     style={{ fontWeight: isRev5 ? 600 : 400 }}
                   >
-                    ⚡ Rev 5 Interactive STLs
+                    ⚡ Rev 7 / Rev 5 Interactive STLs
                   </button>
                   {cadModels.map((m) => (
                     <button
@@ -596,9 +631,66 @@ export function Explorer() {
                   ))}
                 </div>
 
-                {/* Rev 5 Specific Camera Presets & Exploded Slider */}
+                {/* Rev 5 / Rev 7 Specific Camera Presets & Exploded Slider */}
                 {isRev5 ? (
                   <>
+                    {/* Rev 7 Subsystem Isolation Toggles */}
+                    <div className="rev7-subsystems-bar">
+                      <span className="rev5-presets-label">Subsystem:</span>
+                      <div className="rev7-subsystem-chips">
+                        {(['all', 'Armor', 'Drive Pods', 'Battery Cartridge', 'Avionics & LiDAR', 'Weapons'] as const).map((sub) => {
+                          const isActive = rev5SubsystemFilter === sub;
+                          return (
+                            <button
+                              key={sub}
+                              type="button"
+                              className={`rev7-subsystem-btn ${isActive ? 'active' : ''}`}
+                              onClick={() => {
+                                setRev5SubsystemFilter(sub);
+                                setRev5IsolatedId(null);
+                                if (sub === 'Armor') applyPreset('topArmor');
+                                else if (sub === 'Drive Pods') applyPreset('cleatDrive');
+                                else if (sub === 'Avionics & LiDAR') applyPreset('lidarBay');
+                                else if (sub === 'Battery Cartridge') applyPreset('underside');
+                              }}
+                            >
+                              {sub === 'all' ? 'All Subsystems' : sub}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Rev 7 Modular Weapon Systems Config */}
+                    <div className="rev7-weapons-bar">
+                      <span className="rev5-presets-label">Weapon Mod:</span>
+                      <div className="rev7-weapon-chips">
+                        {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                          const isSel = selectedWeaponOption === opt;
+                          const weaponNames: Record<string, string> = {
+                            A: 'Opt A: 2-Tooth AR500',
+                            B: 'Opt B: Single-Bite Tungsten',
+                            C: 'Opt C: Undercutter Wedge',
+                            D: 'Opt D: Kinetic Axe Thresher',
+                          };
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              className={`rev7-weapon-btn ${isSel ? 'active' : ''}`}
+                              onClick={() => {
+                                setSelectedWeaponOption(opt);
+                                setRev5SelectedId(`weapon_option_${opt.toLowerCase()}`);
+                              }}
+                              title={`Mount ${weaponNames[opt]} to robot chassis`}
+                            >
+                              {weaponNames[opt]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {/* Dynamic Studio Lighting Presets */}
                     <div className="rev5-lighting-bar">
                       <span className="rev5-presets-label">Studio Lighting:</span>
@@ -720,6 +812,15 @@ export function Explorer() {
                         </button>
                         <button
                           type="button"
+                          className={`mini ${showCoM ? 'active' : ''}`}
+                          aria-pressed={showCoM}
+                          onClick={() => setShowCoM((v) => !v)}
+                          title="Toggle 3D Center of Mass Indicator & dynamic balance telemetry"
+                        >
+                          🎯 CoM {showCoM ? 'ON' : 'OFF'}
+                        </button>
+                        <button
+                          type="button"
                           className="mini"
                           aria-pressed={rev5Xray}
                           onClick={() => {
@@ -758,6 +859,7 @@ export function Explorer() {
                       </div>
                     </div>
                   </>
+
                 ) : (
                   /* Legacy GLB controls */
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -811,11 +913,11 @@ export function Explorer() {
           {/* Direct Downloads Card */}
           <Reveal>
             <div className="step" style={{ marginTop: 12 }}>
-              <h2>Direct Downloads — {isRev5 ? 'Rev 5 Combat Assembly' : model.label}</h2>
+              <h2>Direct Downloads — {isRev5 ? 'Rev 7 / Rev 5 Combat Assembly' : model.label}</h2>
               <p className="path">
                 <b>stl</b>
                 <i>/</i>
-                {isRev5 ? '12 authentic manufacturing STLs' : model.step.split('/').pop()}
+                {isRev5 ? '19 authentic manufacturing STLs + STEP assets' : model.step.split('/').pop()}
               </p>
               <div className="btn-row" style={{ flexWrap: 'wrap' }}>
                 {isRev5 ? (
@@ -823,17 +925,35 @@ export function Explorer() {
                     <a className="btn primary" href="stl/eyeliner_chassis_puck.stl" download>
                       Chassis Puck STL (5.4 MB)
                     </a>
+                    <a className="btn" href="stl/titanium_cleat_wheel_36T_1.55in.stl" download>
+                      36T Titanium Cleats (2.5 MB)
+                    </a>
+                    <a className="btn" href="stl/eyeliner_battery_cartridge_rev7.stl" download>
+                      TPU Battery Cartridge (39 KB)
+                    </a>
+                    <a className="btn" href="stl/weapon_option_a_symmetric_2tooth.stl" download>
+                      Weapon Opt A STL (23.9 MB)
+                    </a>
+                    <a className="btn" href="stl/weapon_option_b_single_bite_tungsten.stl" download>
+                      Weapon Opt B STL (12.0 MB)
+                    </a>
+                    <a className="btn" href="stl/weapon_option_c_undercutter_wedge.stl" download>
+                      Weapon Opt C STL (24.0 MB)
+                    </a>
+                    <a className="btn" href="stl/weapon_option_d_kinetic_axe.stl" download>
+                      Weapon Opt D STL (916 KB)
+                    </a>
                     <a className="btn" href="stl/eyeliner_top_plate.stl" download>
                       Top Armor Plate STL (5.1 MB)
                     </a>
                     <a className="btn" href="stl/eyeliner_bottom_plate.stl" download>
                       Bottom Armor Plate STL (4.6 MB)
                     </a>
-                    <a className="btn" href="stl/eyeliner_wheel_cleat_left.stl" download>
-                      Titanium Cleat STL (558 KB)
-                    </a>
                     <a className="btn" href="stl/eyeliner_lidar_mount.stl" download>
                       LiDAR Mount STL (706 KB)
+                    </a>
+                    <a className="btn" href="stl/lidar_polycarbonate_debris_shield.stl" download>
+                      Optical Debris Shield STL (3 KB)
                     </a>
                   </>
                 ) : (

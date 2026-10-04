@@ -7,8 +7,76 @@ import {
   vendorShippingRules,
   NHRL_WEIGHT_LIMIT_GRAMS,
   TARGET_WEIGHT_GRAMS,
+  type CombatPart,
   type SubsystemCategory,
 } from '../data/partsData';
+
+export type BomFilterCategory =
+  | 'All'
+  | 'SendCutSend'
+  | 'Electronics'
+  | 'Drive'
+  | 'Hardware'
+  | '3D Print';
+
+function matchesCategoryFilter(part: CombatPart, cat: BomFilterCategory): boolean {
+  if (cat === 'All') return true;
+  const name = part.name.toLowerCase();
+  const spec = part.spec.toLowerCase();
+  const notes = part.notes.toLowerCase();
+  const vendor = part.vendor.toLowerCase();
+  const pn = part.partNumber.toLowerCase();
+
+  if (cat === 'SendCutSend') {
+    return (
+      vendor.includes('sendcutsend') ||
+      pn.includes('scs') ||
+      spec.includes('sendcutsend') ||
+      notes.includes('sendcutsend') ||
+      name.includes('ar500') ||
+      name.includes('titanium top guard')
+    );
+  }
+  if (cat === 'Electronics') {
+    return (
+      part.subsystem === 'Sensors & Compute' ||
+      part.subsystem === 'Power' ||
+      part.subsystem === 'Radio & Pit' ||
+      ['digikey', 'sparkfun', 'adafruit', 'hobbyking', 'rotorama', 'frsky', 'pololu', 'matek'].some((v) =>
+        vendor.includes(v)
+      ) ||
+      ['teensy', 'esc', 'battery', 'lipo', 'ubec', 'sensor', 'accelerometer', 'lidar', 'radio', 'elrs'].some(
+        (k) => name.includes(k) || spec.includes(k)
+      )
+    );
+  }
+  if (cat === 'Drive') {
+    return (
+      part.subsystem === 'Drivetrain' ||
+      ['motor', 'wheel', 'tire', 'cleat', 'bearing', 'pinion', 'shaft', 'hub'].some(
+        (k) => name.includes(k) || spec.includes(k)
+      )
+    );
+  }
+  if (cat === 'Hardware') {
+    return (
+      part.subsystem === 'Fasteners' ||
+      vendor.includes('mcmaster') ||
+      ['screw', 'bolt', 'nut', 'washer', 'standoff', 'fastener', 'thread', 'insert', 'hardware'].some(
+        (k) => name.includes(k) || spec.includes(k)
+      )
+    );
+  }
+  if (cat === '3D Print') {
+    return (
+      vendor.includes('bambu') ||
+      ['tpu', '3d print', 'printed', 'cartridge', 'puck', 'mount', 'cradle', 'shield', 'bumper'].some(
+        (k) => name.includes(k) || spec.includes(k) || notes.includes(k)
+      )
+    );
+  }
+  return true;
+}
 
 function formatUsd(n: number | null | undefined): string {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -105,7 +173,7 @@ export function Bom() {
 
   // Search & Filtering
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'All' | SubsystemCategory>('All');
+  const [activeCategory, setActiveCategory] = useState<BomFilterCategory>('All');
 
   // Checklist & modal state
   const [showChecklistModal, setShowChecklistModal] = useState(false);
@@ -145,8 +213,8 @@ export function Bom() {
   const filteredCatalog = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return combatPartsCatalog.filter((part) => {
-      const matchesTab = activeTab === 'All' || part.subsystem === activeTab;
-      if (!matchesTab) return false;
+      const matchesCategory = matchesCategoryFilter(part, activeCategory);
+      if (!matchesCategory) return false;
       if (!q) return true;
       return (
         part.name.toLowerCase().includes(q) ||
@@ -156,7 +224,7 @@ export function Bom() {
         part.notes.toLowerCase().includes(q)
       );
     });
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeCategory]);
 
   // Mass Rollup Calculations
   const massRollup = useMemo(() => {
@@ -357,14 +425,13 @@ export function Bom() {
     setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const categories: ('All' | SubsystemCategory)[] = [
+  const categories: BomFilterCategory[] = [
     'All',
-    'Chassis & Armor',
-    'Drivetrain',
-    'Sensors & Compute',
-    'Power',
-    'Fasteners',
-    'Radio & Pit',
+    'SendCutSend',
+    'Electronics',
+    'Drive',
+    'Hardware',
+    '3D Print',
   ];
 
   return (
@@ -624,14 +691,14 @@ export function Bom() {
       {/* FILTER TABS & SEARCH BAR */}
       <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-          {/* Subsystem Tabs */}
+          {/* Category Tabs */}
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {categories.map((cat) => (
               <button
                 key={cat}
-                className={`cyber-btn ${activeTab === cat ? 'primary' : ''}`}
+                className={`cyber-btn ${activeCategory === cat ? 'primary' : ''}`}
                 style={{ padding: '6px 14px', fontSize: '12px' }}
-                onClick={() => setActiveTab(cat)}
+                onClick={() => setActiveCategory(cat)}
               >
                 {cat}
               </button>
@@ -736,10 +803,31 @@ export function Bom() {
                       </div>
                     </td>
 
-                    {/* P/N & Vendor with direct link */}
-                    <td style={{ padding: '12px 14px', verticalAlign: 'top', minWidth: '160px' }}>
-                      <div style={{ fontFamily: 'var(--cyber-mono)', fontSize: '12px', color: 'var(--neon-cyan)', marginBottom: '2px' }}>
-                        {part.partNumber}
+                    {/* P/N & Vendor with direct link & copy badge */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top', minWidth: '170px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                        <span style={{ fontFamily: 'var(--cyber-mono)', fontSize: '12px', color: 'var(--neon-cyan)', fontWeight: 600 }}>
+                          {part.partNumber}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(part.partNumber);
+                            setCopyFeedback(`Copied P/N: ${part.partNumber}`);
+                            setTimeout(() => setCopyFeedback(null), 2500);
+                          }}
+                          className="cyber-badge"
+                          style={{
+                            cursor: 'pointer',
+                            padding: '1px 6px',
+                            fontSize: '10px',
+                            background: 'rgba(0, 240, 255, 0.12)',
+                            border: '1px solid rgba(0, 240, 255, 0.35)',
+                            color: 'var(--neon-cyan)',
+                          }}
+                          title="Copy vendor part number"
+                        >
+                          📋
+                        </button>
                       </div>
                       <div>
                         <a
@@ -897,7 +985,7 @@ export function Bom() {
             {/* Checklist items by subsystem */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {categories.filter((c) => c !== 'All').map((cat) => {
-                const partsInCat = combatPartsCatalog.filter((p) => p.subsystem === cat);
+                const partsInCat = combatPartsCatalog.filter((p) => matchesCategoryFilter(p, cat));
                 return (
                   <div key={cat} style={{ background: 'rgba(0,0,0,0.25)', padding: '14px 18px', borderRadius: '8px', border: '1px solid var(--cyber-border-faint)' }}>
                     <h3 style={{ margin: '0 0 10px', fontSize: '14px', color: 'var(--neon-amber)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>

@@ -712,4 +712,137 @@
   padding-top: 14px;
 }
 
+/* =========================================================================
+   REV 7 SUBSYSTEM ISOLATION & MODULAR WEAPON CONTROLS
+   ========================================================================= */
+
+.rev7-subsystems-bar,
+.rev7-weapons-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.rev7-subsystem-chips,
+.rev7-weapon-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rev7-subsystem-btn,
+.rev7-weapon-btn {
+  background: var(--inset);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--mono, monospace);
+  letter-spacing: 0.02em;
+}
+
+.rev7-subsystem-btn:hover,
+.rev7-weapon-btn:hover {
+  background: var(--line);
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.rev7-subsystem-btn.active {
+  background: rgba(0, 240, 255, 0.14);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.rev7-weapon-btn.active {
+  background: rgba(255, 170, 0, 0.16);
+  border-color: #ffaa00;
+  color: #ffaa00;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.25);
+}
+
+/* =========================================================================
+   CENTER OF MASS (CoM) TELEMETRY HUD
+   ========================================================================= */
+
+.com-telemetry-hud {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: rgba(10, 14, 20, 0.90);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-left: 3px solid #00f0ff;
+  border-radius: 4px;
+  padding: 10px 14px;
+  z-index: 15;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  max-width: 320px;
+}
+
+.com-hud-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.com-hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+  animation: pulse-rec 1.2s infinite alternate;
+}
+
+.com-hud-tag {
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: #00f0ff;
+  letter-spacing: 0.08em;
+}
+
+.com-hud-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.com-hud-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.com-hud-item .com-lbl {
+  color: #8b949e;
+}
+
+.com-hud-item .com-val {
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.com-hud-item .com-val.pass {
+  color: #38ef7d;
+  font-weight: 700;
+}
+
+
 

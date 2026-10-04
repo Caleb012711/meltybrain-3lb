@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router';
 import './index.css';
 import './site.css';
 import './cyber-combat.css';
+import './modern-design-tokens.css';
 import { App } from './App';
 import { ThemeProvider } from './components/ThemeProvider';
 
