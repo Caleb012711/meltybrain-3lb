@@ -316,16 +316,27 @@ def export_all_stls_and_steps(parts_dict, assembly_shapes):
     print("=== EXPORTING STEP AND STL ASSETS ===")
     
     # 1. Export STEP files to CAD_DIR
-    for name, shape in assembly_shapes.items():
+    for name, obj_or_shape in assembly_shapes.items():
         step_path = CAD_DIR / f"{name}.step"
         print(f"Exporting STEP: {step_path.name}...")
-        Part.export([shape], str(step_path))
+        if isinstance(obj_or_shape, list):
+            Part.export(obj_or_shape, str(step_path))
+        elif hasattr(obj_or_shape, 'TypeId'):
+            Part.export([obj_or_shape], str(step_path))
+        else:
+            temp_doc = FreeCAD.newDocument("TempStepExport")
+            feat = temp_doc.addObject("Part::Feature", "StepExportFeat")
+            feat.Shape = obj_or_shape
+            temp_doc.recompute()
+            Part.export([feat], str(step_path))
+            FreeCAD.closeDocument("TempStepExport")
         
     # 2. Export STLs to all three directories
     for name, shape in parts_dict.items():
         cad_stl = CAD_DIR / f"{name}.stl"
         print(f"Exporting STL: {name}.stl...")
-        shape.exportStl(str(cad_stl))
+        s = shape.Shape if hasattr(shape, 'Shape') else shape
+        s.exportStl(str(cad_stl))
         
         # Copy / export to 3d-printing and web
         p3d_stl = STL_3D_DIR / f"{name}.stl"
@@ -361,25 +372,29 @@ def render_isometric_previews(parts_render_list, out_images):
         
         for part_name, shape, color, alpha in render_parts:
             # Export temp stl to read triangles
+            s = shape.Shape if hasattr(shape, 'Shape') else shape
             tmp_stl = f"/tmp/{part_name}_tmp.stl"
-            shape.exportStl(tmp_stl)
+            s.exportStl(tmp_stl)
             raw = Path(tmp_stl).read_bytes()
             if len(raw) < 84:
                 continue
             count = struct.unpack_from('<I', raw, 80)[0]
-            if count == 0:
+            actual_count = min(count, (len(raw) - 84) // 50)
+            if actual_count == 0:
                 continue
-            step = max(1, count // 10000)
-            tri_indices = list(range(0, count, step))
+            step = max(1, actual_count // 8000)
+            tri_indices = list(range(0, actual_count, step))
             if not tri_indices:
                 continue
             tri_list = []
             for j in tri_indices:
-                try:
-                    vals = struct.unpack_from('<12fH', raw, 84 + j * 50)[3:12]
-                    tri_list.append(vals)
-                except Exception:
-                    pass
+                offset = 84 + j * 50
+                if offset + 50 <= len(raw):
+                    try:
+                        vals = struct.unpack_from('<12fH', raw, offset)[3:12]
+                        tri_list.append(vals)
+                    except Exception:
+                        pass
             if not tri_list:
                 continue
             triangles = np.array(tri_list).reshape((-1, 3, 3))
@@ -421,6 +436,8 @@ def render_isometric_previews(parts_render_list, out_images):
         # Save to cad/ and display-study/
         cad_out = CAD_DIR / out_name
         study_out = DISPLAY_STUDY_DIR / out_name
+        cad_out.parent.mkdir(parents=True, exist_ok=True)
+        study_out.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(str(cad_out), dpi=140, facecolor=fig.get_facecolor())
         fig.savefig(str(study_out), dpi=140, facecolor=fig.get_facecolor())
         plt.close(fig)
@@ -520,22 +537,18 @@ def main():
     doc.saveAs(str(base_fcstd))
     
     # 8. Define export sets
-    # Assembly shapes for STEP
-    full_assembly_rev6 = Part.Compound([
-        chassis_puck, top_plate, bottom_plate, wheel_tr, wheel_bl,
-        opt_a, pocket_1, pocket_2, lidar_mount, lidar_shield
-    ])
+    solid_objs = [o for o in doc.Objects if hasattr(o, 'Shape') and o.Shape and o.Shape.Volume > 0]
     
     assembly_steps = {
-        "eyeliner_combat_v06": full_assembly_rev6,
-        "eyeliner_combat_v01": full_assembly_rev6,
-        "weapon_option_a_symmetric_2tooth": opt_a,
-        "weapon_option_b_single_bite_tungsten": opt_b,
-        "weapon_option_c_undercutter_wedge": opt_c,
+        "eyeliner_combat_v06": solid_objs,
+        "eyeliner_combat_v01": solid_objs,
+        "weapon_option_a_symmetric_2tooth": doc.Weapon_Option_A_Symmetric_2Tooth,
+        "weapon_option_b_single_bite_tungsten": doc.Weapon_Option_B_Single_Bite_Tungsten,
+        "weapon_option_c_undercutter_wedge": doc.Weapon_Option_C_Undercutter_Wedge,
         "titanium_cleat_wheel_32T_1.55in": cleat_disc,
         "drive_pod_626zz_hub_assembly": hub_assy,
-        "eyeliner_chassis_puck_rev6": chassis_puck,
-        "eyeliner_lidar_mount_rev6": lidar_mount,
+        "eyeliner_chassis_puck_rev6": doc.Chassis_Puck,
+        "eyeliner_lidar_mount_rev6": doc.LiDAR_Mount_Rev6,
     }
     
     # Individual parts for STL
